@@ -1,0 +1,326 @@
+const views = ['o-view', 'u-view', 'v-view', 'h-view'];
+const stages = {};
+const layers = {};
+const measurementLayers = {};
+const snapLayers = {};
+let activeView = '';
+let viewClciked = false;
+let measurementPoints = [];
+let tempLine = null;
+let storedMeasurements = [];
+
+function handleResize(view) {
+    const container = document.getElementById(view);
+    const stage = stages[view]; // Retrieve the correct stage instance
+
+    if (stage && container) {
+        stage.width(container.clientWidth);
+        stage.height(container.clientHeight);
+        //Redraw blocks and measurements for the specific view
+        drawBlocs();
+        redrawMeasurements();
+    }
+}
+
+//Initialize all views
+views.forEach(view => {
+    const container = document.getElementById(view); //Get the container div
+    const stage = new Konva.Stage({
+        container: view,
+        width: container.clientWidth,  //Set to container's actual width
+        height: container.clientHeight //Set to container's actual height
+    });
+    const layer = new Konva.Layer();
+    const measurementLayer = new Konva.Layer();
+    const snapLayer = new Konva.Layer();
+    snapLayer.visible(false); //Start the snap indicator layers as hidden
+
+    stage.add(layer);
+    stage.add(measurementLayer);
+    stage.add(snapLayer);
+    snapLayers[view] = snapLayer; //Store snap layer for toggling visability
+
+    //Set up a large virtual area inside
+    const largeBackground = new Konva.Rect({
+        x: 0,
+        y: 0,
+        width: 13000,  
+        height: 3000,  
+        fill: 'white',
+    });
+
+    layer.add(largeBackground);
+
+    stages[view] = stage;
+    layers[view] = layer;
+    measurementLayers[view] = measurementLayer;
+
+    stage.on('click', e => handleMeasurementClick(stage, e));
+    stage.on('mousemove', e => handleMouseMove(stage, e));
+
+    // Resize views dynamically when the window is resized
+    window.addEventListener("resize", () => handleResize(view));
+});
+
+//changes the measurement view on click
+views.forEach(view => {
+    const stage = stages[view];
+
+    stage.on('click', () => {
+        if (viewClciked) return;
+        activeView = view;
+    });
+});
+
+//transform cursor position correctly after zoom/pan
+function getTransformedPosition(stage, pos) {
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    return transform.point(pos);
+}
+
+//find nearest snapping point
+function getNearestSnapPoint(pos) {
+    let snapRadius = 10;
+    let closestPoint = pos;
+    let minDist = snapRadius;
+
+    layers[activeMeasurementView].getChildren().forEach(shape => {
+        if (shape.attrs.snapPoints) {
+            shape.attrs.snapPoints.forEach(p => {
+                let dist = Math.hypot(p.x - pos.x, p.y - pos.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestPoint = p;
+                }
+            });
+        }
+    });
+
+    return closestPoint;
+}
+
+// Track active measurement state
+let isMeasuring = false;
+let activeMeasurementView = null;
+
+function handleMeasurementClick(stage, e) {
+    if (tool !== 'measure') return;
+
+    let view = Object.keys(stages).find(v => stages[v] === stage);
+
+    // Lock measurement to the first clicked view
+    if (measurementPoints.length === 0) {
+        activeMeasurementView = view;
+    }
+
+    // Prevent measurement clicks in other views
+    if (view !== activeMeasurementView) return;
+
+    let pos = getTransformedPosition(stage, stage.getPointerPosition());
+    let snappedPos = getNearestSnapPoint(pos);
+    measurementPoints.push(snappedPos);
+
+    const mLayer = measurementLayers[activeMeasurementView]; // Ensure correct layer
+
+    if (measurementPoints.length === 1) {
+        if (tempLine) tempLine.destroy();
+
+        tempLine = new Konva.Line({
+            points: [snappedPos.x, snappedPos.y, snappedPos.x, snappedPos.y],
+            stroke: 'gray',
+            strokeWidth: 3,
+            dash: [5, 5],
+            name: 'temp-measurement-line'
+        });
+
+        tempLine.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
+        mLayer.add(tempLine);
+        mLayer.batchDraw();
+        isMeasuring = true;
+    } 
+    else if (measurementPoints.length === 2) {
+        if (tempLine) {
+            tempLine.destroy();
+            tempLine = null;
+        }
+
+        //Ensure measurement is drawn in activeMeasurementView
+        measureDistance(measurementPoints[0], measurementPoints[1], activeMeasurementView, false);
+
+        measurementPoints = [];
+        activeMeasurementView = null; // Unlock measurement for new interactions
+        isMeasuring = false;
+    }
+}
+
+
+
+//update preview measurement line
+function handleMouseMove(stage, e) {
+    if (measurementPoints.length === 1 && tempLine) {
+        let pos = getTransformedPosition(stage, stage.getPointerPosition());
+        let snappedPos = getNearestSnapPoint(pos);
+
+        tempLine.points([measurementPoints[0].x, measurementPoints[0].y, snappedPos.x, snappedPos.y]);
+        measurementLayers[activeView].batchDraw();
+    }
+}
+
+//measure distance between two points
+function measureDistance(start, end, view, isRedrawing) {
+    const mLayer = measurementLayers[view]; 
+    const distance = Math.hypot(end.x - start.x, end.y - start.y).toFixed(2);
+    const hDistance = Math.abs(end.x - start.x).toFixed(2);
+    const vDistance = Math.abs(end.y - start.y).toFixed(2);
+
+    let line = new Konva.Line({
+        points: [start.x, start.y, end.x, end.y],
+        stroke: 'gray',
+        strokeWidth: 3,
+        dash: [5, 5],
+        name: 'final-measurement-line',
+        listening: false 
+    });
+
+    let label = new Konva.Text({
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2,
+        text: `${distance} mm`,
+        fontSize: 30,
+        fill: 'red',
+        name: 'measurement-text',
+        offsetX: 20,
+        offsetY: 10
+    });
+
+    line.strokeScaleEnabled(false);
+    label.perfectDrawEnabled(false);
+    mLayer.add(line, label);
+    mLayer.batchDraw();
+
+    //Only store new measurements, prevent duplicates on redraw
+    if (!isRedrawing) {
+        storedMeasurements.push({ start, end, view });
+        //Show toast message for measurement
+        M.toast({ html: `length: ${distance} mm, X: ${hDistance} mm, Y: ${vDistance} mm`, classes: 'rounded toast-success', displayLength: 3000});
+    }
+}
+
+//Redraw all measurements in a view
+function redrawMeasurements() {
+    Object.keys(measurementLayers).forEach(view => {
+        const mLayer = measurementLayers[view];
+        mLayer.destroyChildren(); // Clear previous measurements
+
+        storedMeasurements.forEach(m => {
+            if (m.view === view) {
+                measureDistance(m.start, m.end, view, true); // Pass "isRedrawing = true"
+            }
+        });
+
+        mLayer.batchDraw();
+    });
+}
+
+//Zoom & Pan functionality
+views.forEach(view => {
+    const stage = stages[view];
+
+    stage.on('wheel', e => {
+        e.evt.preventDefault();
+        const scaleBy = 1.05;
+        let oldScale = stage.scaleX();
+        let pointer = stage.getPointerPosition();
+
+        let newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+        stage.scale({ x: newScale, y: newScale });
+
+        let mousePointTo = {
+            x: (pointer.x - stage.x()) / oldScale,
+            y: (pointer.y - stage.y()) / oldScale
+        };
+
+        stage.position({
+            x: pointer.x - mousePointTo.x * newScale,
+            y: pointer.y - mousePointTo.y * newScale
+        });
+
+        stage.batchDraw();
+    });
+
+    let lastPos = null;
+    stage.on('mousedown', e => { lastPos = stage.getPointerPosition(); });
+    stage.on('mousemove', e => {
+        if (!lastPos) return;
+        if (tool != 'pan') return;
+        const pos = stage.getPointerPosition();
+        stage.x(stage.x() + pos.x - lastPos.x);
+        stage.y(stage.y() + pos.y - lastPos.y);
+        lastPos = pos;
+        stage.batchDraw();
+    });
+    stage.on('mouseup', () => { lastPos = null; });
+});
+
+//clears all views
+function clearAllViews() {
+    Object.keys(layers).forEach(view => {
+        layers[view].destroyChildren(); //Remove all shapes
+        measurementLayers[view].destroyChildren(); //Remove all measurements
+        snapLayers[view].destroyChildren(); //Remove all snap indicators
+        layers[view].batchDraw();
+        measurementLayers[view].batchDraw();
+        snapLayers[view].batchDraw();
+    });
+}
+
+// Reset scale and position of all stages
+function resetScale() {
+    views.forEach(view => {
+        const stage = stages[view];
+        stage.scale({ x: 1, y: 1 });
+        stage.position({ x: 0, y: 0 });
+        stage.batchDraw();
+    });
+}
+
+//clears all measurements
+function clearMeasurements() {
+    Object.keys(measurementLayers).forEach(view => {
+        measurementLayers[view].destroyChildren();
+        storedMeasurements = [];
+        measurementLayers[view].batchDraw();
+    }
+    );
+}
+
+let tool = 'pan'; // Default tool is panning
+
+//Hnadles switching from panning tool to measuring tool
+function activatePanTool() {
+    if (tool === 'measure' && isMeasuring === false) {
+        tool = 'pan';
+        document.getElementById('measureTool').classList.add('lighten-3');
+        document.getElementById('panTool').classList.remove('lighten-3');
+    }
+}
+function activateMeasureTool() {
+    if (tool === 'pan') {
+        tool = 'measure';
+        document.getElementById('panTool').classList.add('lighten-3');
+        document.getElementById('measureTool').classList.remove('lighten-3');
+    }
+}
+
+//Toggle snap indictaors
+function toggleSnapIndicators() {
+    let isVisible;
+    Object.values(snapLayers).forEach(layer => {
+        isVisible = layer.visible();
+        layer.visible(!isVisible); // Toggle visibility
+        layer.batchDraw();
+    });
+    const btn = document.getElementById('toggleSnap');
+    btn.classList.toggle('lighten-3')
+    isVisible == true ? btn.dataset.tooltip = 'Show snap points' : btn.dataset.tooltip = 'Hide snap points'; //Switches the tooltip text
+}

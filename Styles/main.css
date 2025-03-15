@@ -1,0 +1,181 @@
+html, body
+{
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
+#logo
+{
+    pointer-events: none;/*Maked brand logo non clickable*/
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/*Make the about me button in the mobile navbar at the bottom*/
+#mobile
+{
+    display: flex; 
+    flex-direction:column;
+}
+#sideNavAboutMe
+{
+    margin-top: auto;
+}
+.nav-wrapper {
+    position: relative;
+}
+
+/*file and properties sections style*/
+#files, #properties
+{
+    overflow: auto;
+    position: relative;
+}
+#properties, #files
+{
+    overflow-y: scroll;
+    height: calc(100vh - 64px);
+    overflow-wrap: break-word;
+}
+#tab1>div
+{
+    margin: 1em 0;
+}
+#tab1>div>*
+{
+    display: inline;
+}
+#tab1 img
+{
+    width: 100%;
+    height: auto;
+}
+#properties .tabs li a
+{
+    color: black;
+}
+
+.tabs
+{
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.tabs .indicator {
+    background-color: black; /* Change this to your desired color */
+}
+
+/*Styles the div created dynamically for hole data*/
+.holeInfoContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+.holeCard {
+    width: 100%;
+    max-width: 300px;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+}
+.holeInfo {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+/*Styles the div created dynamically for viewing, deleting and selecting files*/
+.viewFiles
+{
+    border: 1px black solid;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 0.5em;
+}
+.viewFiles p
+{
+    display: inline;
+}
+.viewFiles a
+{
+    width: 4em;
+    border-radius: 1em;
+}
+.selected-file
+{
+    border: 2px #311b92 solid;
+}
+
+/*Center Materialize Toast for medium and large screens only*/
+@media (min-width: 601px) { 
+    #toast-container
+    {
+        top: 95% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important; /* Perfect centering */
+        right: auto !important;
+        bottom: auto !important;
+        max-width: none !important;
+    }
+}
+/*Centers materialize floating buttons*/
+.btn-floating
+{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/*Custom toast styles*/
+.toast-success
+{
+    background-color: rgb(149, 255, 149);
+    color: black;
+    font-weight: bold;
+}
+.toast-warning
+{
+    background-color: rgb(255, 255, 149);
+    color: black;
+    font-weight: bold;
+}
+.toast-error
+{
+    background-color: rgb(255, 149, 149);
+    color: black;
+    font-weight: bold;
+}
+
+/* Make the action buttons always on the bottom of the screen */
+#actionButtons
+{
+    position: absolute;
+    top: 0;
+}
+.viewSwitch
+{
+    font-weight: bold;
+}
+
+/*View and canvas styles*/
+#view {
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+#view .view {
+    width: 100%;
+    flex: 1;
+    position: relative;
+    overflow: hidden; /* Ensures Konva does not overflow */
+}

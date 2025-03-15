@@ -1,0 +1,625 @@
+//header data
+let headerData = [];
+//Blocs
+let blocs = ['BO', 'SI', 'AK', 'IK', 'PU', 'KO', 'SC', 'TO', 'UE', 'PR', 'KA', 'EN']
+//Contour bloc data
+let contourData = [];
+//Hole bloc data
+let holeData = [];
+//Marks bloc data
+let marksData = [];
+//Numerations bloc data
+let numerationsData = [];
+//Store lastFace data
+let lastFace = "";
+
+//Parses the header of DSTV file
+function ncParseHeaderData(fileData){
+    const splitFileData = fileData.split('\n');
+    const properties = document.querySelectorAll("#properties #tab1 div");
+    //clears header data array
+    headerData.length = 0;
+    let lineCounter = 0;
+    let isFirstIteration = true;
+    for (line of splitFileData)
+    {
+        //removes the leading spaces
+        line = line.trimStart();
+        //reads only the first 24 lines
+        if (lineCounter == 24) break;
+        //removes ST line and comment line
+        if(isFirstIteration || line.slice(0, 2) == '**') {
+            isFirstIteration = false;
+            continue;
+        };
+        //removes comments from any line
+        line = line.split('**')[0];
+        //Check if there are blocs in the header
+        if (blocs.includes(line.slice(0, 2)) && line.slice(2, 1) == ' ')
+        {
+            M.toast({html: 'File header contains an error!', classes: 'rounded toast-warning', displayLength: 2000});
+            break;
+        }
+        //Empty text info handler
+        if (lineCounter > 19 && line.length == 0) line = 'N/A';
+        //Writes part properties to properties div
+        properties[lineCounter].querySelector('p').innerHTML = line;
+        //Adds line to headerData array
+        headerData.push(line);
+        lineCounter++;
+    }
+};
+
+function ncViewsImage(){
+    const profileCode = document.getElementById('Code').querySelector('p:first-of-type').innerHTML.slice(0, 1);
+    const img = document.getElementById('profileViewsImg');
+    switch (profileCode) {
+        case 'I':
+            img.src = 'Images/Views/I.png';
+            break;
+        case 'RO':
+        case 'RU':
+            img.src = 'Images/Views/R.png';
+            break;
+        case 'U':
+            img.src = 'Images/Views/U.png';
+            break;
+        case 'B':
+            img.src = 'Images/Views/B.png';
+            break;
+        case 'L':
+            img.src = 'Images/Views/L.png';
+            break;
+        case 'C':
+            img.src = 'Images/Views/C.png';
+            break;
+        case 'M':
+            img.src = 'Images/Views/M.png';
+            break;
+        case 'T':
+            img.src = 'Images/Views/T.png';
+            break;
+        default:
+            img.src = '';
+            break;   
+    } 
+}
+
+//Parse contour blocs and add them to the contourData array
+function ncParseContourData(line){
+    let values = line.trim().split(/\s+/); // Split by whitespace
+    let face = "";  
+    let xValue, dimensionRef, yValue;
+
+    // Check if the first value is a face (single letter)
+    if (values[0].length == 1 && /[A-Za-z]/.test(values[0])) {
+        face = values[0];  // Store face
+        values.shift();  // Remove it from the array
+    } else {
+        face = lastFace; // Use the previous face if not present
+    }
+    lastFace = face; // Update last seen face
+
+    // Extract X-value and check for dimension reference
+    let xMatch = values[0].match(/([\d.]+)([A-Za-z]*)$/);
+    xValue = parseFloat(xMatch[1]);  // X-value
+    dimensionRef = xMatch[2] || "";  // Dimension reference (if present)
+
+    yValue = parseFloat(values[1]);  // Y-value (always at index 1)
+
+    // Extract remaining values (starting from index 2)
+    let parsedValues = values.slice(2).map(v => v ? parseFloat(v) : 0.00);
+
+    // Ensure we always have at least 5 extra values (Notch type, Radius, Welding prep 1-4)
+    while (parsedValues.length < 5) {
+        parsedValues.push(0.00);
+    }
+
+    // Add parsed line to contourBlocks
+    contourData.push([face, xValue, dimensionRef, yValue, ...parsedValues]);
+}
+
+//Parse hole blocs and add them to the holeData array
+function ncParseHoleData(line) {
+    let values = line.trim().split(/\s+/); // Split by whitespace
+    let view = "";  
+    let xValue, dimensionRef, yValue, holeType = "", diameter, depth = 0.00;
+    let slotType = "", width = 0.00, height = 0.00, angle = 0.00;
+
+    // Check if the first value is a view (single letter)
+    if (values[0].length === 1 && /[A-Za-z]/.test(values[0])) {
+        view = values.shift();  // Store view and remove it from array
+    } else {
+        view = lastView; // Use previous view if not present
+    }
+    lastView = view; // Update last seen view
+
+    // Extract X-value and check for dimension reference
+    let xMatch = values[0].match(/^([\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) return; // Exit if invalid format
+    xValue = parseFloat(xMatch[1]);  
+    dimensionRef = xMatch[2] || "";  
+
+    // Extract HoleType (may be attached to Y or separate)
+    let yMatch = values[1].match(/^([\d.]+)([A-Za-z]*)$/);
+    if (!yMatch) return; // Exit if invalid format
+    yValue = parseFloat(yMatch[1]);
+    holeType = yMatch[2] || "";  // HoleType (if present)
+
+    diameter = parseFloat(values[2]); // Handle missing diameter
+     
+
+    // Extract optional SlotType
+    if (values.length > 3) {
+        depth = parseFloat(values[3]) || 0.00;
+        let depthMatch = values[3].match(/^([\d.]+)([A-Za-z]*)$/);
+        if (!depthMatch) return; // Exit if invalid format
+        depth = parseFloat(depthMatch[1]);
+        slotType = depthMatch[2] || "";
+    }
+
+    if (slotType != '') {
+        width = parseFloat(values[4]) || 0.00;
+        height = parseFloat(values[5]) || 0.00;
+        angle = parseFloat(values[6]) || 0.00;
+    }
+    // Add parsed line to holeData array
+    holeData.push([view, xValue, dimensionRef, yValue, holeType, diameter, depth, slotType, width, height, angle]);
+}
+
+
+//Parses Blocs
+function ncParseBlocData(fileData){
+    const splitFileData = fileData.split('\n'); //split file lines
+    let bloc = ''; //stores current bloc
+    let isStart = false;
+
+    //Empties stored bloc data
+    contourData.length = 0;
+    holeData.length = 0;
+    marksData.length = 0;
+    numerationsData.length = 0;
+
+    for (line of splitFileData)
+    {
+        //Removes start, end spaces and replaces any un wanted extra spaces in the middle with one space only
+        line = line.trim().replace(/\s+/g, ' ');
+        //Checks for a new bloc
+        if (blocs.includes(line.slice(0, 2)))
+        {
+            isStart = true;
+            bloc = line.slice(0, 2);
+            //Ends parsing at the end of the file
+            if (bloc == 'EN') break;
+            //skips the bloc line
+            continue;
+        }
+
+        //Parse contour blocs and add them to the contourData array
+        if (bloc == 'AK' || bloc == 'IK') ncParseContourData(line);
+        //Parse hole blocs and add them to the holeData array
+        if (bloc == 'BO') ncParseHoleData(line);
+        //Parse marks blocs and add them to the marksData array
+        if (bloc == 'KO' || bloc == 'PU') {
+            ncParseMarksData(line, isStart);
+            isStart = false;
+        }
+        //Parse numerations blocs and add them to the numerationsData array
+        if (bloc == 'SI') ncParseNumertaionsData(line);
+    }
+
+    if (contourData.length == 0) ncHeaderFullyDefined();
+}
+
+//Parse Marks
+function ncParseMarksData(line, isStart){ 
+    let values = line.trim().split(/\s+/); // Split by whitespace
+    let face = "";
+    let xValue, dimensionRef, yValue, radius;
+
+    // Check if the first value is a face (single letter)
+    if (values[0].length == 1 && /[A-Za-z]/.test(values[0])) {
+        face = values[0];  // Store face
+        values.shift();  // Remove it from the array
+    } else {
+        face = lastFace; // Use the previous face if not present
+    }
+    lastFace = face; // Update last seen 
+    
+    //Extract X-value and check for dimension reference
+    let xMatch = values[0].match(/^([\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) return; // Exit if invalid format
+    xValue = parseFloat(xMatch[1]);  
+    dimensionRef = xMatch[2] || "";  
+
+    //Extract y-value and radius
+    yValue = parseFloat(values[1]);
+    radius = parseFloat(values[2]);
+
+    // Add parsed line to marksData
+    marksData.push([face, xValue, dimensionRef, yValue, radius, isStart]);
+}
+
+//Parse Numerations
+function ncParseNumertaionsData(line){
+    let values = line.trim().split(/\s+/); // Split by whitespace
+    let face = "";
+    let xValue, dimensionRef, yValue, angle, height, turn, text;
+
+    // Check if the first value is a face (single letter)
+    if (values[0].length == 1 && /[A-Za-z]/.test(values[0])) {
+        face = values[0];  // Store face
+        values.shift();  // Remove it from the array
+    } else {
+        face = lastFace; // Use the previous face if not present
+    }
+    lastFace = face; // Update last seen 
+    
+    // Extract X-value and check for dimension reference
+    let xMatch = values[0].match(/^([\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) return; // Exit if invalid format
+    xValue = parseFloat(xMatch[1]);  
+    dimensionRef = xMatch[2] || "";
+
+    // Extract HoleType (may be attached to Y or separate)
+    yValue = parseFloat(values[1]);
+    angle = parseFloat(values[2]);
+
+    // Extract text height and check for text rotation
+    let textMatch = values[3].match(/^([\d.]+)([A-Za-z]*)$/);
+    if (!textMatch) return; // Exit if invalid format
+    height = parseFloat(textMatch[1]);  
+    turn = textMatch[2] || "";
+
+    //Extract text
+    text = values[4];
+
+    //Add parsed line to numerationsData
+    numerationsData.push([face, xValue, dimensionRef, yValue, angle, height, turn, text]);
+}
+
+//Adds hole data to hole info tap
+function addHoleData() {
+    for (const [index, holeLine] of holeData.entries()) {
+        const holeInfo = document.getElementById('holeInfoContainer');
+        const holeDiv = document.createElement('div');
+        holeDiv.classList.add('card', 'holeCard');
+        const holeContent = document.createElement('div');
+        holeContent.classList.add('card-content');
+        let view = document.createElement('p');
+        let holeType = document.createElement('p');
+        let xVal = document.createElement('p');
+        let yVal= document.createElement('p');
+        let diaVal = document.createElement('p');
+        let depthVal = document.createElement('p');
+        let widthVal = document.createElement('p');
+        let heightVal = document.createElement('p');
+        let angleVal = document.createElement('p');
+
+        view.innerHTML = '<strong>View:</strong> ' + holeLine[0];
+        if(holeLine[7] === '')
+        {
+            let temp = holeLine[4];
+            switch(temp) {
+                case '':
+                    holeType.innerHTML = '<strong>Type:</strong> Hole';
+                    break;
+                case 'g':
+                    holeType.innerHTML = '<strong>Type:</strong> Threaded hole';
+                    break;
+                case 'l':
+                    holeType.innerHTML = '<strong>Type:</strong> Left threaded hole';
+                    break;
+                case 'm':
+                    holeType.innerHTML = '<strong>Type:</strong> Mark';
+                    break;
+                case 's':
+                    holeType.innerHTML = '<strong>Type:</strong> Countersink hole';
+                    break;
+                default:
+                    break;
+            }
+        }
+        else holeType.innerHTML = 'Slotted hole';
+        xVal.innerHTML = `<strong>X:</strong> ${holeLine[1]} mm`;
+        yVal.innerHTML = `<strong>Y:</strong> ${holeLine[3]} mm`;
+        diaVal.innerHTML = `<strong>Diameter:</strong> ${holeLine[5]} mm`;
+        if (holeLine[6] == 0) depthVal.innerHTML = `<strong>Depth:</strong> through-hole`;
+        else depthVal.innerHTML = `<strong>Depth:</strong> ${holeLine[6]} mm`;
+        widthVal.innerHTML = `<strong>Width:</strong> ${holeLine[8] ? holeLine[8] + ' mm' : 'N/A'}`;
+        heightVal.innerHTML = `<strong>Height:</strong> ${holeLine[9] ? holeLine[9] + ' mm' : 'N/A'}`;
+        angleVal.innerHTML = `<strong>Angle:</strong> ${holeLine[10] ? holeLine[10] + '°' : 'N/A'}`;
+
+        holeDiv.classList.add('holeContainer');
+        [view, holeType, xVal, yVal, diaVal, depthVal, widthVal, heightVal, angleVal].forEach(p => { 
+            p.classList.add('holeInfo');
+            holeContent.appendChild(p);
+        });
+
+        holeDiv.setAttribute('data-index', index);
+        holeDiv.setAttribute('data-view', holeLine[0] + '-view');
+        holeDiv.setAttribute('onClick', 'changeHoleColor(this)')
+        holeDiv.classList.add('holeCard');
+        holeDiv.appendChild(holeContent);
+        holeInfo.appendChild(holeDiv);
+    }
+}
+
+//Hnadles if there are no countour blocs and the part is defined by header only
+function ncHeaderFullyDefined(){
+    const profile = document.getElementById('Code').querySelector('p:first-of-type').innerHTML.trim();
+    const length = parseFloat(document.getElementById('Length').querySelector('p:first-of-type').innerHTML);
+    const height = parseFloat(document.getElementById('Height').querySelector('p:first-of-type').innerHTML);
+    const flangeWidth = parseFloat(document.getElementById('flangeWidth').querySelector('p:first-of-type').innerHTML);
+    const flangeThickness = parseFloat(document.getElementById('flangeThickness').querySelector('p:first-of-type').innerHTML);
+    const webThickness = parseFloat(document.getElementById('webThickness').querySelector('p:first-of-type').innerHTML);
+    const webCutStart = Math.abs(parseFloat(document.getElementById('webCutStart').querySelector('p:first-of-type').innerHTML));
+    const isNegativeWCS = (document.getElementById('webCutStart').querySelector('p:first-of-type').innerHTML.trim().startsWith("-"));
+    const webCutEnd = Math.abs(parseFloat(document.getElementById('webCutEnd').querySelector('p:first-of-type').innerHTML));
+    const isNegativeWCE = (document.getElementById('webCutEnd').querySelector('p:first-of-type').innerHTML.trim().startsWith("-"));
+    const flangeCutStart = Math.abs(parseFloat(document.getElementById('flangeCutStart').querySelector('p:first-of-type').innerHTML));
+    const isNegativeFCS = (document.getElementById('flangeCutStart').querySelector('p:first-of-type').innerHTML.trim().startsWith("-"));
+    const flangeCutEnd = Math.abs(parseFloat(document.getElementById('flangeCutEnd').querySelector('p:first-of-type').innerHTML));
+    const isNegativeFCE = (document.getElementById('flangeCutEnd').querySelector('p:first-of-type').innerHTML.trim().startsWith("-"));
+
+   if (['U', 'B', 'L', 'C', 'M'].includes(profile)) {
+        switch (profile) {
+            case 'M':
+                addBackWeb(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+            case 'U':
+            case 'C':
+                addTopFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+            case 'L':
+                addBottomFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+            case 'B':
+                addFrontWeb(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+            default:
+                break;
+        }
+    }
+    else if (profile == 'I')
+    {
+        addTopFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+        addBottomFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+        addFrontWebI(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+    }
+    else if (profile == 'T')
+    {
+        addT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+    }
+    else M.toast({html: 'Profile type not supported!', classes: 'rounded toast-error', displayLength: 2000});
+    return;
+}
+
+function addFrontWeb(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) { 
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValue = wCS > fCS ? wCS : fCS;
+    const eValue = wCE > fCE ? wCE : fCE;
+
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['v', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['v', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['v', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', length - eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['v', fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    
+    contourData.push(firstPoint);
+}
+
+function addBackWeb(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) { 
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValue = wCS > fCS ? wCS : fCS;
+    const eValue = wCE > fCE ? wCE : fCE;
+
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['h', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['h', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['h', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['h', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['h', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length- eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['h', length - wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['h', wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h',sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['h', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['h', fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    
+    contourData.push(firstPoint);
+}
+
+function addTopFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) { 
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValue = wCS > fCS ? wCS : fCS;
+    const eValue = wCE > fCE ? wCE : fCE;
+
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['o', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['o', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['o', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['o', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['o', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['o', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['o', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['o', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['o', length - wCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['o', length - eValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['o', length, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['o', length - fCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['o', fCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['o', 0.00, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['o', sValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['o', wCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    
+    contourData.push(firstPoint);
+}
+
+function addBottomFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) { 
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValue = wCS > fCS ? wCS : fCS;
+    const eValue = wCE > fCE ? wCE : fCE;
+
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['u', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['u', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['u', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['u', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['u', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length - fCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - wCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['u', length - eValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['u', sValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', wCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['u', fCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['u', 0.00, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    
+    contourData.push(firstPoint);
+}
+
+function addT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) {
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const wCST = ((height - flangeThickness)/2) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCET = ((height - flangeThickness)/2) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValue = wCS > fCS ? wCS : fCS;
+    const eValue = wCE > fCE ? wCE : fCE;
+    const sValueT = wCST > fCS ? wCST : fCS;
+    const eValueT = wCET > fCE ? wCET : fCE;
+    //Calculate web points
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['h', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['h', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['h', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['h', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['h', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length- wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['h', length - eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['h', sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h',wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['h',fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['h', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    contourData.push(firstPoint);
+    //Calculate flange points
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['u', wCST, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['u', sValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['u', wCST, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['u', sValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - eValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length - wCET, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - eValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['u', length - wCET, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - wCET, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length - eValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - wCET, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['u', length - eValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['u', sValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', wCST, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['u', sValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['u', wCST, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    
+    contourData.push(firstPoint);
+}
+
+function addFrontWebI(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) {
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    const fCSW = ((flangeWidth - webThickness)/2) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCEW = ((flangeWidth - webThickness)/2) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValueW = wCS > fCSW ? wCS : fCSW;
+    const eValueW = wCE > fCEW ? wCE : fCEW;
+
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCSW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['v', sValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCSW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['v', sValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - eValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - fCEW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - eValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', length - fCEW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - fCEW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - eValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - fCEW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', length - eValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', fCSW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', fCSW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    contourData.push(firstPoint);
+}
