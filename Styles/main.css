@@ -28,6 +28,11 @@ html, body
     position: relative;
 }
 
+#functionButtons {
+    display: flex;
+    flex-wrap: nowrap; /* Prevents wrapping */
+}
+
 /*file and properties sections style*/
 #files, #properties
 {

@@ -55,8 +55,8 @@ views.forEach(view => {
     layers[view] = layer;
     measurementLayers[view] = measurementLayer;
 
-    stage.on('click', e => handleMeasurementClick(stage, e));
-    stage.on('mousemove', e => handleMouseMove(stage, e));
+    stage.on('click touchstart', e => handleMeasurementClick(stage, e));
+    stage.on('mousemove touchmove', e => handleMouseMove(stage, e));
 
     // Resize views dynamically when the window is resized
     window.addEventListener("resize", () => handleResize(view));
@@ -222,10 +222,10 @@ function redrawMeasurements() {
     });
 }
 
-//Zoom & Pan functionality
 views.forEach(view => {
     const stage = stages[view];
 
+    // Handle mouse wheel zoom
     stage.on('wheel', e => {
         e.evt.preventDefault();
         const scaleBy = 1.05;
@@ -249,18 +249,74 @@ views.forEach(view => {
     });
 
     let lastPos = null;
-    stage.on('mousedown', e => { lastPos = stage.getPointerPosition(); });
-    stage.on('mousemove', e => {
-        if (!lastPos) return;
-        if (tool != 'pan') return;
-        const pos = stage.getPointerPosition();
-        stage.x(stage.x() + pos.x - lastPos.x);
-        stage.y(stage.y() + pos.y - lastPos.y);
-        lastPos = pos;
-        stage.batchDraw();
+    let touchStartDistance = null;
+    let touchStartScale = null;
+
+    // Handle touch start for pan and pinch-to-zoom
+    stage.on('mousedown touchstart', e => {
+        e.evt.preventDefault();
+        if (e.evt.touches && e.evt.touches.length === 2) {
+            // Pinch-to-zoom start
+            touchStartDistance = getDistance(e.evt.touches);
+            touchStartScale = stage.scaleX();
+        } else {
+            // Pan start
+            lastPos = stage.getPointerPosition();
+        }
     });
-    stage.on('mouseup', () => { lastPos = null; });
+
+    // Handle touch move for pan and pinch-to-zoom
+    stage.on('mousemove touchmove', e => {
+        e.evt.preventDefault();
+        if (e.evt.touches && e.evt.touches.length === 2) {
+            // Pinch-to-zoom
+            const newDistance = getDistance(e.evt.touches);
+            const scaleBy = newDistance / touchStartDistance;
+            const newScale = touchStartScale * scaleBy;
+
+            const pointer = {
+                x: (e.evt.touches[0].clientX + e.evt.touches[1].clientX) / 2,
+                y: (e.evt.touches[0].clientY + e.evt.touches[1].clientY) / 2
+            };
+
+            const mousePointTo = {
+                x: (pointer.x - stage.x()) / stage.scaleX(),
+                y: (pointer.y - stage.y()) / stage.scaleY()
+            };
+
+            stage.scale({ x: newScale, y: newScale });
+            stage.position({
+                x: pointer.x - mousePointTo.x * newScale,
+                y: pointer.y - mousePointTo.y * newScale
+            });
+
+            stage.batchDraw();
+        } else if (lastPos && tool === 'pan') {
+            // Pan
+            const pos = stage.getPointerPosition();
+            stage.x(stage.x() + pos.x - lastPos.x);
+            stage.y(stage.y() + pos.y - lastPos.y);
+            lastPos = pos;
+            stage.batchDraw();
+        }
+    });
+
+    // Handle touch end
+    stage.on('mouseup touchend', () => {
+        lastPos = null;
+        touchStartDistance = null;
+        touchStartScale = null;
+    });
 });
+
+// Helper function to calculate the distance between two touch points
+function getDistance(touches) {
+    const [touch1, touch2] = touches;
+    return Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+}
 
 //clears all views
 function clearAllViews() {
