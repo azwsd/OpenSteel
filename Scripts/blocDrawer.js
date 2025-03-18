@@ -428,8 +428,6 @@ function drawNumertaions() {
 }
 
 
-function transformRotation(view, isClockwise) {return isClockwise}
-
 //Function to apply coordinate transformations based on view
 function transformCoordinates(view, x, y, width, height) {
     switch (view) {
