@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>OpenSteel</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!--Include materialize and its fonts-->
+        <link rel="stylesheet" href="Styles/materialize-main.css">
+        <link rel="stylesheet" href="Styles/materialize-icons.css">
+        <!--include main style sheet-->
+        <link rel="stylesheet" href="Styles/main.css">
+        <!--Removes fav icon error-->
+        <link rel="shortcut icon" href="#">
+    </head>
+    <body>
+        <!-- fixed navigation bar-->     
+        <div class="navbar-fixed">
+            <nav>
+                <div class="nav-wrapper deep-purple darken-4">
+                    <ul class="left hide-on-med-and-down">
+                        <li><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
+                    </ul>
+                    <div id="logo">OpenSteel</div>
+                    <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                    <ul class="right hide-on-med-and-down">
+                        <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        <!--About me modal-->
+        <div id="aboutMeModal" class="modal">
+            <div class="modal-content">
+              <h4>About me</h4>
+              <p>Hey there! I'm an open-source project, built with love by <b>Ahmed Mohamed Ragab</b>, and my mission is simple, to help you view and explore <b>DSTV (.nc)</b> files with ease.</p>
+              <p>If you work in steel detailing, CNC machining, or steel manufacturing, I'm here to make your life easier. Just load up a .nc file, and I'll display its contents.</p>
+              <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
+              </div>
+            </div>
+        </div>
+        <!--Clear all modal-->
+        <div id="clearAllModal" class="modal">
+            <div class="modal-content">
+              <h4>Clear all files</h4>
+              <p><b>Are you sure you want to clear all files?</b></p>
+              <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect waves-red btn red" onclick="clearAllFiles()">Yes</a>
+                <a href="#!" class="modal-close waves-effect waves-red btn green" oncanplay="clearAllFiles()">No</a>
+              </div>
+            </div>
+        </div>
+        <!--Mobile navbar-->
+        <ul class="sidenav" id="mobile">
+            <li><p class="filesPlaceHolder">Please insert a file/folder</p></li>
+            <li id="sideNavClearAll"><a data-target="clearAllModal" class="sidenav-close modal-trigger waves-effect float-bottom">Clear all</a></li>
+            <li id="sideNavAboutMe"><a href="#about-me" data-target="aboutMeModal" class="sidenav-close modal-trigger float-bottom">About me</a></li>
+        </ul>
+        
+        <main>
+            <div class="row">
+                <div class="col l2 hide-on-med-and-down deep-purple lighten-2" id="files">
+                    <p class="filesPlaceHolder">Please insert a file/folder</p>
+                </div>
+                <div class="col l8 m12 s12" id="view">
+                    <div id="functionButtons">
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Pan" id="panTool" onclick="activatePanTool()"><i class="material-icons">pan_tool</i></a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Measure" id="measureTool" onclick="activateMeasureTool()"><i class="material-icons">keyboard_tab</i></a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Show snap points" id="toggleSnap" onclick="toggleSnapIndicators()"><i class="material-icons">remove_red_eye</i></a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Clear Measurements" id="clearMeasurements" onclick="clearMeasurements()"><i class="material-icons">delete</i></a>
+                        <!--Toggle buttons for hiding and showing views-->
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('o', this)">O</a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('v', this)">V</a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('u', this)">U</a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('h', this)">H</a>
+                    </div>
+                    <P id="oViewTitle">Top view (O)</P>
+                    <div id="o-view" class="view z-depth-3"></div>
+                    <P id="vViewTitle">Web/Front view (V)</P>
+                    <div id="v-view" class="view z-depth-3"></div>
+                    <P id="uViewTitle">Bottom view (U)</P>
+                    <div id="u-view" class="view z-depth-3"></div>
+                    <P id="hViewTitle">Behind view (H)</P>
+                    <div id="h-view" class="view z-depth-3"></div>
+                </div>
+                <div class="col l2 m12 s12 deep-purple lighten-2" id="properties">
+                    <ul class="tabs">
+                        <li class="tab col s6"><a href="#tab1" class="active deep-purple lighten-2">Properties</a></li>
+                        <li class="tab col s6"><a href="#tab2" class="deep-purple lighten-2">Hole Info</a></li>
+                    </ul>
+                    <div id="tab1" class="tab-content">
+                        <div id="Project"><h5>Project:</h5><p>N/A</p></div>
+                        <div id="Drwaing"><h5>Drwaing:</h5><p>N/A</p></div>
+                        <div id="Phase"><h5>Phase:</h5><p>N/A</p></div>
+                        <div id="Piece"><h5>Piece:</h5><p>N/A</p></div>
+                        <div id="Grade"><h5>Grade:</h5><p>N/A</p></div>
+                        <div id="Quantity"><h5>Quantity:</h5><p>N/A</p></div>
+                        <div id="Profile"><h5>Profile:</h5><p>N/A</p></div>
+                        <div id="Code"><h5>Profile code:</h5><p>N/A</p></div>
+                        <div id="Length"><h5>Length:</h5><p>N/A</p><p>mm</p></div>
+                        <div id="Height"><h5>Height:</h5><p>N/A</p><p>mm</p></div>
+                        <div id="flangeWidth"><h5>Flange width:</h5><p>N/A</p><p>mm</p></div>
+                        <div id="flangeThickness"><h5>Flange thickness:</h5><p>N/A</p><p>mm</p></div>
+                        <div id="webThickness"><h5>Web thichness:</h5><p>N/A</p><p>mm</p></div>
+                        <div id="Radius"><h5>Radius:</h5><p>N/A</p><p>mm</p></div>
+                        <div id="weight"><h5>Weight by meter:</h5><p>N/A</p><p>kg/m</p></div>
+                        <div id="Surface"><h5>Painting surface by meter:</h5><p>N/A</p><p>m2/m</p></div>
+                        <div id="webCutStart"><h5>Web start cut:</h5><p>N/A</p><p>degree</p></div>
+                        <div id="webCutEnd"><h5>Web end cut:</h5><p>N/A</p><p>degree</p></div>
+                        <div id="flangeCutStart"><h5>Flange start cut:</h5><p>N/A</p><p>degree</p></div>
+                        <div id="flangeCutEnd"><h5>Flange end cut:</h5><p>N/A</p><p>degree</p></div>
+                        <div id="textInfo1"><h5>Text info:</h5><p>N/A</p></div>
+                        <div id="textInfo2"><h5>Text info:</h5><p>N/A</p></div>
+                        <div id="textInfo3"><h5>Text info:</h5><p>N/A</p></div>
+                        <div id="textInfo4"><h5>Text info:</h5><p>N/A</p></div>
+                        <div><img class="materialboxed" id="profileViewsImg" src=""></div>
+                    </div>
+                    <div id="tab2" class="tab-content">
+                        <div id="holeInfoContainer" class="holeInfoContainer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="fixed-action-btn">
+            <a class="btn-floating btn-large deep-purple darken-4">
+                <i class="large material-icons tooltipped" data-position="left" data-tooltip="Insert" onclick="insert_file()"><input type="file" hidden id="fileInput" placeholder="File input" directory multiple>insert_drive_file</i>
+            </a>
+        </div>
+        
+        <!--Includes js file for materialize-->
+        <script src="Scripts/materialize-main.js"></script>
+        <!--Includes js dile for konva-->
+        <script src="Scripts/konva.min.js"></script>
+        <!--Custom js files-->
+        <script src="Scripts/konva-scripts.js"></script>
+        <script src="Scripts/blocDrawer.js"></script>
+        <script src="Scripts/fileHandler.js"></script>
+        <script src="Scripts/materialize-scripts.js"></script>
+        <script src="Scripts/ncFileParser.js"></script>
+        <script src="Scripts/main.js"></script>
+    </body>
+</html>
