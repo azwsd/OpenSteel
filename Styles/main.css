@@ -31,6 +31,14 @@ html, body
 #functionButtons {
     display: flex;
     flex-wrap: nowrap; /* Prevents wrapping */
+    gap: 5px;
+}
+
+/* Decrease gap for mobile devices */
+@media (max-width: 600px) {
+    #functionButtons {
+        gap: 2px; /* Reduced gap for smaller screens */
+    }
 }
 
 /*file and properties sections style*/
@@ -131,6 +139,7 @@ html, body
         max-width: none !important;
     }
 }
+
 /*Centers materialize floating buttons*/
 .btn-floating
 {
