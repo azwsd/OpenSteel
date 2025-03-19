@@ -174,11 +174,7 @@ function ncParseBlocData(fileData){
     let bloc = ''; //stores current bloc
     let isStart = false;
 
-    //Empties stored bloc data
-    contourData.length = 0;
-    holeData.length = 0;
-    marksData.length = 0;
-    numerationsData.length = 0;
+    clearAllData(); //Empties stored bloc data
 
     for (line of splitFileData)
     {
@@ -209,6 +205,14 @@ function ncParseBlocData(fileData){
     }
 
     if (contourData.length == 0) ncHeaderFullyDefined();
+}
+
+//Empties stored bloc data
+function clearAllData() {
+    contourData.length = 0;
+    holeData.length = 0;
+    marksData.length = 0;
+    numerationsData.length = 0;
 }
 
 //Parse Marks

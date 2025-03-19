@@ -153,8 +153,6 @@ function handleMeasurementClick(stage, e) {
     }
 }
 
-
-
 //update preview measurement line
 function handleMouseMove(stage, e) {
     if (measurementPoints.length === 1 && tempLine) {

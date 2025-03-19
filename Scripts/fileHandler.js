@@ -146,6 +146,7 @@ function deleteFile(btn, event){
     if (selectedFile) {
         clearHeaderData();
         clearAllViews();
+        clearAllData();
         document.getElementById('profileViewsImg').src = '';
     }
 }
@@ -155,32 +156,27 @@ function clearAllFiles(){
     //checks if map is empty
     if (filePairs.size == 0)
     {
-        M.toast({html: 'There are no files to clear!', classes: 'rounded toast-warning', displayLength: 2000})
+        M.toast({html: 'There are no files to clear!', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
     //removes all files from view
     document.querySelectorAll('.viewFiles').forEach(el => {
         el.remove();
     });
-    //clears map
-    filePairs.clear();
-    //shows place holder
-    filesPlaceHolder();
-    //clears the header data
-    clearHeaderData();
-    //clears the views
-    clearAllViews();
-    //Clears hole data
-    document.getElementById('holeInfoContainer').innerHTML = '';
-    //clears views img
-    document.getElementById('profileViewsImg').src = '';
-    //shows success message
-    M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000})
+    filePairs.clear(); //clears map
+    filesPlaceHolder(); //shows place holder
+    clearHeaderData(); //clears the header data
+    clearAllViews(); //clears the views
+    clearAllData(); //Clears bloc data
+    document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
+    document.getElementById('profileViewsImg').src = ''; //clears views img
+    M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
 
 //clicks a hidden insert element when the list item is clicked
-function insert_file(){
+function insert_file(btn){
     document.getElementById('fileInput').click();
+    M.Tooltip.getInstance(btn).close(); //Closes the tooltip
 };
 
 function clearHeaderData() {
