@@ -35,3 +35,32 @@ document.addEventListener('DOMContentLoaded', function() {
     var elems = document.querySelectorAll('.tabs');
     var instance = M.Tabs.init(elems, {});
 });
+
+//Dropdown menue for action buttons
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize dropdown
+    var dropdowns = document.querySelectorAll('.dropdown-trigger');
+    M.Dropdown.init(dropdowns, { 
+        coverTrigger: false,
+        closeOnClick: false, 
+});
+
+    // Initialize tooltips
+    var tooltips = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltips);
+
+    // Fix event delegation for dropdown buttons
+    document.getElementById('viewsDropdown').addEventListener('click', function (event) {
+        if (event.target.classList.contains('viewSwitch')) {
+            let view = event.target.dataset.view; //Get the view name
+            switchView(view, event.target);
+        }
+    });
+
+    // Set all buttons to active active initially
+    document.querySelectorAll('.viewSwitch').forEach(btn => {
+        btn.classList.remove('text-lighten-3'); // Make them fully visible at start
+        btn.dataset.tooltip = 'Turn OFF'; // Set tooltip to indicate turning it off
+    });
+    M.Tooltip.init(document.querySelectorAll('.tooltipped')); // Refresh tooltips
+});

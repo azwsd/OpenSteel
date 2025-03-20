@@ -343,7 +343,7 @@ function addHoleData() {
         holeDiv.setAttribute('data-index', index);
         holeDiv.setAttribute('data-view', holeLine[0] + '-view');
         holeDiv.setAttribute('onClick', 'changeHoleColor(this)')
-        holeDiv.classList.add('holeCard');
+        holeDiv.classList.add('holeCard', 'hoverable');
         holeDiv.appendChild(holeContent);
         holeInfo.appendChild(holeDiv);
     }

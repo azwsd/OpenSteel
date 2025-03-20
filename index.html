@@ -65,16 +65,31 @@
                     <p class="filesPlaceHolder">Please insert a file/folder</p>
                 </div>
                 <div class="col l8 m12 s12" id="view">
+                    <!-- Dropdown Structure -->
+                    <ul id="viewsDropdown" class="dropdown-content">
+                        <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="o">O</a></li>
+                        <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="v">V</a></li>
+                        <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="u">U</a></li>
+                        <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="h">H</a></li>
+                    </ul>
+                    <!-- Function Buttons -->
                     <div id="functionButtons">
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Pan" id="panTool" onclick="activatePanTool()"><i class="material-icons">pan_tool</i></a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Measure" id="measureTool" onclick="activateMeasureTool()"><i class="material-icons">keyboard_tab</i></a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Show snap points" id="toggleSnap" onclick="toggleSnapIndicators()"><i class="material-icons">remove_red_eye</i></a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Clear Measurements" id="clearMeasurements" onclick="clearMeasurements()"><i class="material-icons">delete</i></a>
-                        <!--Toggle buttons for hiding and showing views-->
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('o', this)">O</a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('v', this)">V</a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('u', this)">U</a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple viewSwitch" data-position="bottom" data-tooltip="OFF" id="vSwitch" onclick="switchView('h', this)">H</a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Pan" id="panTool" onclick="activatePanTool()">
+                            <i class="material-icons">pan_tool</i>
+                        </a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Measure" id="measureTool" onclick="activateMeasureTool()">
+                            <i class="material-icons">keyboard_tab</i>
+                        </a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Toggle snap points" id="toggleSnap" onclick="toggleSnapIndicators()">
+                            <i class="material-icons">remove_red_eye</i>
+                        </a>
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Clear Measurements" id="clearMeasurements" onclick="clearMeasurements()">
+                            <i class="material-icons">delete</i>
+                        </a>
+                        <!-- Dropdown Trigger -->
+                        <a class="waves-effect waves-light btn-small dropdown-trigger deep-purple" id="dropDown" data-target="viewsDropdown">
+                            Views <i class="material-icons right">arrow_drop_down</i>
+                        </a>
                     </div>
                     <P id="oViewTitle">Top view (O)</P>
                     <div id="o-view" class="view z-depth-3"></div>
@@ -99,18 +114,18 @@
                         <div id="Quantity"><h5>Quantity:</h5><p>N/A</p></div>
                         <div id="Profile"><h5>Profile:</h5><p>N/A</p></div>
                         <div id="Code"><h5>Profile code:</h5><p>N/A</p></div>
-                        <div id="Length"><h5>Length:</h5><p>N/A</p><p>mm</p></div>
-                        <div id="Height"><h5>Height:</h5><p>N/A</p><p>mm</p></div>
-                        <div id="flangeWidth"><h5>Flange width:</h5><p>N/A</p><p>mm</p></div>
-                        <div id="flangeThickness"><h5>Flange thickness:</h5><p>N/A</p><p>mm</p></div>
-                        <div id="webThickness"><h5>Web thichness:</h5><p>N/A</p><p>mm</p></div>
-                        <div id="Radius"><h5>Radius:</h5><p>N/A</p><p>mm</p></div>
-                        <div id="weight"><h5>Weight by meter:</h5><p>N/A</p><p>kg/m</p></div>
-                        <div id="Surface"><h5>Painting surface by meter:</h5><p>N/A</p><p>m2/m</p></div>
-                        <div id="webCutStart"><h5>Web start cut:</h5><p>N/A</p><p>degree</p></div>
-                        <div id="webCutEnd"><h5>Web end cut:</h5><p>N/A</p><p>degree</p></div>
-                        <div id="flangeCutStart"><h5>Flange start cut:</h5><p>N/A</p><p>degree</p></div>
-                        <div id="flangeCutEnd"><h5>Flange end cut:</h5><p>N/A</p><p>degree</p></div>
+                        <div id="Length"><h5>Length:</h5><p>N/A</p><p> mm</p></div>
+                        <div id="Height"><h5>Height:</h5><p>N/A</p><p> mm</p></div>
+                        <div id="flangeWidth"><h5>Flange width:</h5><p>N/A</p><p> mm</p></div>
+                        <div id="flangeThickness"><h5>Flange thickness:</h5><p>N/A</p><p> mm</p></div>
+                        <div id="webThickness"><h5>Web thichness:</h5><p>N/A</p><p> mm</p></div>
+                        <div id="Radius"><h5>Radius:</h5><p>N/A</p><p> mm</p></div>
+                        <div id="weight"><h5>Weight by meter:</h5><p>N/A</p><p> kg/m</p></div>
+                        <div id="Surface"><h5>Painting surface by meter:</h5><p>N/A</p><p> m2/m</p></div>
+                        <div id="webCutStart"><h5>Web start cut:</h5><p>N/A</p><p> degrees</p></div>
+                        <div id="webCutEnd"><h5>Web end cut:</h5><p>N/A</p><p> degrees</p></div>
+                        <div id="flangeCutStart"><h5>Flange start cut:</h5><p>N/A</p><p> degrees</p></div>
+                        <div id="flangeCutEnd"><h5>Flange end cut:</h5><p>N/A</p><p> degrees</p></div>
                         <div id="textInfo1"><h5>Text info:</h5><p>N/A</p></div>
                         <div id="textInfo2"><h5>Text info:</h5><p>N/A</p></div>
                         <div id="textInfo3"><h5>Text info:</h5><p>N/A</p></div>

@@ -140,14 +140,13 @@ function deleteFile(btn, event){
     });
     //reset place holder if theres no files
     filesPlaceHolder();
-    //Clears hole data
-    document.getElementById('holeInfoContainer').innerHTML = '';
     //clears the header data and views
     if (selectedFile) {
         clearHeaderData();
         clearAllViews();
         clearAllData();
-        document.getElementById('profileViewsImg').src = '';
+        document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
+        document.getElementById('profileViewsImg').src = ''; //Clears profile image
     }
 }
 

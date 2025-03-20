@@ -493,27 +493,43 @@ function drawBlocs(){
     drawHoles();
     drawMarks();
     drawNumertaions();
+    addOriginPoints();
 }
 
 //Shows or hide views
 function switchView(view, btn) {
-    btn.classList.toggle('lighten-3'); //Switches the button color to display state
-    btn.dataset.tooltip == 'ON' ? btn.dataset.tooltip = 'OFF' : btn.dataset.tooltip = 'ON'; //Switches the tooltip text
-    M.Tooltip.getInstance(btn).close(); //Closes the tooltip
-    document.getElementById(view + 'ViewTitle').classList.toggle('hide'); //Toggles the view title visibility
-    document.getElementById(view + '-view').classList.toggle('hide'); //Toggles the view visibility
-    views.forEach(view => handleResize(view)); //Resizes the views for the new container size
+    let viewTitle = document.getElementById(view + 'ViewTitle');
+    let viewContainer = document.getElementById(view + '-view');
+
+    //Toggle visibility
+    let isVisible = !viewContainer.classList.contains('hide');
+    if (isVisible) {
+        viewTitle.classList.add('hide');
+        viewContainer.classList.add('hide');
+        btn.dataset.tooltip = 'Turn ON'; //Change tooltip to "Turn ON"
+        btn.classList.add('text-lighten-3'); //Dim button
+    } else {
+        viewTitle.classList.remove('hide');
+        viewContainer.classList.remove('hide');
+        btn.dataset.tooltip = 'Turn OFF'; //Change tooltip to "Turn OFF"
+        btn.classList.remove('text-lighten-3'); //Restore button color
+    }
+
+    M.Tooltip.getInstance(btn).close(); //Close tooltip
+    M.Tooltip.init(document.querySelectorAll('.tooltipped')); //Reinitialize tooltips
+
+    views.forEach(v => handleResize(v)); //Resize views if necessary
 }
 
 //Create a snap indicator point in a view at x, y
-function addSnapIndicator(x, y, view) {
-    let snapLayer = snapLayers[view]; // Use snap layer for the active view
+function addSnapIndicator(x, y, view, color='red') {
+    let snapLayer = snapLayers[view]; //Use snap layer for the active view
 
     let indicator = new Konva.Circle({
         x: x,
         y: y,
         radius: 2, // Small snap indicator
-        fill: 'red',
+        fill: color,
         strokeWidth: 1,
         name: 'snap-indicator',
         listening: false // Make sure it does not interfere with clicks
@@ -522,4 +538,32 @@ function addSnapIndicator(x, y, view) {
     indicator.strokeScaleEnabled(false);
     snapLayer.add(indicator);
     snapLayer.batchDraw();
+}
+
+//Adds origin points to each view
+function addOriginPoints(){
+    for(view of views) {
+        let layer = layers[view];
+        let stage = layer.getStage();
+        let canvasWidth = stage.width();
+        let canvasHeight = stage.height();
+        let [tX, tY] = transformCoordinates(view, 0, 0, canvasWidth, canvasHeight);
+
+        let originPoint = new Konva.Circle({
+            x: tX,
+            y: tY,
+            radius: 0,
+            strokeWidth: 0,
+            name: 'origin-point',
+            listening: false, //Make sure it does not interfere with clicks
+            snapPoints: [
+                { x: tX, y: tY }, //Center
+            ]
+        });
+
+        addSnapIndicator(tX, tY, view, 'green'); //Add snap point to origin point
+        originPoint.strokeScaleEnabled(false);
+        layer.add(originPoint);
+        layer.batchDraw();
+    }
 }
