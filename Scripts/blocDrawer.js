@@ -522,13 +522,14 @@ function switchView(view, btn) {
 }
 
 //Create a snap indicator point in a view at x, y
+let snapSize = 2;
 function addSnapIndicator(x, y, view, color='red') {
     let snapLayer = snapLayers[view]; //Use snap layer for the active view
 
     let indicator = new Konva.Circle({
         x: x,
         y: y,
-        radius: 2, // Small snap indicator
+        radius: snapSize, // Small snap indicator
         fill: color,
         strokeWidth: 1,
         name: 'snap-indicator',

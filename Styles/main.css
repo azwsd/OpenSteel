@@ -41,6 +41,21 @@ html, body
     }
 }
 
+.settings-item {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.settings-item input {
+    width: 60px;
+    margin-left: 10px;
+    text-align: center;
+}
+.dropdown-content {
+    min-width: 220px;
+}
+
 /*file and properties sections style*/
 #files, #properties
 {

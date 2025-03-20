@@ -72,6 +72,20 @@
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="u">U</a></li>
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="h">H</a></li>
                     </ul>
+                    <ul id="settingsDropdown" class="dropdown-content">
+                        <li class="settings-item">
+                            <span class="deep-purple-text lighten-3">Snap point size:</span>
+                            <input type="number" class="browser-default" min="1" max="20" id="snapSize">
+                        </li>
+                        <li class="settings-item">
+                            <span class="deep-purple-text lighten-3">Snap point distance:</span>
+                            <input type="number" class="browser-default" min="1" max="20" id="snapDistance">
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="#" class="deep-purple-text lighten-3 center-align" id="saveSettings">Save</a>
+                        </li>
+                    </ul>
                     <!-- Function Buttons -->
                     <div id="functionButtons">
                         <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Pan" id="panTool" onclick="activatePanTool()">
@@ -87,8 +101,11 @@
                             <i class="material-icons">delete</i>
                         </a>
                         <!-- Dropdown Trigger -->
-                        <a class="waves-effect waves-light btn-small dropdown-trigger deep-purple" id="dropDown" data-target="viewsDropdown">
+                        <a class="waves-effect waves-light btn-small dropdown-trigger deep-purple" id="viewsDropDown" data-target="viewsDropdown">
                             Views <i class="material-icons right">arrow_drop_down</i>
+                        </a>
+                        <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="settingsDropDown" data-target="settingsDropdown">
+                            <i class="material-icons">settings</i>
                         </a>
                     </div>
                     <P id="oViewTitle">Top view (O)</P>

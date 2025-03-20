@@ -79,10 +79,10 @@ function getTransformedPosition(stage, pos) {
 }
 
 //find nearest snapping point
+let snapDistance = 10;
 function getNearestSnapPoint(pos) {
-    let snapRadius = 10;
     let closestPoint = pos;
-    let minDist = snapRadius;
+    let minDist = snapDistance;
 
     layers[activeMeasurementView].getChildren().forEach(shape => {
         if (shape.attrs.snapPoints) {
@@ -98,6 +98,33 @@ function getNearestSnapPoint(pos) {
 
     return closestPoint;
 }
+
+//Insures that the input numbers are in the correct range
+document.querySelectorAll("input[type=number]").forEach(input => {
+    input.addEventListener("input", function() {
+        let value = parseInt(this.value, 10); // Ensure value is an integer
+
+        if (isNaN(value)) {
+            this.value = this.min; // Default to min if value is invalid
+        } else if (value < this.min) {
+            this.value = this.min;
+        } else if (value > this.max) {
+            this.value = this.max;
+        }
+    });
+});
+
+//Loads default values
+document.addEventListener('DOMContentLoaded', function (){
+    document.getElementById('snapSize').value = snapSize;
+    document.getElementById('snapDistance').value = snapDistance;
+});
+
+document.getElementById("saveSettings").addEventListener("click", function() {
+    snapSize = document.getElementById("snapSize").value;
+    snapDistance = document.getElementById("snapDistance").value;
+    drawBlocs(); //Redraw views
+});
 
 // Track active measurement state
 let isMeasuring = false;
