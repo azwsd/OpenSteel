@@ -213,6 +213,7 @@ function clearAllData() {
     holeData.length = 0;
     marksData.length = 0;
     numerationsData.length = 0;
+    storedMeasurements.length = 0;
 }
 
 //Parse Marks
@@ -325,14 +326,14 @@ function addHoleData() {
             }
         }
         else holeType.innerHTML = 'Slotted hole';
-        xVal.innerHTML = `<strong>X:</strong> ${holeLine[1]} mm`;
-        yVal.innerHTML = `<strong>Y:</strong> ${holeLine[3]} mm`;
-        diaVal.innerHTML = `<strong>Diameter:</strong> ${holeLine[5]} mm`;
-        if (holeLine[6] == 0) depthVal.innerHTML = `<strong>Depth:</strong> through-hole`;
-        else depthVal.innerHTML = `<strong>Depth:</strong> ${holeLine[6]} mm`;
-        widthVal.innerHTML = `<strong>Width:</strong> ${holeLine[8] ? holeLine[8] + ' mm' : 'N/A'}`;
-        heightVal.innerHTML = `<strong>Height:</strong> ${holeLine[9] ? holeLine[9] + ' mm' : 'N/A'}`;
-        angleVal.innerHTML = `<strong>Angle:</strong> ${holeLine[10] ? holeLine[10] + '°' : 'N/A'}`;
+        xVal.innerHTML = `<strong>X: </strong> ${holeLine[1]} mm`;
+        yVal.innerHTML = `<strong>Y: </strong> ${holeLine[3]} mm`;
+        diaVal.innerHTML = `<strong>Diameter: </strong> ${holeLine[5]} mm`;
+        if (holeLine[6] == 0) depthVal.innerHTML = `<strong>Depth: </strong> through-hole`;
+        else depthVal.innerHTML = `<strong>Depth: </strong> ${holeLine[6]} mm`;
+        widthVal.innerHTML = `<strong>Width: </strong> ${holeLine[8] ? holeLine[8] + ' mm' : 'N/A'}`;
+        heightVal.innerHTML = `<strong>Height: </strong> ${holeLine[9] ? holeLine[9] + ' mm' : 'N/A'}`;
+        angleVal.innerHTML = `<strong>Angle: </strong> ${holeLine[10] ? holeLine[10] + '°' : 'N/A'}`;
 
         holeDiv.classList.add('holeContainer');
         [view, holeType, xVal, yVal, diaVal, depthVal, widthVal, heightVal, angleVal].forEach(p => { 
@@ -347,6 +348,81 @@ function addHoleData() {
         holeDiv.appendChild(holeContent);
         holeInfo.appendChild(holeDiv);
     }
+}
+
+//Adds measurement line to history dropdown menu
+function addMeasurementData(measurementCounter, view, distance, hDistance, vDistance) {
+    let container = document.getElementById('historyDropdown');
+    let div = document.createElement('div');
+    let measurements = document.createElement('div');
+    let measurementView = document.createElement('p');
+    let measrementDistance = document.createElement('p');
+    let measrementhDistance = document.createElement('p');
+    let measrementvDistance= document.createElement('p');
+    let btn = document.createElement('a');
+    let icon = document.createElement('i');
+
+    measurementView.innerHTML = view;
+    measrementDistance.innerHTML = `<strong>D: </strong> ${distance} mm`;
+    measrementhDistance.innerHTML = `<strong>X: </strong> ${hDistance} mm`;
+    measrementvDistance.innerHTML = `<strong>Y: </strong> ${vDistance} mm`;
+
+    div.setAttribute('data-measurementCounter', measurementCounter);
+    div.setAttribute('onclick', 'changeMeasurementColor(this)');
+    div.classList.add('measurement-container', 'hoverable');
+    measurements.classList.add('measurement-data');
+    btn.classList.add('waves-effect', 'waves-light', 'red', 'btn-floating');
+    btn.setAttribute('onclick', 'deleteMeasurement(this, event)');
+    icon.classList.add('material-icons');
+    icon.textContent = 'delete';
+
+    btn.appendChild(icon);
+    measurements.appendChild(measurementView);
+    measurements.appendChild(measrementDistance);
+    measurements.appendChild(measrementhDistance);
+    measurements.appendChild(measrementvDistance);
+    div.appendChild(measurements);
+    div.appendChild(btn);
+    container.appendChild(div);
+}
+
+//Deletes a measurement
+function deleteMeasurement(btn, event) {
+    //Stops the div from being pressed selecting the deleted
+    event.stopPropagation();
+    let dropDownMenu = document.getElementById("historyDropdown");
+    let dropdownElement = document.getElementById("historyDropdownBtn"); //The dropdown menu element
+    let instance = M.Dropdown.getInstance(dropdownElement);
+    //Gets closest parent with class measurement-container
+    let div = btn.closest('.measurement-container');
+    let measurementCounter = div.dataset.measurementcounter;
+    let view = div.firstElementChild.firstElementChild.innerHTML;
+    let layer = measurementLayers[view];
+    layer.findOne(`.final-measurement-line-${measurementCounter}`).destroy(); //Find the measurement line by its name
+    layer.findOne(`.measurement-text-${measurementCounter}`).destroy(); //Find the measurement text by its name
+    layer.batchDraw(); //Redraws the layer after modification
+    div.remove(); //Removes measurement history from dropdown menu
+    instance.recalculateDimensions(); //Recalculates drodown dimensions when elements are removed
+    if (dropDownMenu.innerHTML == '') instance.close(); //Closes dropdown when it's empty
+}
+
+//Selects measurement
+function changeMeasurementColor(measurementDiv) {
+    //Resets all measurement text color
+    for (let view of views) {
+        let layer = measurementLayers[view];
+        let measurementLines = layer.find(node => node.name().startsWith('measurement-text-'));
+        measurementLines.forEach(text => text.fill('green'));
+    }
+    //Removes sletected file class from every container div
+    let divs = document.querySelectorAll('.measurement-container');
+    for (let div of divs) div.classList.remove('selected-file');
+    //Adds selected file class to desired div
+    measurementDiv.classList.add('selected-file');
+    let measurementCounter = measurementDiv.dataset.measurementcounter;
+    let view = measurementDiv.firstElementChild.firstElementChild.innerHTML;
+    let layer = measurementLayers[view];
+    layer.findOne(`.measurement-text-${measurementCounter}`).fill('red'); //Find the measurement line by its name
 }
 
 //Hnadles if there are no countour blocs and the part is defined by header only

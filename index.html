@@ -66,6 +66,8 @@
                 </div>
                 <div class="col l8 m12 s12" id="view">
                     <!-- Dropdown Structure -->
+                    <ul id="historyDropdown" class="dropdown-content">
+                    </ul>
                     <ul id="viewsDropdown" class="dropdown-content">
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="o">O</a></li>
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="v">V</a></li>
@@ -101,10 +103,13 @@
                             <i class="material-icons">delete</i>
                         </a>
                         <!-- Dropdown Trigger -->
-                        <a class="waves-effect waves-light btn-small dropdown-trigger deep-purple" id="viewsDropDown" data-target="viewsDropdown">
+                        <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger lighten-3" id="historyDropdownBtn" data-target="historyDropdown">
+                            <i class="material-icons">history</i>
+                        </a>
+                        <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="viewsDropDownBtn" data-target="viewsDropdown">
                             Views <i class="material-icons right">arrow_drop_down</i>
                         </a>
-                        <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="settingsDropDown" data-target="settingsDropdown">
+                        <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="settingsDropDownBtn" data-target="settingsDropdown">
                             <i class="material-icons">settings</i>
                         </a>
                     </div>

@@ -36,14 +36,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var instance = M.Tabs.init(elems, {});
 });
 
-//Dropdown menue for action buttons
+//Dropdown menu for action buttons
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize dropdown
-    var dropdowns = document.querySelectorAll('.dropdown-trigger');
-    M.Dropdown.init(dropdowns, { 
+    var elems = document.querySelectorAll('.dropdown-trigger');
+    var instances = M.Dropdown.init(elems, { 
         coverTrigger: false,
         closeOnClick: false, 
-});
+    });
 
     // Initialize tooltips
     var tooltips = document.querySelectorAll('.tooltipped');

@@ -192,18 +192,20 @@ function handleMouseMove(stage, e) {
 }
 
 //measure distance between two points
+let measurementCounter = 0;
 function measureDistance(start, end, view, isRedrawing) {
-    const mLayer = measurementLayers[view]; 
+    const mLayer = measurementLayers[view];
     const distance = Math.hypot(end.x - start.x, end.y - start.y).toFixed(2);
     const hDistance = Math.abs(end.x - start.x).toFixed(2);
     const vDistance = Math.abs(end.y - start.y).toFixed(2);
 
+    measurementCounter++;
     let line = new Konva.Line({
         points: [start.x, start.y, end.x, end.y],
         stroke: 'gray',
         strokeWidth: 3,
         dash: [5, 5],
-        name: 'final-measurement-line',
+        name: `final-measurement-line-${measurementCounter}`,
         listening: false 
     });
 
@@ -212,8 +214,8 @@ function measureDistance(start, end, view, isRedrawing) {
         y: (start.y + end.y) / 2,
         text: `${distance} mm`,
         fontSize: 30,
-        fill: 'red',
-        name: 'measurement-text',
+        fill: 'green',
+        name: `measurement-text-${measurementCounter}`,
         offsetX: 20,
         offsetY: 10
     });
@@ -223,8 +225,11 @@ function measureDistance(start, end, view, isRedrawing) {
     mLayer.add(line, label);
     mLayer.batchDraw();
 
+    if (measurementCounter > 0) document.getElementById('historyDropdownBtn').classList.remove('lighten-3');
+
     //Only store new measurements, prevent duplicates on redraw
     if (!isRedrawing) {
+        addMeasurementData(measurementCounter, view, distance, hDistance, vDistance); //Adds measurement data to history menu
         storedMeasurements.push({ start, end, view });
         //Show toast message for measurement
         M.toast({ html: `length: ${distance} mm, X: ${hDistance} mm, Y: ${vDistance} mm`, classes: 'rounded toast-success', displayLength: 3000});
@@ -373,6 +378,9 @@ function clearMeasurements() {
         measurementLayers[view].batchDraw();
     }
     );
+    document.getElementById('historyDropdown').innerHTML = ''; //Clears measurement history
+    measurementCounter = 0; //Resets measuremtn counter
+    document.getElementById('historyDropdownBtn').classList.add('lighten-3');
 }
 
 let tool = 'pan'; // Default tool is panning

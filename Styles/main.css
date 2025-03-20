@@ -55,6 +55,27 @@ html, body
 .dropdown-content {
     min-width: 220px;
 }
+/* Styling for measurement data dropdown menu*/
+.measurement-container {
+    border: 1px solid black;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between; /* Push items to the edges */
+    align-items: center; /* Align items vertically */
+    width: 100%;
+}
+.measurement-data {
+    padding: 2px;
+    display: flex;
+    flex-direction: column;
+}
+.measurement-data p {
+    margin: 2px auto;
+}
+.measurement-container a {
+    margin-right: 5px;
+}
 
 /*file and properties sections style*/
 #files, #properties

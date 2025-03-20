@@ -52,16 +52,13 @@ function selectFile(file){
     //parses file header data and add it to the view
     ncParseHeaderData(filePairs.get(file));
     ncParseBlocData(filePairs.get(file));
-    //Draw blocs to view
-    drawBlocs();
-    //Eesets scale and position of the view
-    resetScale();
-    //Shows the views image
-    ncViewsImage();
-    //Clears hole data
-    document.getElementById('holeInfoContainer').innerHTML = '';
-    //Adds hole data to hole info tap
-    addHoleData();
+    drawBlocs(); //Draw blocs to view
+    resetScale(); //Eesets scale and position of the view
+    ncViewsImage(); //Shows the views image
+    document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
+    addHoleData(); //Adds hole data to hole info tap
+    document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
+    document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
     let instance = M.Sidenav.getInstance(sideNav)
@@ -147,6 +144,8 @@ function deleteFile(btn, event){
         clearAllData();
         document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
+        document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
+        document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     }
 }
 
@@ -169,6 +168,8 @@ function clearAllFiles(){
     clearAllData(); //Clears bloc data
     document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
     document.getElementById('profileViewsImg').src = ''; //clears views img
+    document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
+    document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
 
