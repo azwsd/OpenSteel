@@ -494,6 +494,7 @@ function drawBlocs(){
     drawMarks();
     drawNumertaions();
     addOriginPoints();
+    redrawMeasurements();
 }
 
 //Shows or hide views
@@ -523,7 +524,8 @@ function switchView(view, btn) {
 
 //Create a snap indicator point in a view at x, y
 let snapSize = 2;
-function addSnapIndicator(x, y, view, color='red') {
+let snapPointColor = '#FF0000';
+function addSnapIndicator(x, y, view, color=snapPointColor) {
     let snapLayer = snapLayers[view]; //Use snap layer for the active view
 
     let indicator = new Konva.Circle({
@@ -542,6 +544,7 @@ function addSnapIndicator(x, y, view, color='red') {
 }
 
 //Adds origin points to each view
+let originPointColor = '#008000';
 function addOriginPoints(){
     for(view of views) {
         let layer = layers[view];
@@ -562,7 +565,7 @@ function addOriginPoints(){
             ]
         });
 
-        addSnapIndicator(tX, tY, view, 'green'); //Add snap point to origin point
+        addSnapIndicator(tX, tY, view, originPointColor); //Add snap point to origin point
         originPoint.strokeScaleEnabled(false);
         layer.add(originPoint);
         layer.batchDraw();

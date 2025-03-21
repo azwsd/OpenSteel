@@ -83,6 +83,22 @@
                             <span class="deep-purple-text lighten-3">Snap point distance:</span>
                             <input type="number" class="browser-default" min="1" max="20" id="snapDistance">
                         </li>
+                        <li class="settings-item">
+                            <span class="deep-purple-text lighten-3">Snap point Color:</span>
+                            <input type="color" id="snapPointColor">
+                        </li>
+                        <li class="settings-item">
+                            <span class="deep-purple-text lighten-3">Origin point Color:</span>
+                            <input type="color" id="originPointColor">
+                        </li>
+                        <li class="settings-item">
+                            <span class="deep-purple-text lighten-3">Measurement line color:</span>
+                            <input type="color" id="measurementColor">
+                        </li>
+                        <li class="settings-item">
+                            <span class="deep-purple-text lighten-3">Measurement text color:</span>
+                            <input type="color" id="measurementTextColor">
+                        </li>
                         <li class="divider"></li>
                         <li>
                             <a href="#" class="waves-effect waves-light grey-text text-lighten-5 lighten-1 center-align deep-purple" id="saveSettings">Apply</a>
@@ -103,7 +119,7 @@
                             <i class="material-icons">delete</i>
                         </a>
                         <!-- Dropdown Trigger -->
-                        <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger lighten-3" id="historyDropdownBtn" data-target="historyDropdown">
+                        <a class="waves-effect waves-light btn-small tooltipped deep-purple dropdown-trigger lighten-3" data-position="bottom" data-tooltip="Measurement history" id="historyDropdownBtn" data-target="historyDropdown">
                             <i class="material-icons">history</i>
                         </a>
                         <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="viewsDropDownBtn" data-target="viewsDropdown">
@@ -111,6 +127,7 @@
                         </a>
                         <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="settingsDropDownBtn" data-target="settingsDropdown">
                             <i class="material-icons">settings</i>
+                            <i class="material-icons right">arrow_drop_down</i>
                         </a>
                     </div>
                     <P id="oViewTitle">Top view (O)</P>

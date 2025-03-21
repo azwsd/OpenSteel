@@ -116,17 +116,27 @@ document.querySelectorAll("input[type=number]").forEach(input => {
 
 //Loads default values
 document.addEventListener('DOMContentLoaded', function (){
+    //Set values in the settings dropdown menu to default
     document.getElementById('snapSize').value = snapSize;
     document.getElementById('snapDistance').value = snapDistance;
+    document.getElementById('snapPointColor').value = snapPointColor;
+    document.getElementById('originPointColor').value = originPointColor;
+    document.getElementById('measurementColor').value = measurementColor;
+    document.getElementById('measurementTextColor').value = measurementTextColor;
 });
 
 document.getElementById("saveSettings").addEventListener("click", function() {
+    //Set values in script to values from settings dropdown menu
     snapSize = document.getElementById("snapSize").value;
     snapDistance = document.getElementById("snapDistance").value;
+    snapPointColor = document.getElementById('snapPointColor').value;
+    originPointColor = document.getElementById('originPointColor').value;
+    measurementColor = document.getElementById('measurementColor').value;
+    measurementTextColor = document.getElementById('measurementTextColor').value;
     drawBlocs(); //Redraw views
 });
 
-// Track active measurement state
+//Track active measurement state
 let isMeasuring = false;
 let activeMeasurementView = null;
 
@@ -135,12 +145,12 @@ function handleMeasurementClick(stage, e) {
 
     let view = Object.keys(stages).find(v => stages[v] === stage);
 
-    // Lock measurement to the first clicked view
+    //Lock measurement to the first clicked view
     if (measurementPoints.length === 0) {
         activeMeasurementView = view;
     }
 
-    // Prevent measurement clicks in other views
+    //Prevent measurement clicks in other views
     if (view !== activeMeasurementView) return;
 
     let pos = getTransformedPosition(stage, stage.getPointerPosition());
@@ -192,30 +202,35 @@ function handleMouseMove(stage, e) {
 }
 
 //measure distance between two points
+let measurementColor = '#808080';
+let measurementTextColor = '#008000';
 let measurementCounter = 0;
-function measureDistance(start, end, view, isRedrawing) {
+function measureDistance(start, end, view, isRedrawing, index) {
     const mLayer = measurementLayers[view];
     const distance = Math.hypot(end.x - start.x, end.y - start.y).toFixed(2);
     const hDistance = Math.abs(end.x - start.x).toFixed(2);
     const vDistance = Math.abs(end.y - start.y).toFixed(2);
 
-    measurementCounter++;
+    if(!isRedrawing) measurementCounter++;
+
+    let lineName = isRedrawing ? `final-measurement-line-${index}` : `final-measurement-line-${measurementCounter}`;
     let line = new Konva.Line({
         points: [start.x, start.y, end.x, end.y],
-        stroke: 'gray',
+        stroke: measurementColor,
         strokeWidth: 3,
         dash: [5, 5],
-        name: `final-measurement-line-${measurementCounter}`,
+        name: lineName,
         listening: false 
     });
 
+    let labelName = isRedrawing ? `measurement-text-${index}` : `measurement-text-${measurementCounter}`;
     let label = new Konva.Text({
         x: (start.x + end.x) / 2,
         y: (start.y + end.y) / 2,
         text: `${distance} mm`,
         fontSize: 30,
-        fill: 'green',
-        name: `measurement-text-${measurementCounter}`,
+        fill: measurementTextColor,
+        name: labelName,
         offsetX: 20,
         offsetY: 10
     });
@@ -244,7 +259,7 @@ function redrawMeasurements() {
 
         storedMeasurements.forEach(m => {
             if (m.view === view) {
-                measureDistance(m.start, m.end, view, true); // Pass "isRedrawing = true"
+                measureDistance(m.start, m.end, view, true, m.measurementCounter); // Pass "isRedrawing = true"
             }
         });
 

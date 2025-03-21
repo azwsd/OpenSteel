@@ -41,6 +41,7 @@ html, body
     }
 }
 
+/* Setting items styling */
 .settings-item {
     padding: 10px 16px;
     display: flex;
@@ -55,6 +56,7 @@ html, body
 .dropdown-content {
     min-width: 220px;
 }
+
 /* Styling for measurement data dropdown menu*/
 .measurement-container {
     border: 1px solid black;
