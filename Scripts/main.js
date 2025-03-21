@@ -21,3 +21,12 @@ fileInput.addEventListener("change", async (event) => {
         fileInput.value = "";
     }
 });
+
+//Makes the action buttons always under the nav bar
+window.addEventListener("scroll", function () {
+    let navbar = document.querySelector(".navbar-fixed");
+    let buttonContainer = document.querySelector("#functionButtons");
+    let navHeight = navbar.offsetHeight;
+    
+    buttonContainer.style.top = navHeight + "px";
+});

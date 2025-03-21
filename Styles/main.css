@@ -29,6 +29,8 @@ html, body
 }
 
 #functionButtons {
+    position: sticky;
+    z-index: 999; /* Keep it above other elements */
     display: flex;
     flex-wrap: nowrap; /* Prevents wrapping */
     gap: 5px;
