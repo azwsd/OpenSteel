@@ -225,12 +225,12 @@ function measureDistance(start, end, view, isRedrawing) {
     mLayer.add(line, label);
     mLayer.batchDraw();
 
-    if (measurementCounter > 0) document.getElementById('historyDropdownBtn').classList.remove('lighten-3');
+    if (measurementCounter > 0) document.getElementById('historyDropdownBtn').classList.remove('lighten-3'); //Make measurement history button active
 
     //Only store new measurements, prevent duplicates on redraw
     if (!isRedrawing) {
         addMeasurementData(measurementCounter, view, distance, hDistance, vDistance); //Adds measurement data to history menu
-        storedMeasurements.push({ start, end, view });
+        storedMeasurements.push({ start, end, view, measurementCounter });
         //Show toast message for measurement
         M.toast({ html: `length: ${distance} mm, X: ${hDistance} mm, Y: ${vDistance} mm`, classes: 'rounded toast-success', displayLength: 3000});
     }

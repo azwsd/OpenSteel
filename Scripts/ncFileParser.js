@@ -403,6 +403,7 @@ function deleteMeasurement(btn, event) {
     layer.batchDraw(); //Redraws the layer after modification
     div.remove(); //Removes measurement history from dropdown menu
     instance.recalculateDimensions(); //Recalculates drodown dimensions when elements are removed
+    storedMeasurements = storedMeasurements.filter(item => item.measurementCounter != measurementCounter); //Removes measurement from measurement stored data
     if (dropDownMenu.children.length === 0) {
         instance.close(); //Closes dropdown when it's empty
         dropdownElement.classList.add('lighten-3'); //Makes the measurement history button appear inactive
