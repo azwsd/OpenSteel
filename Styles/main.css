@@ -58,6 +58,9 @@ html, body
 .dropdown-content {
     min-width: 220px;
 }
+#settingsDropdown input {
+    max-width: 20%;
+}
 
 /* Styling for measurement data dropdown menu*/
 .measurement-container {
