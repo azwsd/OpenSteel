@@ -16,9 +16,6 @@ function handleResize(view) {
     if (stage && container) {
         stage.width(container.clientWidth);
         stage.height(container.clientHeight);
-        //Redraw blocks and measurements for the specific view
-        drawBlocs();
-        redrawMeasurements();
     }
 }
 
