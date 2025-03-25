@@ -167,7 +167,6 @@ function ncParseHoleData(line) {
     holeData.push([view, xValue, dimensionRef, yValue, holeType, diameter, depth, slotType, width, height, angle]);
 }
 
-
 //Parses Blocs
 function ncParseBlocData(fileData){
     const splitFileData = fileData.split('\n'); //split file lines
@@ -192,7 +191,11 @@ function ncParseBlocData(fileData){
         }
 
         //Parse contour blocs and add them to the contourData array
-        if (bloc == 'AK' || bloc == 'IK') ncParseContourData(line);
+        if (bloc == 'AK' || bloc == 'IK') {
+            if(isStart) contourData.push([bloc]); //Pushes the countour bloc type
+            isStart = false;
+            ncParseContourData(line);
+        }
         //Parse hole blocs and add them to the holeData array
         if (bloc == 'BO') ncParseHoleData(line);
         //Parse marks blocs and add them to the marksData array
