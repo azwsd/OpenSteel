@@ -6,7 +6,7 @@ function drawContours() {
     let currentView = null;
     let arcLine = 0;
     let arcData = [];
-    let fX, fY, sX, sY, eX, eY, r;
+    let fX, fY, sX, sY, eX, eY, r, rTemp;
     let arcType = '';
 
     for (dataLine of contourData) {
@@ -39,10 +39,11 @@ function drawContours() {
         if(dataLine[4] != 0 && arcLine == 0) {
             fX = dataLine[1];
             fY = dataLine[3];
+            rTemp = dataLine[4];
             arcLine++;
             arcData.push(fX, fY);
         }
-        else if(arcLine == 1) {
+        else if(dataLine[4] != 0 && arcLine == 1) {
             sX = dataLine[1];
             sY = dataLine[3];
             r = dataLine[4];
@@ -50,13 +51,20 @@ function drawContours() {
             arcData.push(sX, sY, r);
             continue; 
         }
-        else  if(dataLine[4] == 0 && arcLine == 2) {
+        else if(dataLine[4] == 0 && arcLine == 1) {
+            eX = dataLine[1];
+            eY = dataLine[3];
+            cX = dataLine[1];
+            cY = arcData[1];
+            arcData.push(cX, cY, rTemp, eX, eY);
+            arcType = 'partial';
+        }
+        else if(dataLine[4] == 0 && arcLine == 2) {
             eX = dataLine[1];
             eY = dataLine[3];
             arcLine = 0;
             arcType = 'partial';
-            arcData.push(eX, eY);
-            continue; 
+            arcData.push(eX, eY); 
         }
         else if(dataLine[4] != 0 && arcLine == 2) {
             arcLine++;
@@ -68,7 +76,6 @@ function drawContours() {
             arcLine = 0;
             arcType = 'full';
             arcData.push(eX, eY);
-            continue;
         }
 
         if (arcData.length !== 0 && arcType === 'partial') {
@@ -81,21 +88,60 @@ function drawContours() {
             let eY = arcData[6];
             [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
             [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
-            const isClockwise = arcData[4] > 0 ? false : true;
             const r = Math.abs(arcData[4]);
-        
-            [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r);
 
-            let startAngle = calcAngle(sX, sY, cX, cY);
-            let endAngle = calcAngle(eX, eY, cX, cY);
-            startAngle = transformAngle(view, startAngle);
-            endAngle = transformAngle(view, endAngle);
+            if(sX == eX && sY == eY) {
+                //Delete last made line if it was an external hole as a contour
+                const lines = stage.find('Line');
+                if (lines.length > 0) {
+                    lines[lines.length - 1].destroy();
+                }
 
-            let arcAngle = Math.abs(startAngle - endAngle);
-            arcAngle = Math.min(arcAngle, 360 - arcAngle);
-            let rotation = transformRotation(view, isClockwise, endAngle, startAngle);
+                [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
+                [cX, cY] = [((sX + cX) / 2), (sY + cY) / 2];
+                hole = new Konva.Circle({
+                    x: cX, 
+                    y: cY,
+                    radius: r,
+                    stroke: 'black',
+                    strokeWidth: 3,
+                    name: `contour-arc`,
+                    snapPoints: [
+                        { x: cX, y: cY }, // Center
+                        { x: cX + r, y: cY }, // Right (0°)
+                        { x: cX, y: cY - r }, // Top (90°)
+                        { x: cX - r, y: cY }, // Left (180°)
+                        { x: cX, y: cY + r }, // Bottom (270°)
+                    ]
+                });
+                //create snap indicator
+                addSnapIndicator(cX, cY, view);
+                addSnapIndicator(cX + r, cY, view);
+                addSnapIndicator(cX, cY - r, view);
+                addSnapIndicator(cX - r, cY, view);
+                addSnapIndicator(cX, cY + r, view);
 
-            let arc = new Konva.Arc({
+                hole.strokeScaleEnabled(false);
+                layer.add(hole);
+                layer.batchDraw();
+
+                isFirstIteration = true;
+            }
+            else {
+                const isClockwise = arcData[4] > 0 ? false : true;
+            
+                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r);
+
+                let startAngle = calcAngle(sX, sY, cX, cY);
+                let endAngle = calcAngle(eX, eY, cX, cY);
+                startAngle = transformAngle(view, startAngle);
+                endAngle = transformAngle(view, endAngle);
+
+                let arcAngle = Math.abs(startAngle - endAngle);
+                arcAngle = Math.min(arcAngle, 360 - arcAngle);
+                let rotation = transformRotation(view, isClockwise, endAngle, startAngle);
+
+                let arc = new Konva.Arc({
                 x: cX,
                 y: cY,
                 innerRadius: r,
@@ -108,18 +154,21 @@ function drawContours() {
                 snapPoints : [
                     {cX, cY}
                 ],
-            });
-            addSnapIndicator(cX, cY, view);
+                });
+                addSnapIndicator(cX, cY, view);
         
-            arc.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
-            layer.add(arc);
-            layer.batchDraw();
+                arc.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
+                layer.add(arc);
+                layer.batchDraw();
+            }
 
             prevX = arcData[5];
             prevY = arcData[6];
         
             arcData = [];
             arcType = '';
+            arcLine = 0;
+            continue;
         }
 
         if (arcData.length !== 0 && arcType === 'full') {
@@ -145,7 +194,7 @@ function drawContours() {
             let arcAngle = Math.abs(startAngle - endAngle);
             arcAngle = Math.max(arcAngle, 360 - arcAngle);
             let rotation = transformRotation(view, isClockwise, endAngle, startAngle);
-        
+            
             let arc = new Konva.Arc({
                 x: cX,
                 y: cY,
@@ -161,16 +210,17 @@ function drawContours() {
                 ],
             });
             addSnapIndicator(cX, cY, view);
-        
             arc.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
             layer.add(arc);
             layer.batchDraw();
-
+            
             prevX = arcData[5];
             prevY = arcData[6];
         
             arcData = [];
             arcType = '';
+            arcLine = 0;
+            continue;
         }
         
         
@@ -525,7 +575,7 @@ function switchView(view, btn) {
 //Create a snap indicator point in a view at x, y
 let snapSize = 2;
 let snapPointColor = '#FF0000';
-function addSnapIndicator(x, y, view, color=snapPointColor) {
+function addSnapIndicator(x, y, view, color=snapPointColor, name='snap-indicator') {
     let snapLayer = snapLayers[view]; //Use snap layer for the active view
 
     let indicator = new Konva.Circle({
@@ -534,7 +584,7 @@ function addSnapIndicator(x, y, view, color=snapPointColor) {
         radius: snapSize, // Small snap indicator
         fill: color,
         strokeWidth: 1,
-        name: 'snap-indicator',
+        name: name,
         listening: false // Make sure it does not interfere with clicks
     });
 
@@ -565,7 +615,7 @@ function addOriginPoints(){
             ]
         });
 
-        addSnapIndicator(tX, tY, view, originPointColor); //Add snap point to origin point
+        addSnapIndicator(tX, tY, view, originPointColor, 'origin-point'); //Add snap point to origin point
         originPoint.strokeScaleEnabled(false);
         layer.add(originPoint);
         layer.batchDraw();

@@ -130,7 +130,41 @@ document.getElementById("saveSettings").addEventListener("click", function() {
     originPointColor = document.getElementById('originPointColor').value;
     measurementColor = document.getElementById('measurementColor').value;
     measurementTextColor = document.getElementById('measurementTextColor').value;
-    drawBlocs(); //Redraw views
+
+    //Iterate over all measurement layers
+    Object.values(measurementLayers).forEach(layer => {
+        layer.getChildren(node => 
+            node.name()?.startsWith("final-measurement-line") ||
+            node.name()?.startsWith("measurement-text")
+        ).forEach(node => {
+            if (node.className === "Line") node.stroke(measurementColor); //Change Line color
+            else if (node.className === "Text") node.fill(measurementTextColor); //Change text color
+        });
+
+        layer.batchDraw(); //Redraw layer after updates
+    });
+
+    //Iterate over all snap layers
+    Object.values(snapLayers).forEach(layer => {
+        layer.getChildren(node => node.name() === "origin-point").forEach(node => {
+            if (node.className === "Circle") {
+                node.fill(originPointColor); //Change origin point color
+                node.radius(snapSize); //Change size
+            }
+        });
+
+        layer.batchDraw(); //Redraw layer after updates
+    });
+    Object.values(snapLayers).forEach(layer => {
+        layer.getChildren(node => node.name() === "snap-indicator").forEach(node => {
+            if (node.className === "Circle") {
+                node.fill(snapPointColor); //Change snap point color
+                node.radius(snapSize); //Change size
+            }
+        });
+
+        layer.batchDraw(); //Redraw layer after updates
+    });
 });
 
 //Track active measurement state
