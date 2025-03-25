@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function (){
     document.getElementById('originPointColor').value = originPointColor;
     document.getElementById('measurementColor').value = measurementColor;
     document.getElementById('measurementTextColor').value = measurementTextColor;
+    document.getElementById('measurementTextTransform').checked = resizeVisable;
 });
 
 document.getElementById("saveSettings").addEventListener("click", function() {
@@ -130,6 +131,7 @@ document.getElementById("saveSettings").addEventListener("click", function() {
     originPointColor = document.getElementById('originPointColor').value;
     measurementColor = document.getElementById('measurementColor').value;
     measurementTextColor = document.getElementById('measurementTextColor').value;
+    resizeVisable = document.getElementById('measurementTextTransform').checked;
 
     //Iterate over all measurement layers
     Object.values(measurementLayers).forEach(layer => {
@@ -138,7 +140,16 @@ document.getElementById("saveSettings").addEventListener("click", function() {
             node.name()?.startsWith("measurement-text")
         ).forEach(node => {
             if (node.className === "Line") node.stroke(measurementColor); //Change Line color
-            else if (node.className === "Text") node.fill(measurementTextColor); //Change text color
+            else if (node.className === "Text") {
+                node.fill(measurementTextColor); //Change text color
+                node.draggable(resizeVisable); //Change draggable status
+            }
+        });
+
+        //Iterate over all transformer for measuring lables
+        const labelTransformers = layer.find('Transformer');
+        labelTransformers.forEach(labelTransformer => {
+            resizeVisable == false ? labelTransformer.hide() : labelTransformer.show();
         });
 
         layer.batchDraw(); //Redraw layer after updates
@@ -235,6 +246,7 @@ function handleMouseMove(stage, e) {
 //measure distance between two points
 let measurementColor = '#808080';
 let measurementTextColor = '#008000';
+let resizeVisable = false;
 let measurementCounter = 0;
 function measureDistance(start, end, view, isRedrawing, index) {
     const mLayer = measurementLayers[view];
@@ -254,6 +266,11 @@ function measureDistance(start, end, view, isRedrawing, index) {
         listening: false 
     });
 
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const angleRad = Math.atan2(dy, dx);
+    const angleDeg = angleRad * (180 / Math.PI);
+
     let labelName = isRedrawing ? `measurement-text-${index}` : `measurement-text-${measurementCounter}`;
     let label = new Konva.Text({
         x: (start.x + end.x) / 2,
@@ -262,13 +279,20 @@ function measureDistance(start, end, view, isRedrawing, index) {
         fontSize: 30,
         fill: measurementTextColor,
         name: labelName,
-        offsetX: 20,
-        offsetY: 10
+        draggable: resizeVisable,
+        rotation: angleDeg
     });
+
+    let labelTransformer = new Konva.Transformer({
+        nodes: [label],
+        rotateEnabled: true, //allows rotation
+        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], //anchors for scaling, if desired
+    });
+    resizeVisable == false ? labelTransformer.hide() : labelTransformer.show();
 
     line.strokeScaleEnabled(false);
     label.perfectDrawEnabled(false);
-    mLayer.add(line, label);
+    mLayer.add(line, label, labelTransformer);
     mLayer.batchDraw();
 
     if (measurementCounter > 0) document.getElementById('historyDropdownBtn').classList.remove('lighten-3'); //Make measurement history button active

@@ -44,6 +44,9 @@ html, body
 }
 
 /* Setting items styling */
+#settingsDropdown {
+    overflow-x: hidden;
+}
 .settings-item {
     padding: 10px 16px;
     display: flex;
@@ -58,7 +61,7 @@ html, body
 .dropdown-content {
     min-width: 220px;
 }
-#settingsDropdown input {
+#settingsDropdown input[type="color"] {
     max-width: 20%;
 }
 
