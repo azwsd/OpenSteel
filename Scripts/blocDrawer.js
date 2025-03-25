@@ -1,7 +1,6 @@
 // Draws contour blocks to the canvas with coordinate transformations
 function drawContours() {
     let isFirstIteration = true;
-    let contourType = null;
     let prevX, prevY, tPrevX, tPrevY, tX, tY;
     let prevView = null;
     let currentView = null;
