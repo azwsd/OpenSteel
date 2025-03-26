@@ -24,6 +24,9 @@
                     </ul>
                     <div id="logo">OpenSteel</div>
                     <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                    <ul class="hide-on-med-and-down">
+                        <li><a href="#shortcuts" data-target="shortcutsModal" class="waves-effect modal-trigger">Shortcuts</a></li>
+                    </ul>
                     <ul class="right hide-on-med-and-down">
                         <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
                     </ul>
@@ -41,14 +44,46 @@
               </div>
             </div>
         </div>
+        <!--Shortcuts  modal-->
+        <div id="shortcutsModal" class="modal">
+            <div class="modal-content">
+                <h4>Shortcuts</h4>
+                <ul>
+                    <li><b>Ctrl + S</b> - Save all current visible views</li>
+                    <li><b>S</b> - Save visible active view</li>
+                    <li><b>P</b> - Pan tool</li>
+                    <li><b>M</b> - Measure tool</li>
+                    <li><b>T</b> - Toggle snap points on/off</li>
+                    <li><b>C</b> - Clear all measurements</li>
+                    <li><b>O</b> - Toggle "O" view on/off</li>
+                    <li><b>V</b> - Toggle "V" view on/off</li>
+                    <li><b>U</b> - Toggle "U" view on/off</li>
+                    <li><b>H</b> - Toggle "H" view on/off</li>
+                </ul>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
+                </div>
+            </div>
+        </div>
         <!--Clear all modal-->
         <div id="clearAllModal" class="modal">
             <div class="modal-content">
-              <h4>Clear all files</h4>
+              <h4>CLEAR ALL FILES!</h4>
               <p><b>Are you sure you want to clear all files?</b></p>
               <div class="modal-footer">
                 <a href="#!" class="modal-close waves-effect waves-red btn red" onclick="clearAllFiles()">Yes</a>
-                <a href="#!" class="modal-close waves-effect waves-red btn green" oncanplay="clearAllFiles()">No</a>
+                <a href="#!" class="modal-close waves-effect waves-red btn green">No</a>
+              </div>
+            </div>
+        </div>
+        <!--Clear measurements modal-->
+        <div id="clearMeasurementsModal" class="modal">
+            <div class="modal-content">
+              <h4>CLEAR ALL MEASUREMENTS!</h4>
+              <p><b>Are you sure you want to clear all measurements?</b></p>
+              <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect waves-red btn red" onclick="clearMeasurements()">Yes</a>
+                <a href="#!" class="modal-close waves-effect waves-red btn green">No</a>
               </div>
             </div>
         </div>
@@ -122,7 +157,7 @@
                         <a class="waves-effect waves-light btn-small tooltipped deep-purple lighten-3" data-position="bottom" data-tooltip="Toggle snap points" id="toggleSnap" onclick="toggleSnapIndicators()">
                             <i class="material-icons">remove_red_eye</i>
                         </a>
-                        <a class="waves-effect waves-light btn-small tooltipped deep-purple" data-position="bottom" data-tooltip="Clear Measurements" id="clearMeasurements" onclick="clearMeasurements()">
+                        <a class="waves-effect waves-light btn-small modal-trigger deep-purple" data-position="bottom" data-tooltip="Clear Measurements" id="clearMeasurements" href="#clearMeasurementsModal" data-target="clearMeasurementsModal">
                             <i class="material-icons">delete</i>
                         </a>
                         <!-- Dropdown Trigger -->

@@ -10,6 +10,11 @@ function drawContours() {
     let arcType = '';
 
     for (dataLine of contourData) {
+        if(dataLine[0] == 'IK' || dataLine[0] == 'AK') {
+            isFirstIteration = true;
+            continue;
+        }
+
         currentView = dataLine[0];
 
         // Skip drawing the line if the face has changed
@@ -17,14 +22,24 @@ function drawContours() {
             prevX = dataLine[1];
             prevY = dataLine[3];
             prevView = currentView;
+            isFirstIteration = false;
             continue;
         }
         prevView = currentView;
 
         // Skip drawing the first line from origin
-        if (isFirstIteration) {
+        if (isFirstIteration && dataLine[4] == 0) {
             prevX = dataLine[1];
             prevY = dataLine[3];
+            isFirstIteration = false;
+            continue;
+        }
+        else if(isFirstIteration && dataLine[4] != 0) {
+            fX = dataLine[1];
+            fY = dataLine[3];
+            rTemp = dataLine[4];
+            arcLine++;
+            arcData.push(fX, fY);
             isFirstIteration = false;
             continue;
         }
@@ -91,12 +106,6 @@ function drawContours() {
             const r = Math.abs(arcData[4]);
 
             if(sX == eX && sY == eY) {
-                //Delete last made line if it was an external hole as a contour
-                const lines = stage.find('Line');
-                if (lines.length > 0) {
-                    lines[lines.length - 1].destroy();
-                }
-
                 [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
                 [cX, cY] = [((sX + cX) / 2), (sY + cY) / 2];
                 hole = new Konva.Circle({
