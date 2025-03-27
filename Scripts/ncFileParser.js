@@ -2,7 +2,7 @@
 let headerData = [];
 //Blocs
 let blocs = ['BO', 'SI', 'AK', 'IK', 'PU', 'KO', 'SC', 'TO', 'UE', 'PR', 'KA', 'EN']
-//Contour bloc data
+//External contour bloc data
 let contourData = [];
 //Hole bloc data
 let holeData = [];
@@ -86,7 +86,7 @@ function ncViewsImage(){
 }
 
 //Parse contour blocs and add them to the contourData array
-function ncParseContourData(line){
+function ncParseContourData(line, contourType){
     let values = line.trim().split(/\s+/); // Split by whitespace
     let face = "";  
     let xValue, dimensionRef, yValue;
@@ -116,7 +116,7 @@ function ncParseContourData(line){
     }
 
     // Add parsed line to contourBlocks
-    contourData.push([face, xValue, dimensionRef, yValue, ...parsedValues]);
+    contourData.push([face, xValue, dimensionRef, yValue, ...parsedValues, contourType]);
 }
 
 //Parse hole blocs and add them to the holeData array
@@ -192,9 +192,8 @@ function ncParseBlocData(fileData){
 
         //Parse contour blocs and add them to the contourData array
         if (bloc == 'AK' || bloc == 'IK') {
-            if(isStart) contourData.push([bloc]); //Pushes the countour bloc type
             isStart = false;
-            ncParseContourData(line);
+            ncParseContourData(line, bloc);
         }
         //Parse hole blocs and add them to the holeData array
         if (bloc == 'BO') ncParseHoleData(line);
@@ -403,6 +402,7 @@ function deleteMeasurement(btn, event) {
     let layer = measurementLayers[view];
     layer.findOne(`.final-measurement-line-${measurementCounter}`).destroy(); //Find the measurement line by its name
     layer.findOne(`.measurement-text-${measurementCounter}`).destroy(); //Find the measurement text by its name
+    layer.findOne(`.measurement-transformer-${measurementCounter}`).destroy(); //Find the measurement text transformer by its name
     layer.batchDraw(); //Redraws the layer after modification
     div.remove(); //Removes measurement history from dropdown menu
     instance.recalculateDimensions(); //Recalculates drodown dimensions when elements are removed

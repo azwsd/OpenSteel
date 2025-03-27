@@ -1,21 +1,29 @@
 // Draws contour blocks to the canvas with coordinate transformations
 function drawContours() {
     let isFirstIteration = true;
-    let prevX, prevY, tPrevX, tPrevY, tX, tY;
+    let resetIteration = false;
+    let prevX, prevY, tPrevX, tPrevY, tX, tY, firstX, firstY;
+    let currentContour = null;
     let prevView = null;
     let currentView = null;
     let arcLine = 0;
     let arcData = [];
     let fX, fY, sX, sY, eX, eY, r, rTemp;
     let arcType = '';
-
+    console.log(contourData);
     for (dataLine of contourData) {
-        if(dataLine[0] == 'IK' || dataLine[0] == 'AK') {
+        currentView = dataLine[0];
+
+        if(currentContour != dataLine[9]) {
+            currentContour = dataLine[9];
             isFirstIteration = true;
-            continue;
         }
 
-        currentView = dataLine[0];
+        if(currentContour == 'IK' && isFirstIteration) {
+            firstX = dataLine[1];
+            firstY = dataLine[3];
+        }
+        else if(currentContour == 'IK' && !isFirstIteration && dataLine[1] == firstX && dataLine[3] == firstY) resetIteration = true;
 
         // Skip drawing the line if the face has changed
         if (prevView !== null && prevView !== currentView) {
@@ -260,6 +268,11 @@ function drawContours() {
         line.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
         layer.add(line);
         layer.batchDraw();
+
+        if(resetIteration) {
+            resetIteration = false;
+            isFirstIteration = true;
+        }
     }
 }
 
