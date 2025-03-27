@@ -283,8 +283,10 @@ function measureDistance(start, end, view, isRedrawing, index) {
         rotation: angleDeg
     });
 
+    let labelTransformerName = isRedrawing ? `measurement-transformer-${index}` : `measurement-transformer-${measurementCounter}`;
     let labelTransformer = new Konva.Transformer({
         nodes: [label],
+        name: labelTransformerName,
         rotateEnabled: true, //allows rotation
         enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], //anchors for scaling, if desired
     });
