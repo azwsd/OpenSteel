@@ -65,6 +65,30 @@ html, body
     max-width: 20%;
 }
 
+/* Styling for shortcuts modal*/
+#shortcut-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+#shortcut-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+#shortcut-list li:last-child {
+    border-bottom: none;
+}
+#shortcut-list b {
+    display: inline-block;
+    width: 7rem;
+    font-weight: 600;
+    color: #512DA8; /* Deep purple accent */
+}
+.view-name {
+    font-weight: bold;
+    color: #D32F2F; /* Red accent for view names */
+}
+
 /* Styling for measurement data dropdown menu*/
 .measurement-container {
     border: 1px solid black;
