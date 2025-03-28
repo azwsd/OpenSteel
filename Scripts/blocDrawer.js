@@ -10,7 +10,7 @@ function drawContours() {
     let arcData = [];
     let fX, fY, sX, sY, eX, eY, r, rTemp;
     let arcType = '';
-    console.log(contourData);
+
     for (dataLine of contourData) {
         currentView = dataLine[0];
 
