@@ -80,7 +80,7 @@ html, body
 }
 #shortcut-list b {
     display: inline-block;
-    width: 7rem;
+    width: 8rem;
     font-weight: 600;
     color: #512DA8; /* Deep purple accent */
 }

@@ -49,12 +49,29 @@
             <div class="modal-content">
                 <h4>Shortcuts</h4>
                 <ul id="shortcut-list">
-                    <li><b>Ctrl + S</b>Save all currently visible areas of views</li>
-                    <li><b>S</b>Save the visible area of the active view</li>
                     <li><b>P</b>Pan tool</li>
                     <li><b>M</b>Measure tool</li>
                     <li><b>T</b>Toggle snap points on/off</li>
                     <li><b>C</b>Clear all measurements</li>
+                    <li>
+                        <b>
+                        <i class="material-icons tiny">arrow_upward</i>
+                        <i class="material-icons tiny">arrow_downward</i>
+                        </b>
+                        Navigate imported files
+                    </li>
+                    <li>
+                        <b>
+                        <i class="material-icons tiny">arrow_back</i>
+                        <i class="material-icons tiny">arrow_forward</i>
+                        </b>
+                        Navigate hole data
+                    </li>
+                    <li><b>Home/End</b>Increase/Decrease snap point size</li>
+                    <li><b>Page Up/Down</b>Increase/Decrease snap point distance</li>
+                    <li><b>F</b>Toggle resizing and dragging of measurement text</li>
+                    <li><b>S</b>Save the visible area of the active view</li>
+                    <li><b>Ctrl + S</b>Save all currently visible areas of views</li>
                     <li><b>O</b>Toggle <span class="view-name">O</span> view on/off</li>
                     <li><b>V</b>Toggle <span class="view-name">V</span> view on/off</li>
                     <li><b>U</b>Toggle <span class="view-name">U</span> view on/off</li>
@@ -112,11 +129,11 @@
                     <ul id="settingsDropdown" class="dropdown-content">
                         <li class="settings-item">
                             <span class="deep-purple-text lighten-3">Snap point size:</span>
-                            <input type="number" class="browser-default" min="1" max="20" id="snapSize">
+                            <input type="number" class="browser-default" id="snapSize">
                         </li>
                         <li class="settings-item">
                             <span class="deep-purple-text lighten-3">Snap point distance:</span>
-                            <input type="number" class="browser-default" min="1" max="20" id="snapDistance">
+                            <input type="number" class="browser-default" id="snapDistance">
                         </li>
                         <li class="settings-item">
                             <span class="deep-purple-text lighten-3">Snap point Color:</span>
