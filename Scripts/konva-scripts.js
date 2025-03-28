@@ -112,10 +112,20 @@ document.querySelectorAll("input[type=number]").forEach(input => {
 });
 
 //Loads default values
+let snapDistanceMin = 1;
+let snapDistanceMax = 20;
+let snapSizeMin = 1;
+let snapSizeMax = 20;
 document.addEventListener('DOMContentLoaded', function (){
     //Set values in the settings dropdown menu to default
-    document.getElementById('snapSize').value = snapSize;
-    document.getElementById('snapDistance').value = snapDistance;
+    let snapSizeElement = document.getElementById('snapSize');
+    snapSizeElement.value = snapSize;
+    snapSizeElement.min = snapSizeMin;
+    snapSizeElement.max = snapSizeMax;
+    let snapDistanceElement = document.getElementById('snapDistance');
+    snapDistanceElement.value = snapDistance;
+    snapDistanceElement.min = snapDistanceMin;
+    snapDistanceElement.max = snapDistanceMax;
     document.getElementById('snapPointColor').value = snapPointColor;
     document.getElementById('originPointColor').value = originPointColor;
     document.getElementById('measurementColor').value = measurementColor;
@@ -126,7 +136,24 @@ document.addEventListener('DOMContentLoaded', function (){
 document.getElementById("saveSettings").addEventListener("click", function() {
     //Set values in script to values from settings dropdown menu
     snapSize = document.getElementById("snapSize").value;
+    //Ensure snap size is in range
+    if(snapSize < snapSizeMin) {
+        document.getElementById("snapSize").value = snapSizeMin;
+        snapSize = snapSizeMin;
+    }
+    else if(snapSize > snapSizeMax) {
+        document.getElementById("snapSize").value = snapSizeMax;
+        snapSize = snapSizeMax;
+    }
     snapDistance = document.getElementById("snapDistance").value;
+    if(snapDistance < snapDistanceMin) {
+        document.getElementById("snapDistance").value = snapDistanceMin;
+        snapDistance = snapDistanceMin;
+    }
+    else if(snapDistance > snapDistanceMax) {
+        document.getElementById("snapDistance").value = snapDistanceMax;
+        snapDistance = ssnapDistanceMax;
+    }
     snapPointColor = document.getElementById('snapPointColor').value;
     originPointColor = document.getElementById('originPointColor').value;
     measurementColor = document.getElementById('measurementColor').value;
