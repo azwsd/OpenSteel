@@ -107,18 +107,22 @@ document.addEventListener('keydown', function (e) {
         else if(holeElements.length != 0) holeElements[0].click(); //If no hole is selected select first hole
     }
     else if(e.key === 'Home') {
+        e.preventDefault(); //Prevent default browser save behavior
         document.getElementById('snapSize').stepUp();
         document.getElementById('saveSettings').click();
     }
     else if(e.key === 'End') {
+        e.preventDefault(); //Prevent default browser save behavior
         document.getElementById('snapSize').stepDown();
         document.getElementById('saveSettings').click();
     }
     else if(e.key === 'PageUp') {
+        e.preventDefault(); //Prevent default browser save behavior
         document.getElementById('snapDistance').stepUp();
         document.getElementById('saveSettings').click();
     }
     else if(e.key === 'PageDown') {
+        e.preventDefault(); //Prevent default browser save behavior
         document.getElementById('snapDistance').stepDown();
         document.getElementById('saveSettings').click();
     }
