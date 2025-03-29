@@ -35,17 +35,36 @@ window.addEventListener("scroll", function () {
 document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.key === 's') { //Detect Ctrl + S
         e.preventDefault(); //Prevent default browser save behavior
+        
+        let zip = new JSZip(); //Create a new ZIP archive
+        let promises = [];
+
         Object.keys(stages).forEach(view => {
-            if(document.getElementById(view).classList.contains('hide')) return; //If view is hidden skip it
-            let stage = stages[view];
-            let dataURL = stage.toDataURL({ pixelRatio: 5 }); //High resolution export
+            if (document.getElementById(view).classList.contains('hide')) return; //Skip hidden views
             
-            let link = document.createElement('a');
-            link.href = dataURL;
-            link.download = `${view}.png`; //Name based on view name
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            let stage = stages[view];
+            let dataURL = stage.toDataURL({ pixelRatio: 5 }); //High-resolution export
+            
+            // Convert dataURL to Blob
+            let promise = fetch(dataURL)
+                .then(res => res.blob())
+                .then(blob => {
+                    zip.file(`${view}.png`, blob); // Add PNG file to ZIP
+                });
+
+            promises.push(promise);
+        });
+
+        // Wait for all PNGs to be added, then generate the ZIP
+        Promise.all(promises).then(() => {
+            zip.generateAsync({ type: 'blob' }).then(blob => {
+                let link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = "views.zip"; // Name of the ZIP file
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
         });
     }
     else if(e.key === 's') { //Detect S
