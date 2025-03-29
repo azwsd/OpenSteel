@@ -145,18 +145,14 @@ function drawContours() {
                 isFirstIteration = true;
             }
             else {
-                const isClockwise = arcData[4] > 0 ? false : true;
-            
+                let isClockwise = arcData[4] > 0 ? false : true;
                 [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r);
-
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
-                startAngle = transformAngle(view, startAngle);
-                endAngle = transformAngle(view, endAngle);
 
-                let arcAngle = Math.abs(startAngle - endAngle);
-                arcAngle = Math.min(arcAngle, 360 - arcAngle);
-                let rotation = transformRotation(view, isClockwise, endAngle, startAngle);
+                isClockwise = transformClock(view, isClockwise);
+                let arcAngle = calcArcAngle(startAngle, endAngle, isClockwise);
+                let rotationAngle = isClockwise ? startAngle : endAngle;
 
                 let arc = new Konva.Arc({
                 x: cX,
@@ -165,7 +161,7 @@ function drawContours() {
                 outerRadius: r,
                 angle: arcAngle,
                 stroke: 'black',
-                rotation: rotation,
+                rotation: rotationAngle,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -199,18 +195,16 @@ function drawContours() {
             [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
             [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
             [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
-            const isClockwise = arcData[4] > 0 ? true : false;
+            let isClockwise = arcData[4] > 0 ? true : false;
             const r = Math.abs(arcData[4]);
         
             //Compute start and end angles in degrees
             let startAngle = calcAngle(sX, sY, cX, cY);
             let endAngle = calcAngle(eX, eY, cX, cY);
-            startAngle = transformAngle(view, startAngle);
-            endAngle = transformAngle(view, endAngle);
             
-            let arcAngle = Math.abs(startAngle - endAngle);
-            arcAngle = Math.max(arcAngle, 360 - arcAngle);
-            let rotation = transformRotation(view, isClockwise, endAngle, startAngle);
+            isClockwise = transformClock(view, isClockwise);
+            let arcAngle = calcArcAngle(startAngle, endAngle, isClockwise);
+            let rotationAngle = isClockwise ? startAngle : endAngle;
             
             let arc = new Konva.Arc({
                 x: cX,
@@ -219,7 +213,7 @@ function drawContours() {
                 outerRadius: r,
                 angle: arcAngle,
                 stroke: 'black',
-                rotation: rotation + 90, 
+                rotation: rotationAngle, 
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -539,6 +533,18 @@ function transformRotation(view, isClockwise, startAngle, endAngle) {
         default:
             return !isClockwise ? endAngle : startAngle;
     }
+}
+
+function calcArcAngle(start, end, isClockwise) {
+    if (isClockwise) {
+        return start > end ? 360 - start + end : end - start;
+    } else {
+        return start > end ? start - end : 360 - end + start;
+    }
+}
+
+function transformClock(view, isClockwise) {
+    return (view === 'v-view' || view === 'u-view') ? !isClockwise : isClockwise;
 }
 
 function calcAngle(pX, pY, cX, cY){
