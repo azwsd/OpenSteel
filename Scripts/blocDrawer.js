@@ -508,33 +508,6 @@ function transformCoordinates(view, x, y, width, height) {
     }
 }
 
-//Function to apply angle transformations based on view
-function transformAngle(view, angle) {
-    switch (view) {
-        case 'v-view':
-        case 'u-view':
-            return (360 - angle) % 360;
-        case 'o-view':
-            return (180 + angle) % 360;
-        case 'h-view':
-        default:
-            return angle;
-    }
-}
-
-function transformRotation(view, isClockwise, startAngle, endAngle) {
-    switch (view) {
-        case 'o-view':
-            return isClockwise ? (startAngle + 180) % 360 : (endAngle + 180) % 360;
-        case 'v-view':
-        case 'u-view':
-            return  isClockwise ? -endAngle : -startAngle;
-        case 'h-view':
-        default:
-            return !isClockwise ? endAngle : startAngle;
-    }
-}
-
 function calcArcAngle(start, end, isClockwise) {
     if (isClockwise) {
         return start > end ? 360 - start + end : end - start;
