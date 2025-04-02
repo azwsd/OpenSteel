@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,4 +118,125 @@
     <!--Includes main js file for profile page-->
     <script src="Scripts/profiles-main.js"></script>
 </body>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>OpenSteel</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--Include materialize and its fonts-->
+    <link rel="stylesheet" href="Styles/materialize-main.css">
+    <link rel="stylesheet" href="Styles/materialize-icons.css">
+    <!--include main style sheet-->
+    <link rel="stylesheet" href="Styles/main.css">
+    <!--Removes fav icon error-->
+    <link rel="shortcut icon" href="#">
+</head>
+<body>
+    <!-- fixed navigation bar-->     
+    <div class="navbar-fixed">
+        <nav>
+            <div class="nav-wrapper deep-purple darken-4">
+                <ul class="left hide-on-med-and-down">
+                    <li><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
+                    <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
+                </ul>
+                <div id="logo">OpenSteel</div>
+                <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                <ul class="right hide-on-med-and-down">
+                    <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+    <!--About me modal-->
+    <div id="aboutMeModal" class="modal">
+        <div class="modal-content">
+          <h4>About me</h4>
+          <p>Hey there! I'm an open-source project, built with love by <b>Ahmed Mohamed Ragab</b>, and my mission is simple, to help you view and explore <b>DSTV (.nc)</b> files with ease.</p>
+          <p>If you work in steel detailing, CNC machining, or steel manufacturing, I'm here to make your life easier. Just load up a .nc file, and I'll display its contents.</p>
+          <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
+          </div>
+        </div>
+    </div>
+    <!--Clear all modal-->
+    <div id="clearAllModal" class="modal">
+        <div class="modal-content">
+          <h4>CLEAR ALL FILES!</h4>
+          <p><b>Are you sure you want to clear all files?</b></p>
+          <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-red btn red" onclick="clearAllFiles()">Yes</a>
+            <a href="#!" class="modal-close waves-effect waves-red btn green">No</a>
+          </div>
+        </div>
+    </div>  
+    <!--Mobile navbar-->
+    <ul class="sidenav" id="mobile">
+        <li><p class="filesPlaceHolder">Please insert a file/folder</p></li>
+        <li id="sideNavClearAll"><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
+        <ul class="sideNavBottom">
+            <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
+            <li><a href="#about-me" data-target="aboutMeModal" class="sidenav-close modal-trigger float-bottom">About me</a></li>
+        </ul>
+    </ul>
+
+    <main>
+        <div class="row">
+            <div class="col l2 hide-on-med-and-down deep-purple lighten-2" id="files">
+                <p class="filesPlaceHolder">Please insert a file/folder</p>
+            </div>
+            <div class="col l10" id="profileDiv">
+                <div class="row" id="profileContentDiv">
+                    <div class="col">
+                        <div class="row" id="ProfileSelection">
+                            <!-- Dropdown Trigger -->
+                            <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="profileDropdownBtn" data-target="profileDropdown">
+                                <p id="profileMain">Profile</p> <i class="material-icons right">arrow_drop_down</i>
+                            </a>
+                            <!-- Dropdown Structure -->
+                            <ul id='profileDropdown' class='dropdown-content dropDownLimitHeight'>
+                            </ul>
+                            <!-- Dropdown Trigger -->
+                            <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="profileSizeDropdownBtn" data-target="profileSizeDropdown">
+                                <p id="profileSize">size</p> <i class="material-icons right">arrow_drop_down</i>
+                            </a>
+                            <!-- Dropdown Structure -->
+                            <ul id='profileSizeDropdown' class='dropdown-content dropDownLimitHeight'>
+                                <a class="deep-purple-text lighten-3">Please select a profile!</a>
+                            </ul>
+                        </div>
+                        <div class="row" id="profileData">
+                            please select a profile and a size!
+                        </div>
+                    </div>
+                    <div class="col l10" id="profileImage">
+                        <img src="Images/Profiles/no-profile.png" alt="">
+                    </div>
+                    <div class="col" id="weightCalc">
+                        <input type="number" placeholder="Length" id="Length" min="0"><p>mm</p>
+                        <input type="number" placeholder="Quantity" id="Quantity" min="0"><p>peices</p>
+                        <a class="waves-effect waves-light btn-small deep-purple" onclick="calcWeight()">Calc</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large deep-purple darken-4">
+            <i class="large material-icons tooltipped" data-position="left" data-tooltip="Insert" onclick="insert_file(this)"><input type="file" hidden id="fileInput" placeholder="File input" directory multiple>insert_drive_file</i>
+        </a>
+    </div>
+
+    <!--Includes js file for materialize-->
+    <script src="Scripts/materialize-main.js"></script>
+    <script src="Scripts/materialize-scripts.js"></script>
+    <!--Includes main js file for profile page-->
+    <script src="Scripts/profiles-main.js"></script>
+</body>
+>>>>>>> 02e07e62ad6e52c8aa8ad2f44bfbc2edcaf051e3
 </html>
