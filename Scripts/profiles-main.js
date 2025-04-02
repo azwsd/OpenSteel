@@ -224,7 +224,7 @@ async function findProfile() {
     const profileType = headerData[7].toUpperCase();
     const length = headerData[8];
     const height = headerData[9];
-    const flangeWdith = headerData[10];
+    const flangeWidth = headerData[10];
     const flangeThickness = headerData[11];
     const webThickness = headerData[12];
     const radius = headerData[13];
@@ -247,7 +247,7 @@ async function findProfile() {
             return Promise.all(parseCSV(text).forEach(async obj => {
                 if (
                     parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWdith).toFixed(2) 
+                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.tw).toFixed(2) == parseFloat(webThickness).toFixed(2) 
                     && parseFloat(obj.tf).toFixed(2) == parseFloat(flangeThickness).toFixed(2) 
                     && parseFloat(obj.r).toFixed(2) == parseFloat(radius).toFixed(2)) {
@@ -275,7 +275,7 @@ async function findProfile() {
             return Promise.all(parseCSV(text).forEach(async obj => {
                 if (
                     parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWdith).toFixed(2) 
+                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
@@ -295,7 +295,7 @@ async function findProfile() {
         .catch(error => console.error("Error loading CSV:", error)));
         fetchPromises.push(promise);
     }
-    else if (profileType == 'M' && height == flangeWdith) {
+    else if (profileType == 'M' && height == flangeWidth) {
         profileType = 'SHS';
         fetchPromises.push(fetch('data/SHS.csv')
         .then(response => response.text())
@@ -321,7 +321,7 @@ async function findProfile() {
         })
         .catch(error => console.error("Error loading CSV:", error)));
     }
-    else if (profileType == 'M' && height != flangeWdith) {
+    else if (profileType == 'M' && height != flangeWidth) {
         profileType = 'RHS';
         fetchPromises.push(fetch('data/RHS.csv')
         .then(response => response.text())
@@ -329,7 +329,7 @@ async function findProfile() {
             return Promise.all(parseCSV(text).forEach(async (obj, index) => {
                 if (
                     parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWdith).toFixed(2) 
+                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
@@ -355,7 +355,7 @@ async function findProfile() {
         .then(text => {
             return Promise.all(parseCSV(text).forEach(async (obj, index) => {
                 if (
-                    parseFloat(obj.od).toFixed(2) == parseFloat(flangeWdith).toFixed(2) 
+                    parseFloat(obj.od).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
@@ -380,7 +380,7 @@ async function findProfile() {
         .then(response => response.text())
         .then(text => {
             return Promise.all(parseCSV(text).forEach(async (obj, index) => {
-                if (parseFloat(obj.od).toFixed(2) == parseFloat(flangeWdith).toFixed(2)) {
+                if (parseFloat(obj.od).toFixed(2) == parseFloat(flangeWidth).toFixed(2)) {
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
                     await new Promise(resolve => {
