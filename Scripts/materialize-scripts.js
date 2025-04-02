@@ -50,7 +50,9 @@ document.addEventListener('DOMContentLoaded', function () {
     M.Tooltip.init(tooltips);
 
     // Fix event delegation for dropdown buttons
-    document.getElementById('viewsDropdown').addEventListener('click', function (event) {
+    let viewsDropdown = document.getElementById('viewsDropdown');
+    if (!viewsDropdown) return;
+    viewsDropdown.addEventListener('click', function (event) {
         if (event.target.classList.contains('viewSwitch')) {
             let view = event.target.dataset.view; //Get the view name
             switchView(view, event.target);

@@ -163,3 +163,19 @@ document.addEventListener('keydown', function (e) {
     if(e.key.toLowerCase() === 'u') document.querySelector(`.viewSwitch[data-view="u"]`).click();
     if(e.key.toLowerCase() === 'h') document.querySelector(`.viewSwitch[data-view="h"]`).click();
 });
+
+function loadProfilesPage(){
+    sessionStorage.setItem("filePairs", JSON.stringify(Object.fromEntries(filePairs)));
+    sessionStorage.setItem("selectedFile", selectedFile);
+    window.location.href = "profiles.html";
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    if (filePairs != {}) {
+        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true); //Load saved files in session
+    }
+    if (selectedFile != '') {
+        selectedFile = sessionStorage.getItem('selectedFile');
+        selectFile(selectedFile); //Select saved selectedFile in session
+    }
+});

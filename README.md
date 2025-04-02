@@ -1,17 +1,27 @@
 # OpenSteel
-## _DSTV Viewer Made with Love_
 
-OpenSteel is a web app for viewing DSTV (.nc and .nc1) files made with HTML, CSS, and JS according to __STANDARD DESCRIPTION FOR STEEL STRUCTURE PIECES FOR THE NUMERICAL CONTROL, July 1998, 7. ST Edition__.
+## _A DSTV Viewer and Steel Profile Library_
+
+OpenSteel is a web app that not only allows you to view DSTV files but also provides a steel profile library for easy access to standard steel profiles. Built with HTML, CSS, and JavaScript, OpenSteel is an open-source, lightweight web app designed to help engineers and fabricators.
+
+## Table of Contents
+
+- [Features](#features)
+- [Supported DSTV Blocks](#supported-dstv-blocks)
+- [Tech Stack](#tech-stack)
+- [File Structure](#file-structure)
+- [Some Functions Explained](#some-functions-explained)
+- [License](#license)
+- [Contributing](#contributing)
 
 ## Features
 
 - Import multiple DSTV (.nc and .nc1) files at once
 - Panning, zooming, and measuring functionality
-- Snap points for taking measurements
-- DSTV header data viewer
-- Hole data viewer
-
-OpenSteel is an open-source, lightweight web app with great functionality.
+- Snap points for precise measurements
+- DSTV header and hole data viewer
+- Steel profile library with common steel sections
+- Simple, easy-to-use interface
 
 ## Supported DSTV Blocks
 
@@ -24,19 +34,23 @@ OpenSteel supports parsing and rendering the following DSTV blocks:
 - **PU (Marking)** - Defines markings on the part for assembly guidance.
 - **KO (Marking)** - Similar to PU but for other specific markings.
 
-## Tech
+## Tech Stack
 
-OpenSteel uses pure HTML, CSS, and JS:
+OpenSteel is built using the following technologies:
 
-- [Materialize] - Framework for styling and adding responsive behavior
-- [Konva] - A JS API for creating stages and drawing on them
+- **HTML5** and **CSS3** for the structure and styling
+- **JavaScript** for functionality
+- **Materialize** for styling and responsive behavior
+- **Konva.js** for interactive canvas drawing
+- **jszip.js** for creating zip files
 
 ## File Structure
 
 ```
 project
 │   README.md
-│   index.html   
+│   index.html
+│   profiles.html 
 │
 └───Fonts
 │
@@ -51,6 +65,7 @@ project
 │   materialize-main.js    **Main Materialize script
 │   materialize-scripts.js **Initialize scripts for Materialize
 │   ncFileParser.js        **Handles file parsing
+│   profiles-main.js       **Handles the profile library functionality
 └───Styles
 │   main.css               **Main stylesheet
 │   materialize-icons.css  **Imports Materialize icons locally
@@ -67,7 +82,7 @@ project
 - `ncParseHoleData(line)` - Parses the hole data for DSTV files (BO block).
 - `ncParseMarksData(line, isStart)` - Parses the mark data for DSTV files (KO and PU blocks).
 - `ncParseNumerationsData(line)` - Parses the numbering data for DSTV files (SI block).
-- `addHoleData()` - Adds hole cards to index.html for viewing.
+- `addHoleData()` - Adds hole cards to `index.html` for viewing.
 - `ncHeaderFullyDefined()` - If the header data is sufficient for defining the part (no contour data), this function handles drawing the part.
 
 ### blocDrawer.js
@@ -81,3 +96,15 @@ project
 
 OpenSteel, Ahmed Mohamed Ragab.
 
+## Contributing
+
+We welcome contributions! If you'd like to contribute, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Make your changes.
+4. Commit your changes (`git commit -am 'Add new feature'`).
+5. Push to the branch (`git push origin feature-branch`).
+6. Create a new pull request.
+
+If you have any questions or need assistance, feel free to open an issue.
