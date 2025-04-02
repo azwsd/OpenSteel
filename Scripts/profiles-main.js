@@ -233,7 +233,8 @@ async function findProfile() {
     let fetchPromises = [];
 
     if (!(['I', 'U', 'L', 'M', 'RO', 'RU', 'C'].includes(profileType))) {
-        M.toast({html: 'Profile not supported!', classes: 'rounded toast-error', displayLength: 2000})
+        M.toast({html: 'Profile not supported!', classes: 'rounded toast-error', displayLength: 2000});
+        document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
         return;
     }
 
