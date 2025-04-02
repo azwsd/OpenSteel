@@ -1,5 +1,11 @@
 //Map containing fileName, filedata as text pairs
-let filePairs = new Map();
+let filePairs = new Map(Object.entries(JSON.parse(sessionStorage.getItem("filePairs") || "{}")));
+let selectedFile = sessionStorage.getItem("selectedFile") || "";
+
+function updateSessionData() {
+    sessionStorage.setItem("filePairs", JSON.stringify(Object.fromEntries(filePairs)));
+    sessionStorage.setItem("selectedFile", selectedFile);
+}
 
 //counter for files imported
 let fileCounter = 0;
@@ -49,6 +55,7 @@ function selectFile(file){
             el.classList.remove('selected-file');
         }
     });
+    selectedFile = file;
     //parses file header data and add it to the view
     ncParseHeaderData(filePairs.get(file));
     ncParseBlocData(filePairs.get(file));
@@ -59,6 +66,7 @@ function selectFile(file){
     addHoleData(); //Adds hole data to hole info tap
     document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
     document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
+    updateSessionData()
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
     let instance = M.Sidenav.getInstance(sideNav)
@@ -66,9 +74,9 @@ function selectFile(file){
 }
 
 //adds file to the html page
-function addFile(fileName, fileData, fileCount){
+function addFile(fileName, fileData, fileCount, isReload = false){
     //handles if the file already exists
-    if (filePairs.has(fileName))
+    if (filePairs.has(fileName) && !isReload)
     {
         M.toast({html: 'File already exists!', classes: 'rounded toast-warning', displayLength: 2000})
         return;
@@ -76,14 +84,14 @@ function addFile(fileName, fileData, fileCount){
 
     //Checks for ST and EN in the files
     const splitFileData = fileData.split('\n');
-    if (splitFileData[0].substring(0, 2) != 'ST')
+    if (splitFileData[0].substring(0, 2) != 'ST' && !isReload)
     {
         M.toast({html: 'Incorrect file structure!', classes: 'rounded toast-error', displayLength: 2000});
         return;
     }
 
     //adds file and its content as a key value pair in a map
-    filePairs.set(fileName, fileData);
+    if (!isReload) filePairs.set(fileName, fileData);
 
     let sideNavClearAll = document.getElementById('sideNavClearAll');
     let sideNavFiles = document.getElementById('mobile')
@@ -119,7 +127,8 @@ function addFile(fileName, fileData, fileCount){
     //adds or removes the files space holder
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
-    if (fileCounter == fileCount) selectFile(fileName);
+    if (fileCounter == fileCount && !isReload) selectFile(fileName);
+    updateSessionData()
 }
 
 //deletes file of pressed button
@@ -130,7 +139,7 @@ function deleteFile(btn, event){
     //deletes element from the map
     filePairs.delete(fileName);
     //checks if file is selected or not
-    let selectedFile = btn.closest('.viewFiles').classList.contains('selected-file');
+    let selectedFileDiv = btn.closest('.viewFiles').classList.contains('selected-file');
     //deletes the file from the view
     document.querySelectorAll('.fileDelete').forEach(el => {
         if (el.dataset.filename == fileName) el.closest('.viewFiles').remove();
@@ -138,7 +147,7 @@ function deleteFile(btn, event){
     //reset place holder if theres no files
     filesPlaceHolder();
     //clears the header data and views
-    if (selectedFile) {
+    if (selectedFileDiv) {
         clearHeaderData();
         clearAllViews();
         clearAllData();
@@ -146,7 +155,9 @@ function deleteFile(btn, event){
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
         document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
         document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
+        selectedFile = '';
     }
+    updateSessionData()
 }
 
 //clears all files
@@ -162,6 +173,7 @@ function clearAllFiles(){
         el.remove();
     });
     filePairs.clear(); //clears map
+    selectedFile = ''; //Clears stored selected file
     filesPlaceHolder(); //shows place holder
     clearHeaderData(); //clears the header data
     clearAllViews(); //clears the views
@@ -171,6 +183,7 @@ function clearAllFiles(){
     document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
     document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
+    updateSessionData()
 }
 
 //clicks a hidden insert element when the list item is clicked

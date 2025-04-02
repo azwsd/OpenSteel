@@ -20,7 +20,7 @@ html, body
     display: flex; 
     flex-direction:column;
 }
-#sideNavAboutMe
+.sideNavBottom
 {
     margin-top: auto;
 }
@@ -116,9 +116,6 @@ html, body
 {
     overflow: auto;
     position: relative;
-}
-#properties, #files
-{
     overflow-y: scroll;
     height: calc(100vh - 64px);
     overflow-wrap: break-word;
@@ -262,4 +259,84 @@ html, body
     flex: 1;
     position: relative;
     overflow: hidden; /* Ensures Konva does not overflow */
+}
+
+/*Profiles page styling*/
+#profileDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(-10%, 0);
+    height: auto;
+    box-sizing: border-box;
+}
+#profileContentDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+#profileContentDiv .col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+#profileContentDiv .col:first-child {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+#profileContentDiv a p {
+    display: inline;
+}
+#ProfileSelection, #profileData{
+    display: block;
+}
+#profileData {
+    height: 20vh;
+    border: 2px #311b92 solid;
+    border-radius: 1em;
+    width: 20vw;
+    overflow: auto;
+}
+#profileImage {
+    margin: auto;
+}
+.dropDownLimitHeight {
+    height: 25vh;
+}
+#profileImage img {
+    max-height: 50vh;
+    max-width: 60vw;
+    object-fit: contain;
+}
+#weightCalc {
+    width: 60vw;
+}
+#weightCalc input{
+    width: 15%;
+    margin-left: 5%;
+}
+#weightCalc a{
+    margin: 5%;
+}
+@media (max-width: 992px) {
+    #profileDiv {
+        justify-content: center;
+        align-items: center;
+        transform: none;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    #weightCalc {
+        width: 100vw;
+    }
+    #profileData {
+        width: 60vw;
+    }
 }
