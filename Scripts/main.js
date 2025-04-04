@@ -156,7 +156,7 @@ document.addEventListener('keydown', function (e) {
     if(e.key.toLowerCase() === 'p') activatePanTool();
     if(e.key.toLowerCase() === 'm') activateMeasureTool();
     if(e.key.toLowerCase() === 't') toggleSnapIndicators()
-    if(e.key.toLowerCase() === 'c') M.Modal.getInstance(document.getElementById('clearMeasurementsModal')).open();
+    if(e.key.toLowerCase() === 'c' && !e.ctrlKey) M.Modal.getInstance(document.getElementById('clearMeasurementsModal')).open();
     if(e.key.toLowerCase() === 'f') {
         document.getElementById('measurementTextTransform').click();
         document.getElementById('saveSettings').click();
