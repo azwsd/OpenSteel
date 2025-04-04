@@ -1,6 +1,10 @@
+//header data
+let headerData = [];
 //Map containing fileName, filedata as text pairs
 let filePairs = new Map(Object.entries(JSON.parse(sessionStorage.getItem("filePairs") || "{}")));
 let selectedFile = sessionStorage.getItem("selectedFile") || "";
+//Blocs
+let blocs = ['BO', 'SI', 'AK', 'IK', 'PU', 'KO', 'SC', 'TO', 'UE', 'PR', 'KA', 'EN']
 
 function updateSessionData() {
     sessionStorage.setItem("filePairs", JSON.stringify(Object.fromEntries(filePairs)));
@@ -63,6 +67,7 @@ function selectFile(file){
     selectedFile = file;
     ncParseHeaderData(filePairs.get(selectedFile));
     findProfile();
+    ncViewsImage(); //Shows the views image
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
     let instance = M.Sidenav.getInstance(sideNav)
@@ -142,6 +147,15 @@ function deleteFile(btn, event){
     });
     //reset place holder if theres no files
     filesPlaceHolder();
+    //clears the header data and views
+    if (selectedFileDiv) {
+        clearHeaderData();
+        clearAllViews();
+        clearAllData();
+        document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
+        document.getElementById('profileViewsImg').src = ''; //Clears profile image
+        selectedFile = '';
+    }
     updateSessionData()
 }
 
@@ -160,6 +174,9 @@ function clearAllFiles(){
     filePairs.clear(); //clears map
     selectedFile = ''; //Clears stored selected file
     filesPlaceHolder(); //shows place holder
+    clearHeaderData(); //clears the header data
+    document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
+    document.getElementById('profileViewsImg').src = ''; //clears views img
     updateSessionData()
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
@@ -170,6 +187,50 @@ function insert_file(btn){
     M.Tooltip.getInstance(btn).close(); //Closes the tooltip
 };
 
+function clearHeaderData() {
+    const properties = document.querySelectorAll("#properties div");
+    properties.forEach(property => {
+        let pElement = property.querySelector('p');
+        if (pElement) {
+            pElement.innerHTML = 'N/A';
+        }
+    });
+}
+
+function ncViewsImage(){
+    const profileCode = document.getElementById('Code').querySelector('p:first-of-type').innerHTML.slice(0, 1);
+    const img = document.getElementById('profileViewsImg');
+    switch (profileCode) {
+        case 'I':
+            img.src = 'Images/Views/I.png';
+            break;
+        case 'RO':
+        case 'RU':
+            img.src = 'Images/Views/R.png';
+            break;
+        case 'U':
+            img.src = 'Images/Views/U.png';
+            break;
+        case 'B':
+            img.src = 'Images/Views/B.png';
+            break;
+        case 'L':
+            img.src = 'Images/Views/L.png';
+            break;
+        case 'C':
+            img.src = 'Images/Views/C.png';
+            break;
+        case 'M':
+            img.src = 'Images/Views/M.png';
+            break;
+        case 'T':
+            img.src = 'Images/Views/T.png';
+            break;
+        default:
+            img.src = '';
+            break;   
+    } 
+}
 
 fileInput.addEventListener("change", async (event) => {
     //reset file counter
@@ -193,10 +254,12 @@ fileInput.addEventListener("change", async (event) => {
 });
 
 //Parses the header of DSTV file
-let headerData = [];
 function ncParseHeaderData(fileData){
     const splitFileData = fileData.split('\n');
+    const properties = document.querySelectorAll("#properties #tab1 div");
     headerData = []
+    //clears header data array
+    headerData.length = 0;
     let lineCounter = 0;
     let isFirstIteration = true;
     for (line of splitFileData)
@@ -204,7 +267,7 @@ function ncParseHeaderData(fileData){
         //removes the leading spaces
         line = line.trimStart();
         //reads only the first 24 lines
-        if (lineCounter == 19) break;
+        if (lineCounter == 24) break;
         //removes ST line and comment line
         if(isFirstIteration || line.slice(0, 2) == '**') {
             isFirstIteration = false;
@@ -212,202 +275,22 @@ function ncParseHeaderData(fileData){
         };
         //removes comments from any line
         line = line.split('**')[0];
+        //Check if there are blocs in the header
+        if (blocs.includes(line.slice(0, 2)) && line.slice(2, 1) == ' ')
+            {
+                M.toast({html: 'File header contains an error!', classes: 'rounded toast-warning', displayLength: 2000});
+                break;
+            }
+            //Empty text info handler
+            if (lineCounter > 19 && line.length == 0) line = 'N/A';
+            //Writes part properties to properties div
+            properties[lineCounter].querySelector('p').innerHTML = line;
         //Removes \r from the end of string
         line = line.replace(/\r$/, '');
         headerData.push(line);
         lineCounter++;
     }
 };
-
-async function findProfile() {
-    const quantity = Number(headerData[5]);
-    const profileType = headerData[7].toUpperCase();
-    const length = headerData[8];
-    const height = headerData[9];
-    const flangeWidth = headerData[10];
-    const flangeThickness = headerData[11];
-    const webThickness = headerData[12];
-    const radius = headerData[13];
-    //Handle missing profile data in database
-    let profileFound = false;
-    let fetchPromises = [];
-
-    if (!(['I', 'U', 'L', 'M', 'RO', 'RU', 'C'].includes(profileType))) {
-        M.toast({html: 'Profile not supported!', classes: 'rounded toast-error', displayLength: 2000});
-        document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
-        return;
-    }
-
-    //Convert DSTV profile type to standard type
-    if (profileType == 'I' || profileType == 'U' || profileType == 'C') {
-        csvPath = profileType == 'I' ? 'data/I.csv' : 'data/U.csv';
-        fetchPromises.push(fetch(csvPath)
-        .then(response => response.text())
-        .then(text => {
-            return Promise.all(parseCSV(text).forEach(async obj => {
-                if (
-                    parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
-                    && parseFloat(obj.tw).toFixed(2) == parseFloat(webThickness).toFixed(2) 
-                    && parseFloat(obj.tf).toFixed(2) == parseFloat(flangeThickness).toFixed(2) 
-                    && parseFloat(obj.r).toFixed(2) == parseFloat(radius).toFixed(2)) {
-                    profileFound = true;
-                    await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[Number(obj.localIndex)].click();
-                }
-            }));
-        })
-        .catch(error => console.error("Error loading CSV:", error)));
-    }
-    if (profileType == 'L') {
-        fetchPromises.push(fetch('data/L.csv')
-        .then(response => response.text())
-        .then(text => {
-            return Promise.all(parseCSV(text).forEach(async obj => {
-                if (
-                    parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
-                    && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
-                    profileFound = true;
-                    await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[Number(obj.localIndex)].click();
-                }
-            }));
-        })
-        .catch(error => console.error("Error loading CSV:", error)));
-        fetchPromises.push(promise);
-    }
-    else if (profileType == 'M' && height == flangeWidth) {
-        profileType = 'SHS';
-        fetchPromises.push(fetch('data/SHS.csv')
-        .then(response => response.text())
-        .then(text => {
-            return Promise.all(parseCSV(text).forEach(async (obj, index) => {
-                if (
-                    parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
-                    profileFound = true;
-                    await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
-                }
-            }));
-        })
-        .catch(error => console.error("Error loading CSV:", error)));
-    }
-    else if (profileType == 'M' && height != flangeWidth) {
-        profileType = 'RHS';
-        fetchPromises.push(fetch('data/RHS.csv')
-        .then(response => response.text())
-        .then(text => {
-            return Promise.all(parseCSV(text).forEach(async (obj, index) => {
-                if (
-                    parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
-                    && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
-                    && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
-                    profileFound = true;
-                    await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
-                }
-            }));
-        })
-        .catch(error => console.error("Error loading CSV:", error)));
-    }
-    else if (profileType == 'RO') {
-        profileType = 'CHS';
-        fetchPromises.push(fetch('data/CHS.csv')
-        .then(response => response.text())
-        .then(text => {
-            return Promise.all(parseCSV(text).forEach(async (obj, index) => {
-                if (
-                    parseFloat(obj.od).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
-                    && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
-                    profileFound = true;
-                    await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
-                }
-            }));
-        })
-        .catch(error => console.error("Error loading CSV:", error)));
-    }
-    else if (profileType == 'RU') {
-        profileType = 'Round';
-        fetchPromises.push(fetch('data/round.csv')
-        .then(response => response.text())
-        .then(text => {
-            return Promise.all(parseCSV(text).forEach(async (obj, index) => {
-                if (parseFloat(obj.od).toFixed(2) == parseFloat(flangeWidth).toFixed(2)) {
-                    profileFound = true;
-                    await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
-                }
-            }));
-        })
-        .catch(error => console.error("Error loading CSV:", error)));
-    }
-    // Wait for all fetch operations to complete
-    await Promise.all(fetchPromises);
-    if (!profileFound) {
-        handleMissingProfile();
-    }
-    else {
-        document.getElementById('Length').value = length; //Set length value to length of DSTV part
-        document.getElementById('Quantity').value = quantity; //Set quantity value to quantity of DSTV part
-    }
-}
 
 function handleMissingProfile() {
     document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
@@ -436,105 +319,6 @@ document.addEventListener('DOMContentLoaded', function(){
         selectFile(selectedFile); //Select saved selectedFile in session
     }
 });
-
-let csvData = [];
-let csvPath = '';
-let loadedProfile = '';
-let loadedProfileCode = '';
-function loadSubProfiles(btn) {
-    return new Promise(resolve => {
-        if (typeof btn === "object") {
-            var profile = btn.innerHTML;
-            var instance = M.Dropdown.getInstance(document.getElementById('profileDropdownBtn'));
-            instance.close();
-        }
-        else var profile = btn;
-        
-        const img = document.querySelector('#profileImage img');
-        //If a new profile type is selected it removes profile data content
-        if (loadedProfileCode != profile) {
-            loadedProfileCode = profile;
-            document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
-        }
-        if (['IPE', 'HE', 'M', 'W', 'UB', 'H-JS', 'H-KS', 'IPN', 'S', 'J', 'IB', 'HD', 'UC', 'HP', 'UBP'].includes(profile)) {
-            //If a new profile type is selected it removes profile data content
-            if (loadedProfile != 'I') {
-                loadedProfile = 'I';
-                document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
-            }
-            csvPath = 'data/I.csv';
-            img.src = 'Images/Profiles/I.png';
-        }
-        else if (['UPE', 'PFC', 'UPN', 'U', 'C', 'MC', 'CH', 'CN', 'TFC'].includes(profile)) {
-            loadedProfile = 'U';
-            csvPath = 'data/U.csv';
-            img.src = 'Images/Profiles/U.png';
-        }
-        else if (['EA', 'UA'].includes(profile)) {
-            loadedProfile = 'L';
-            csvPath = 'data/L.csv';
-            img.src = 'Images/Profiles/L.png';
-        }
-        else if (profile == 'Rebar') {
-            loadedProfile = 'Rebar';
-            csvPath = 'data/rebar.csv';
-            img.src = 'Images/Profiles/round.png';
-        }
-        else if (profile == 'CHS') {
-            loadedProfile = 'CHS';
-            csvPath = 'data/CHS.csv';
-            img.src = 'Images/Profiles/CHS.png';
-        }
-        else if (profile == 'Flat') {
-            loadedProfile = 'Flat';
-            csvPath = 'data/flat.csv';
-            img.src = 'Images/Profiles/flat.png';
-        }
-        else if (profile == 'Square') {
-            loadedProfile = 'Square';
-            csvPath = 'data/square.csv';
-            img.src = 'Images/Profiles/square.png';
-        }
-        else if (profile == 'Round') {
-            loadedProfile = 'Round';
-            csvPath = 'data/round.csv';
-            img.src = 'Images/Profiles/round.png';
-        }
-        else if (profile == 'RHS') {
-            loadedProfile = 'RHS';
-            csvPath = 'data/RHS.csv';
-            img.src = 'Images/Profiles/SHS.png';
-        }
-        else if (profile == 'SHS') {
-            loadedProfile = 'SHS';
-            csvPath = 'data/SHS.csv';
-            img.src = 'Images/Profiles/SHS.png';
-        }
-        else {
-            M.toast({html: 'Profile not supported!', classes: 'rounded toast-error', displayLength: 2000})
-            img.src = 'Images/Profiles/no-profile.png';
-            document.getElementById('profileSizeDropdown').innerHTML = '<a class="deep-purple-text lighten-3">Please select a profile!</a>';
-            document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
-            return;
-        }
-        fetch(csvPath)
-            .then(response => response.text())
-            .then(text => {
-                csvData = parseCSV(text).filter(row => row.profileCode == profile);
-    
-                const profileSizeDropdown = document.getElementById('profileSizeDropdown');
-                profileSizeDropdown.innerHTML = ""; //Clear profile size dropdown
-                csvData.forEach((obj, index) => {
-                    const item = document.createElement('li');
-                    const profileID = getProfileID(obj);
-                    item.innerHTML = `<a class="deep-purple-text lighten-3" data-index="${index}" onclick="loadProfile(this)">${profileID}</a>`;
-                    profileSizeDropdown.appendChild(item);
-                });
-            })
-            .catch(error => console.error("Error loading CSV:", error));
-        resolve();
-    })
-}
 
 function getProfileID(obj) {
     switch (loadedProfile) {
