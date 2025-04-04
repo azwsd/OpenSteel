@@ -162,6 +162,7 @@ function drawContours() {
                 angle: arcAngle,
                 stroke: 'black',
                 rotation: rotationAngle,
+                clockwise: false,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -214,6 +215,7 @@ function drawContours() {
                 angle: arcAngle,
                 stroke: 'black',
                 rotation: rotationAngle, 
+                clockwise: false,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -574,8 +576,8 @@ function switchView(view, btn) {
 }
 
 //Create a snap indicator point in a view at x, y
-let snapSize = 2;
-let snapPointColor = '#FF0000';
+let snapSize = localStorage.getItem("snapSize") || 2;
+let snapPointColor = localStorage.getItem("snapPointColor") || '#FF0000';
 function addSnapIndicator(x, y, view, color=snapPointColor, name='snap-indicator') {
     let snapLayer = snapLayers[view]; //Use snap layer for the active view
 
@@ -595,7 +597,7 @@ function addSnapIndicator(x, y, view, color=snapPointColor, name='snap-indicator
 }
 
 //Adds origin points to each view
-let originPointColor = '#008000';
+let originPointColor = localStorage.getItem("originPointColor") || '#008000';
 function addOriginPoints(){
     for(view of views) {
         let layer = layers[view];

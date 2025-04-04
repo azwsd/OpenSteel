@@ -203,6 +203,14 @@ document.getElementById("saveSettings").addEventListener("click", function() {
 
         layer.batchDraw(); //Redraw layer after updates
     });
+    //Save settings to local storage
+    localStorage.setItem("snapSize", snapSize);
+    localStorage.setItem("snapDistance", snapDistance);
+    localStorage.setItem("snapPointColor", snapPointColor);
+    localStorage.setItem("originPointColor", originPointColor);
+    localStorage.setItem("measurementColor", measurementColor);
+    localStorage.setItem("measurementTextColor", measurementTextColor);
+    localStorage.setItem("resizeVisable", resizeVisable);
 });
 
 //Track active measurement state
@@ -271,9 +279,9 @@ function handleMouseMove(stage, e) {
 }
 
 //measure distance between two points
-let measurementColor = '#808080';
-let measurementTextColor = '#008000';
-let resizeVisable = false;
+let measurementColor = localStorage.getItem("measurementColor") || '#808080';
+let measurementTextColor = localStorage.getItem("measurementTextColor") || '#008000';
+let resizeVisable = localStorage.getItem("resizeVisable") || false;
 let measurementCounter = 0;
 function measureDistance(start, end, view, isRedrawing, index) {
     const mLayer = measurementLayers[view];
