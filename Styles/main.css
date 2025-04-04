@@ -13,7 +13,10 @@ html, body
     font-size: 2rem;
     font-weight: bold;
 }
-
+.materialboxed.active & .materialbox-overlay {
+    z-index: 9999 !important; /* Ensure the overlay is above other elements */
+    position: fixed !important;
+}
 /*Make the about me button in the mobile navbar at the bottom*/
 #mobile
 {
@@ -137,7 +140,6 @@ html, body
 {
     color: black;
 }
-
 .tabs
 {
     position: sticky;
@@ -145,7 +147,7 @@ html, body
     z-index: 10;
 }
 .tabs .indicator {
-    background-color: black; /* Change this to your desired color */
+    background-color: black;
 }
 
 /*Styles the div created dynamically for hole data*/
@@ -266,7 +268,6 @@ html, body
     display: flex;
     justify-content: center;
     align-items: center;
-    transform: translate(-10%, 0);
     height: auto;
     box-sizing: border-box;
 }
@@ -306,13 +307,14 @@ html, body
 }
 #profileImage {
     margin: auto;
+    padding: 0;
 }
 .dropDownLimitHeight {
     height: 25vh;
 }
 #profileImage img {
-    max-height: 50vh;
-    max-width: 60vw;
+    max-height: 40vh;
+    max-width: 40vw;
     object-fit: contain;
 }
 #weightCalc {
@@ -329,9 +331,9 @@ html, body
     #profileDiv {
         justify-content: center;
         align-items: center;
-        transform: none;
         margin-left: auto;
         margin-right: auto;
+        height: auto;
     }
     #weightCalc {
         width: 100vw;
