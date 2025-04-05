@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function (){
     document.getElementById('originPointColor').value = originPointColor;
     document.getElementById('measurementColor').value = measurementColor;
     document.getElementById('measurementTextColor').value = measurementTextColor;
-    document.getElementById('measurementTextTransform').checked = resizeVisable;
+    document.getElementById('measurementTextTransform').checked = resizeVisible;
 });
 
 document.getElementById("saveSettings").addEventListener("click", function() {
@@ -158,7 +158,7 @@ document.getElementById("saveSettings").addEventListener("click", function() {
     originPointColor = document.getElementById('originPointColor').value;
     measurementColor = document.getElementById('measurementColor').value;
     measurementTextColor = document.getElementById('measurementTextColor').value;
-    resizeVisable = document.getElementById('measurementTextTransform').checked;
+    resizeVisible = document.getElementById('measurementTextTransform').checked;
 
     //Iterate over all measurement layers
     Object.values(measurementLayers).forEach(layer => {
@@ -169,14 +169,14 @@ document.getElementById("saveSettings").addEventListener("click", function() {
             if (node.className === "Line") node.stroke(measurementColor); //Change Line color
             else if (node.className === "Text") {
                 node.fill(measurementTextColor); //Change text color
-                node.draggable(resizeVisable); //Change draggable status
+                node.draggable(resizeVisible); //Change draggable status
             }
         });
 
         //Iterate over all transformer for measuring lables
         const labelTransformers = layer.find('Transformer');
         labelTransformers.forEach(labelTransformer => {
-            resizeVisable == false ? labelTransformer.hide() : labelTransformer.show();
+            resizeVisible == false ? labelTransformer.hide() : labelTransformer.show();
         });
 
         layer.batchDraw(); //Redraw layer after updates
@@ -210,7 +210,7 @@ document.getElementById("saveSettings").addEventListener("click", function() {
     localStorage.setItem("originPointColor", originPointColor);
     localStorage.setItem("measurementColor", measurementColor);
     localStorage.setItem("measurementTextColor", measurementTextColor);
-    localStorage.setItem("resizeVisable", resizeVisable);
+    localStorage.setItem("resizeVisible", resizeVisible);
 });
 
 //Track active measurement state
@@ -281,7 +281,7 @@ function handleMouseMove(stage, e) {
 //measure distance between two points
 let measurementColor = localStorage.getItem("measurementColor") || '#808080';
 let measurementTextColor = localStorage.getItem("measurementTextColor") || '#008000';
-let resizeVisable = localStorage.getItem("resizeVisable") || false;
+let resizeVisible = localStorage.getItem("resizeVisible") === "true" ? true : false;
 let measurementCounter = 0;
 function measureDistance(start, end, view, isRedrawing, index) {
     const mLayer = measurementLayers[view];
@@ -314,7 +314,7 @@ function measureDistance(start, end, view, isRedrawing, index) {
         fontSize: 30,
         fill: measurementTextColor,
         name: labelName,
-        draggable: resizeVisable,
+        draggable: resizeVisible,
         rotation: angleDeg
     });
 
@@ -325,7 +325,7 @@ function measureDistance(start, end, view, isRedrawing, index) {
         rotateEnabled: true, //allows rotation
         enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], //anchors for scaling, if desired
     });
-    resizeVisable == false ? labelTransformer.hide() : labelTransformer.show();
+    resizeVisible == false ? labelTransformer.hide() : labelTransformer.show();
 
     line.strokeScaleEnabled(false);
     label.perfectDrawEnabled(false);
