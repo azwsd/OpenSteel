@@ -172,7 +172,6 @@ function clearAllFiles(){
     selectedFile = ''; //Clears stored selected file
     filesPlaceHolder(); //shows place holder
     clearHeaderData(); //clears the header data
-    document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
     document.getElementById('profileViewsImg').src = ''; //clears views img
     updateSessionData()
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
