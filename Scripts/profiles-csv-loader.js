@@ -29,7 +29,7 @@ async function findProfile() {
             const promises = csv.map(async obj => {
                 if (
                     (obj.name.toUpperCase().replace(/ /g,'') == profileName) ||
-                    (obj.alt != '' && obj.alt.toUpperCase().replace(/ /g,'') == profileName) ||
+                    (obj.alt != undefined && obj.alt != '' && obj.alt.toUpperCase().replace(/ /g,'') == profileName) ||
                     (parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
                     && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.tw).toFixed(2) == parseFloat(webThickness).toFixed(2) 
