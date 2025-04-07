@@ -1,6 +1,7 @@
 
 async function findProfile() {
     const quantity = Number(headerData[5]);
+    const profileName = headerData[6].toUpperCase().replace(/ /g,''); 
     const profileType = headerData[7].toUpperCase();
     const length = headerData[8];
     const height = headerData[9];
@@ -27,11 +28,13 @@ async function findProfile() {
             const csv = parseCSV(text);
             const promises = csv.map(async obj => {
                 if (
-                    parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
+                    (obj.name.toUpperCase().replace(/ /g,'') == profileName) ||
+                    (obj.alt != '' && obj.alt.toUpperCase().replace(/ /g,'') == profileName) ||
+                    (parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
                     && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.tw).toFixed(2) == parseFloat(webThickness).toFixed(2) 
                     && parseFloat(obj.tf).toFixed(2) == parseFloat(flangeThickness).toFixed(2) 
-                    && parseFloat(obj.r).toFixed(2) == parseFloat(radius).toFixed(2)) {
+                    && parseFloat(obj.r).toFixed(2) == parseFloat(radius).toFixed(2))) {
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
                     await new Promise(resolve => {
