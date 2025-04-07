@@ -162,7 +162,7 @@ function drawContours() {
                 angle: arcAngle,
                 stroke: 'black',
                 rotation: rotationAngle,
-                clockwise: false,
+                clockwise: true,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -215,7 +215,7 @@ function drawContours() {
                 angle: arcAngle,
                 stroke: 'black',
                 rotation: rotationAngle, 
-                clockwise: false,
+                clockwise: true,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
