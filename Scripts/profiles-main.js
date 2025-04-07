@@ -150,8 +150,6 @@ function deleteFile(btn, event){
     //clears the header data and views
     if (selectedFileDiv) {
         clearHeaderData();
-        clearAllViews();
-        clearAllData();
         document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
         selectedFile = '';
