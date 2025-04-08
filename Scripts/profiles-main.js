@@ -150,6 +150,10 @@ function deleteFile(btn, event){
     //clears the header data and views
     if (selectedFileDiv) {
         clearHeaderData();
+        document.getElementById('profileData').innerHTML = 'please select a profile and a size!'; //Clears profile data
+        document.getElementById('Length').value = ''; //Clears length input
+        document.getElementById('Quantity').value = ''; //Clears quantity input
+        document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
         selectedFile = '';
     }
@@ -172,8 +176,12 @@ function clearAllFiles(){
     selectedFile = ''; //Clears stored selected file
     filesPlaceHolder(); //shows place holder
     clearHeaderData(); //clears the header data
+    document.getElementById('profileData').innerHTML = 'please select a profile and a size!'; //Clears profile data
+    document.getElementById('Length').value = ''; //Clears length input
+    document.getElementById('Quantity').value = ''; //Clears quantity input
+    document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
     document.getElementById('profileViewsImg').src = ''; //clears views img
-    updateSessionData()
+    updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
 
