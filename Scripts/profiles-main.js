@@ -515,3 +515,28 @@ function calcWeight() {
     }
     M.toast({html: `Weight: ${weight} Kg`, classes: 'rounded toast-success', displayLength: 2000});
 }
+
+document.addEventListener('keydown', function (e) {
+    if(e.key === 'ArrowUp') { //Detect arrow up
+        e.preventDefault(); //Prevent default browser save behavior
+        let fileElements = document.querySelectorAll('.viewFiles');
+        let selectedIndex = -1;
+    
+        fileElements.forEach((el, index) => {
+            if (el.classList.contains('selected-file')) selectedIndex = index;
+        });
+        // Select next file if available
+        if (selectedIndex !== -1 && selectedIndex - 1 > -1) fileElements[selectedIndex - 1].click();
+    }
+    else if(e.key === 'ArrowDown') { //Detect arrow down
+        e.preventDefault(); //Prevent default browser save behavior
+        let fileElements = document.querySelectorAll('.viewFiles');
+        let selectedIndex = -1;
+    
+        fileElements.forEach((el, index) => {
+            if (el.classList.contains('selected-file')) selectedIndex = index;
+        });
+        // Select next file if available
+        if (selectedIndex !== -1 && selectedIndex + 1 < fileElements.length) fileElements[selectedIndex + 1].click();
+    }
+});
