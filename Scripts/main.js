@@ -65,6 +65,11 @@ function downloadActiveViews() {
     M.Sidenav.getInstance(document.getElementById('mobile')).close(); //Closes side nav
 }
 
+function clickHoleData() {
+    let btn = document.querySelector('#properties .tabs > li:nth-child(2) a');
+    if(!btn.classList.contains('active')) btn.click();
+}
+
 //Download all views when ctrl + s is pressed
 document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.key === 's') { //Detect Ctrl + S
@@ -88,6 +93,7 @@ document.addEventListener('keydown', function (e) {
         let fileElements = document.querySelectorAll('.viewFiles');
         let selectedIndex = -1;
     
+        clickHoleData()
         fileElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
@@ -99,6 +105,7 @@ document.addEventListener('keydown', function (e) {
         let fileElements = document.querySelectorAll('.viewFiles');
         let selectedIndex = -1;
     
+        clickHoleData()
         fileElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
