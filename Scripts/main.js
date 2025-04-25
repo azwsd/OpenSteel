@@ -93,7 +93,6 @@ document.addEventListener('keydown', function (e) {
         let fileElements = document.querySelectorAll('.viewFiles');
         let selectedIndex = -1;
     
-        clickHoleData()
         fileElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
@@ -105,7 +104,6 @@ document.addEventListener('keydown', function (e) {
         let fileElements = document.querySelectorAll('.viewFiles');
         let selectedIndex = -1;
     
-        clickHoleData()
         fileElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
@@ -117,6 +115,7 @@ document.addEventListener('keydown', function (e) {
         let holeElements = document.querySelectorAll('.holeCard');
         let selectedIndex = -1;
     
+        clickHoleData()
         holeElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
@@ -129,6 +128,7 @@ document.addEventListener('keydown', function (e) {
         let holeElements = document.querySelectorAll('.holeCard');
         let selectedIndex = -1;
     
+        clickHoleData()
         holeElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
