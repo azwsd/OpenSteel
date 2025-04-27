@@ -433,7 +433,7 @@ function changeMeasurementColor(measurementDiv) {
     for (let view of views) {
         let layer = measurementLayers[view];
         let measurementLines = layer.find(node => node.name().startsWith('measurement-text-'));
-        measurementLines.forEach(text => text.fill('green'));
+        measurementLines.forEach(text => text.fill(measurementTextColor));
     }
     //Removes sletected file class from every container div
     let divs = document.querySelectorAll('.measurement-container');

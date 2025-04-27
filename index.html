@@ -22,11 +22,13 @@
                     <ul class="left hide-on-med-and-down">
                         <li><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
                         <li><a href="#" onclick="loadProfilesPage()" class="waves-effect float-left">Profiles library</a></li>
+                        <li><a href="#" onclick="loadNestingPage()" class="waves-effect float-left">Linear nesting</a></li>
                         <li><a href="#shortcuts" data-target="shortcutsModal" class="waves-effect modal-trigger">Shortcuts</a></li>
                     </ul>
                     <div id="logo">OpenSteel</div>
                     <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
                     <ul class="right hide-on-med-and-down">
+                        <li><a href="#" onclick="loadNestingPage()" class="waves-effect float-left">Linear nesting</a></li>
                         <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
                     </ul>
                 </div>
@@ -35,12 +37,13 @@
         <!--About me modal-->
         <div id="aboutMeModal" class="modal">
             <div class="modal-content">
-              <h4>Welcome to OpenSteel</h4>
+                <h4>Welcome to OpenSteel</h4>
                 <p>An open-source project crafted with care by <b>Ahmed Mohamed Ragab</b>.</p>
                 <p>OpenSteel is designed to simplify the workflow of professionals in steel detailing, CNC machining, and structural steel fabrication by providing an intuitive interface to view and explore <b>DSTV (.nc/.nc1)</b> files.</p>
                 <p>In addition to NC file visualization, OpenSteel includes a comprehensive <b>Steel Profile Library</b>, allowing you to browse and reference standard steel sections with ease.</p>
-                <p>Whether you're inspecting part geometry or working with steel profiles, OpenSteel brings clarity and convenience to your everyday tasks.</p>
-              <div class="modal-footer">
+                <p>OpenSteel also performs <b>linear nesting</b> from user input and/or loaded DSTV files, optimizing material usage for your fabrication projects.</p>
+                <p>Whether you're inspecting part geometry, working with steel profiles, or optimizing material utilization through nesting, OpenSteel brings clarity and convenience to your everyday tasks.</p>
+            <div class="modal-footer">
                 <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
               </div>
             </div>

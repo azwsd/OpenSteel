@@ -307,6 +307,12 @@ function loadIndexPage(){
     window.location.href = "index.html";
 }
 
+function loadNestingPage(){
+    sessionStorage.setItem("filePairs", JSON.stringify(Object.fromEntries(filePairs)));
+    sessionStorage.setItem("selectedFile", selectedFile);
+    window.location.href = "nesting.html";
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     //Fill profile codes into view
     for (profile of profileCodes) {

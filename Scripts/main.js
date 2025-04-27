@@ -181,6 +181,12 @@ function loadProfilesPage(){
     window.location.href = "profiles.html";
 }
 
+function loadNestingPage(){
+    sessionStorage.setItem("filePairs", JSON.stringify(Object.fromEntries(filePairs)));
+    sessionStorage.setItem("selectedFile", selectedFile);
+    window.location.href = "nesting.html";
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     if (filePairs != {}) {
         for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true); //Load saved files in session

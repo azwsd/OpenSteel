@@ -113,6 +113,9 @@ html, body
 .measurement-container a {
     margin-right: 5px;
 }
+.row {
+  margin-bottom: 0;
+}
 
 /*file and properties sections style*/
 #files, #properties
@@ -208,6 +211,13 @@ html, body
         max-width: none !important;
     }
 }
+@media (min-width: 993px) { 
+  html, body
+  {
+      overflow-y: hidden;
+  }
+}
+
 
 /*Centers materialize floating buttons*/
 .btn-floating
@@ -341,4 +351,290 @@ html, body
     #profileData {
         width: 60vw;
     }
+}
+
+/*Linear nesting page*/
+#nestingDiv {
+  height: calc(100vh - 64px);
+  overflow-y: scroll;
+}
+
+/* Tables */
+.responsive-table {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+  
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+  
+table th, table td {
+  padding: 0.75rem;
+}
+  
+@media only screen and (max-width: 992px) {
+  table.responsive-table thead {
+    display: none;
+  }
+    
+  table.responsive-table tr {
+    display: block;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 0.5rem;
+  }
+    
+  table.responsive-table td {
+    display: block;
+    text-align: right;
+    border-bottom: none;
+    position: relative;
+    padding-left: 50%;
+  }
+    
+  table.responsive-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0.75rem;
+    font-weight: bold;
+    text-align: left;
+  }
+}
+
+.bar-container {
+  position: relative;
+  height: 60px;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+}
+  
+.stock-bar {
+  position: relative;
+  height: 40px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.grip-segment {
+  position: absolute;
+  height: 100%;
+  background-color: #9e9e9e;
+  color: white;
+  text-align: center;
+  line-height: 40px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+  
+.piece-segment {
+  position: absolute;
+  height: 100%;
+  color: white;
+  text-align: center;
+  line-height: 40px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+  
+.saw-cut-segment {
+  position: absolute;
+  min-width: 2px;
+  z-index: 2;
+  height: 100%;
+  background-color: black;
+}
+  
+.offcut-segment {
+  position: absolute;
+  height: 100%;
+  background-color: #e0e0e0;
+  color: #616161;
+  text-align: center;
+  line-height: 40px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-left: 2px dashed #9e9e9e;
+}
+  
+.length-indicator {
+  position: relative;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #616161;
+  margin-top: 0.25rem;
+}
+  
+/* Nest Cards */
+.nest-card {
+  margin-bottom: 2rem;
+}
+  
+.nest-header {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+  
+.nest-header h5 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+  
+.nest-stats {
+  margin-bottom: 0;
+}
+  
+.stat-label {
+  font-weight: 500;
+}
+  
+.pieces-summary {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+  
+.pieces-summary h6 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+  
+.pieces-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+  
+.piece-item .chip {
+  margin: 0;
+}
+  
+/* Summary Cards */
+.summary-cards {
+  margin-top: 2rem;
+}
+  
+.summary-card {
+  margin-bottom: 1.5rem;
+}
+  
+.responsive-table-container {
+  overflow-x: auto;
+}
+  
+/* Optimization Settings */
+#optimize-config .card-panel {
+  padding: 1rem;
+}
+  
+/* Form Elements */
+.input-field {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+  
+.btn, .btn-large, .btn-floating {
+  margin: 0.25rem;
+}
+    
+/* Results Panel */
+#results .card-panel {
+  padding: 1rem;
+}
+  
+/* Media Queries */
+@media only screen and (max-width: 992px) {
+  .bar-container {
+    height: 50px;
+  }
+    
+  .stock-bar {
+    height: 30px;
+  }
+    
+  .piece-segment, .grip-segment, .offcut-segment {
+    line-height: 30px;
+    font-size: 0.7rem;
+  }
+    
+  .nest-stats .stat {
+    width: 50%;
+    float: left;
+    margin-bottom: 0.5rem;
+  }
+}
+  
+@media only screen and (max-width: 600px) {
+  /* Small screens */
+  .nest-stats .stat {
+    width: 100%;
+    float: none;
+  }
+    
+  .bar-container {
+    height: 40px;
+  }
+    
+  .stock-bar {
+    height: 25px;
+  }
+    
+  .piece-segment, .grip-segment, .offcut-segment {
+    line-height: 25px;
+    font-size: 0.6rem;
+  }
+    
+  /* Adjust padding for card panels on small screens */
+  .card-panel {
+    padding: 12px;
+  }
+}
+
+.custom-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #673ab7; /* Materialize deep-purple */
+  user-select: none;
+}
+
+.custom-checkbox-container {
+  display: inline-block;
+  margin: 10px 0;
+  font-family: inherit;
+  background-color: #673ab7;
+  height: 54px;
+  line-height: 54px;
+  font-size: 15px;
+  padding: 0 28px;
+  border-radius: 2px;
+}
+.custom-checkbox-container input[type="checkbox"] {
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+  vertical-align: middle;
+  margin-right: 5px;
+  appearance: checkbox;
+  -webkit-appearance: checkbox;
+  width: auto;
+  height: auto;
+}
+.custom-checkbox-container label {
+  cursor: pointer;
+  user-select: none;
+  color: white;
+  font-size: 15px;
 }

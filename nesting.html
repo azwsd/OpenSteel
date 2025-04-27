@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>OpenSteel</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--Include materialize and its fonts-->
+    <link rel="stylesheet" href="Styles/materialize-main.css">
+    <link rel="stylesheet" href="Styles/materialize-icons.css">
+    <!--include main style sheet-->
+    <link rel="stylesheet" href="Styles/main.css">
+    <!--Removes fav icon error-->
+    <link rel="shortcut icon" href="#">
+</head>
+<body>
+    <!-- fixed navigation bar-->     
+    <div class="navbar-fixed">
+        <nav>
+            <div class="nav-wrapper deep-purple darken-4">
+                <ul class="left hide-on-med-and-down">
+                    <li><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
+                    <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
+                    <li><a href="#!"  class="waves-effect float-left" onclick="loadProfilesPage()">Profiles library</a></li>
+                </ul>
+                <div id="logo">OpenSteel</div>
+                <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                <ul class="right hide-on-med-and-down">
+                    <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+    <!--About me modal-->
+    <div id="aboutMeModal" class="modal">
+        <div class="modal-content">
+            <h4>Welcome to OpenSteel</h4>
+                <p>An open-source project crafted with care by <b>Ahmed Mohamed Ragab</b>.</p>
+                <p>OpenSteel is designed to simplify the workflow of professionals in steel detailing, CNC machining, and structural steel fabrication by providing an intuitive interface to view and explore <b>DSTV (.nc/.nc1)</b> files.</p>
+                <p>In addition to NC file visualization, OpenSteel includes a comprehensive <b>Steel Profile Library</b>, allowing you to browse and reference standard steel sections with ease.</p>
+                <p>OpenSteel also performs <b>linear nesting</b> from user input and/or loaded DSTV files, optimizing material usage for your fabrication projects.</p>
+                <p>Whether you're inspecting part geometry, working with steel profiles, or optimizing material utilization through nesting, OpenSteel brings clarity and convenience to your everyday tasks.</p>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
+          </div>
+        </div>
+    </div>
+    <!--Clear all modal-->
+    <div id="clearAllModal" class="modal">
+        <div class="modal-content">
+          <h4>CLEAR ALL FILES!</h4>
+          <p><b>Are you sure you want to clear all files?</b></p>
+          <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-red btn red" onclick="clearAllFiles()">Yes</a>
+            <a href="#!" class="modal-close waves-effect waves-red btn green">No</a>
+          </div>
+        </div>
+    </div>  
+    <!--Mobile navbar-->
+    <ul class="sidenav" id="mobile">
+        <li><p class="filesPlaceHolder">Please insert a file/folder</p></li>
+        <li id="sideNavClearAll"><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
+        <ul class="sideNavBottom">
+            <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
+            <li><a href="#!"  class="waves-effect float-left" onclick="loadProfilesPage()">Profiles library</a></li>
+            <li><a href="#about-me" data-target="aboutMeModal" class="sidenav-close modal-trigger float-bottom">About me</a></li>
+        </ul>
+    </ul>
+
+    <main>
+        <div class="row">
+            <div class="col l2 hide-on-med-and-down deep-purple lighten-2" id="files">
+                <p class="filesPlaceHolder">Please insert a file/folder</p>
+            </div>
+            <div class="col l8 m12 s12" id="nestingDiv">
+                <div class="card-panel">
+                    <div class="section">
+                        <h5 class="deep-purple-text">Stock Items</h5>
+                        <div class="row">
+                            <div class="input-field col s12 m4">
+                                <input type="text" id="stock-profile" class="validate">
+                                <label for="stock-profile">Profile</label>
+                            </div>
+                            <div class="input-field col s12 m4">
+                                <input type="number" id="stock-length" value="12000" class="validate">
+                                <label for="stock-length" class="active">Length (mm)</label>
+                            </div>
+                            <div class="input-field col s12 m4">
+                                <input type="number" id="stock-amount" value="1" class="validate">
+                                <label for="stock-amount" class="active">Amount</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col s12">
+                                <button id="add-stock" class="waves-effect waves-light btn deep-purple">
+                                    <i class="material-icons left hide-on-small-only">add</i>
+                                    <i class="material-icons hide-on-med-and-up">add</i>
+                                    <span class="hide-on-small-only">Add Stock</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="responsive-table">
+                            <table id="stock-table" class="striped highlight">
+                                <thead>
+                                    <tr>
+                                        <th>Profile</th>
+                                        <th>Length (mm)</th>
+                                        <th>Amount</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="section">
+                        <h5 class="deep-purple-text">Piece Items</h5>
+                        <div class="row">
+                            <div class="input-field col s12 m3">
+                                <input type="text" id="piece-profile" class="validate">
+                                <label for="piece-profile">Profile</label>
+                            </div>
+                            <div class="input-field col s12 m3">
+                                <input type="number" id="piece-length" class="validate">
+                                <label for="piece-length">Length (mm)</label>
+                            </div>
+                            <div class="input-field col s12 m3">
+                                <input type="number" id="piece-amount" value="1" class="validate">
+                                <label for="piece-amount" class="active">Amount</label>
+                            </div>
+                            <div class="input-field col s12 m3">
+                                <input type="text" id="piece-label" placeholder="Defaults to length" class="validate">
+                                <label for="piece-label" class="active">Label (Optional)</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col s12">
+                                <button id="add-piece" class="waves-effect waves-light btn deep-purple">
+                                    <i class="material-icons left hide-on-small-only">add</i>
+                                    <i class="material-icons hide-on-med-and-up">add</i>
+                                    <span class="hide-on-small-only">Add Piece</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="responsive-table">
+                            <table id="piece-table" class="striped highlight">
+                                <thead>
+                                    <tr>
+                                        <th>Profile</th>
+                                        <th>Length (mm)</th>
+                                        <th>Amount</th>
+                                        <th>Label</th>
+                                        <th>Color</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="optimize-config" class="section">
+                        <h5 class="deep-purple-text">Optimization Settings</h5>
+                        <div class="card-panel">
+                          <div class="row">
+                            <!-- Shorter Length Preference -->
+                            <div class="col s12 m6 l4">
+                              <p>
+                                <label>
+                                    <input type="checkbox" id="shorter-length-preference"/>
+                                    <span>Prefer Shorter Stocks First</span>
+                                </label>
+                              </p>
+                            </div>
+                            
+                            <!-- Max Unique Pieces Per Stock -->
+                            <div class="col s12 m6 l4">
+                              <div class="input-field">
+                                    <input type="number" id="max-unique-labels" min="1" value="999" class="validate">
+                                    <label for="max-unique-labels" class="active">Max Unique Pieces Per Stock</label>
+                              </div>
+                            </div>
+                            
+                            <!-- Saw Width -->
+                            <div class="col s12 m6 l4">
+                              <div class="input-field">
+                                    <input type="number" id="saw-width" min="0" value="3" class="validate">
+                                    <label for="saw-width" class="active">Saw Width (mm)</label>
+                              </div>
+                            </div>
+                            
+                            <!-- Grip Start -->
+                            <div class="col s12 m6 l6">
+                              <div class="input-field">
+                                    <input type="number" id="grip-start" min="0" value="20" class="validate">
+                                    <label for="grip-start" class="active">Grip Start (mm)</label>
+                              </div>
+                            </div>
+                            
+                            <!-- Grip End -->
+                            <div class="col s12 m6 l6">
+                              <div class="input-field">
+                                    <input type="number" id="grip-end" min="0" value="20" class="validate">
+                                    <label for="grip-end" class="active">Grip End (mm)</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    
+                    <div class="section center-align">
+                        <button id="optimize-btn" class="waves-effect waves-light btn-large deep-purple">
+                            <i class="material-icons left">format_line_spacing</i>Optimize Cutting Nests
+                        </button>
+                    </div>
+                    
+                    <div id="results" class="section hide">
+                        <h5 class="deep-purple-text">Results</h5>
+                        <div class="card-panel grey lighten-4">
+                            <div class="row">
+                                <div class="col s12 m4">
+                                    <p>Total Stocks Used: <strong id="total-stock"></strong></p>
+                                </div>
+                                <div class="col s12 m4">
+                                    <p>Material Efficiency: <strong id="material-efficiency"></strong></p>
+                                </div>
+                                <div class="col s12 m4">
+                                    <p>Total Offcut: <strong id="total-offcut"></strong>mm</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col s12">
+                                    <p>Total Waste: <strong id="total-waste"></strong>mm</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="remaining-pieces"></div>
+                    </div>
+                    
+                    <div id="cutting-nests" class="section hide">
+                        <h5 class="deep-purple-text">Nests</h5>
+                        <div class="card-panel">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col l2 m12 s12 deep-purple lighten-2" id="properties">
+                <div id="tab1" class="tab-content">
+                    <div id="Project"><h5>Project:</h5><p>N/A</p></div>
+                    <div id="Draswing"><h5>Drawing:</h5><p>N/A</p></div>
+                    <div id="Phase"><h5>Phase:</h5><p>N/A</p></div>
+                    <div id="Piece"><h5>Piece:</h5><p>N/A</p></div>
+                    <div id="Grade"><h5>Grade:</h5><p>N/A</p></div>
+                    <div id="Quantity"><h5>Quantity:</h5><p>N/A</p></div>
+                    <div id="Profile"><h5>Profile:</h5><p>N/A</p></div>
+                    <div id="Code"><h5>Profile code:</h5><p>N/A</p></div>
+                    <div id="Length"><h5>Length:</h5><p>N/A</p><p> mm</p></div>
+                    <div id="Height"><h5>Height:</h5><p>N/A</p><p> mm</p></div>
+                    <div id="flangeWidth"><h5>Flange width:</h5><p>N/A</p><p> mm</p></div>
+                    <div id="flangeThickness"><h5>Flange thickness:</h5><p>N/A</p><p> mm</p></div>
+                    <div id="webThickness"><h5>Web thichness:</h5><p>N/A</p><p> mm</p></div>
+                    <div id="Radius"><h5>Radius:</h5><p>N/A</p><p> mm</p></div>
+                    <div id="weight"><h5>Weight by meter:</h5><p>N/A</p><p> kg/m</p></div>
+                    <div id="Surface"><h5>Painting surface by meter:</h5><p>N/A</p><p> m2/m</p></div>
+                    <div id="webCutStart"><h5>Web start cut:</h5><p>N/A</p><p> degrees</p></div>
+                    <div id="webCutEnd"><h5>Web end cut:</h5><p>N/A</p><p> degrees</p></div>
+                    <div id="flangeCutStart"><h5>Flange start cut:</h5><p>N/A</p><p> degrees</p></div>
+                    <div id="flangeCutEnd"><h5>Flange end cut:</h5><p>N/A</p><p> degrees</p></div>
+                    <div id="textInfo1"><h5>Text info:</h5><p>N/A</p></div>
+                    <div id="textInfo2"><h5>Text info:</h5><p>N/A</p></div>
+                    <div id="textInfo3"><h5>Text info:</h5><p>N/A</p></div>
+                    <div id="textInfo4"><h5>Text info:</h5><p>N/A</p></div>
+                    <div><img class="materialboxed" id="profileViewsImg" src=""></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large deep-purple darken-4">
+            <i class="large material-icons tooltipped" data-position="left" data-tooltip="Insert" onclick="insert_file(this)"><input type="file" hidden id="fileInput" placeholder="File input" directory multiple>insert_drive_file</i>
+        </a>
+    </div>
+
+    <!--Includes js file for materialize-->
+    <script src="Scripts/materialize-main.js"></script>
+    <script src="Scripts/materialize-scripts.js"></script>
+    <!--Includes js file for jsPDF-->
+    <script src="Scripts/jsPDF.min.js"></script>
+    <script src="Scripts/jsPDF-autotable.min.js"></script>
+    <!--Includes main js files for profile page-->
+    <script src="Scripts/nesting-main.js"></script>
+</body>
+</html>
