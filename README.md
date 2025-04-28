@@ -2,7 +2,7 @@
 
 ## _A DSTV Viewer and Steel Profile Library_
 
-OpenSteel is a web app that not only allows you to view DSTV files but also provides a steel profile library for easy access to standard steel profiles. Built with HTML, CSS, and JavaScript, OpenSteel is an open-source, lightweight web app designed to help engineers and fabricators.
+OpenSteel is a web app that not only allows you to view DSTV files but also provides a steel profile library for easy access to standard steel profiles. It also allows for profile linear nesting from DSTV and/or user input. Built with HTML, CSS, and JavaScript, OpenSteel is an open-source, lightweight web app designed to help engineers and fabricators.
 
 ## Table of Contents
 
@@ -43,6 +43,7 @@ OpenSteel is built using the following technologies:
 - **Materialize** for styling and responsive behavior
 - **Konva.js** for interactive canvas drawing
 - **jszip.js** for creating zip files
+- **jsPDF.js** for creating PDF files
 
 ## File Structure
 
@@ -51,6 +52,7 @@ project
 │   README.md
 │   index.html
 │   profiles.html 
+│   nesting.html
 │
 └───Fonts
 │
@@ -59,12 +61,17 @@ project
 └───Scripts
 │   blocDrawer.js          **Handles the drawing of parsed DSTV files into shapes
 │   fileHandler.js         **Handles information viewing
+│   jsPDF-autotable.min.js **Helper library for jsPDF
+│   jsPDF.min.js           **Library for creating PDFs
+│   jszip.min.js           **Library for creating zip files
 │   konva.min.js           **Main Konva script
 │   konva-scripts.js       **Helper script for Konva to add additional functionality
 │   main.js                **Main script file for file importing
 │   materialize-main.js    **Main Materialize script
 │   materialize-scripts.js **Initialize scripts for Materialize
 │   ncFileParser.js        **Handles file parsing
+│   nesting-main.js        **Main script file for linear nesting
+│   profiles-csv-loader.js **Handles csv file loading
 │   profiles-main.js       **Handles the profile library functionality
 └───Styles
 │   main.css               **Main stylesheet
