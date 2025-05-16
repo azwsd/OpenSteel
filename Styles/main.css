@@ -17,6 +17,16 @@ html, body
     z-index: 9999 !important; /* Ensure the overlay is above other elements */
     position: fixed !important;
 }
+
+.linkedin-link {
+  display: flex;
+  align-items: center;
+}
+.linkedin
+{
+    height: 2rem;
+}
+
 /*Make the about me button in the mobile navbar at the bottom*/
 #mobile
 {

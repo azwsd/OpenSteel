@@ -34,9 +34,11 @@ window.addEventListener("scroll", function () {
 function downloadActiveViews() {
     let zip = new JSZip(); //Create a new ZIP archive
         let promises = [];
+        let hasVisibleViews = false;
 
         Object.keys(stages).forEach(view => {
             if (document.getElementById(view).classList.contains('hide')) return; //Skip hidden views
+            hasVisibleViews = true; //At least one view is visible
             
             let stage = stages[view];
             let dataURL = stage.toDataURL({ pixelRatio: 5 }); //High-resolution export
@@ -51,7 +53,12 @@ function downloadActiveViews() {
             promises.push(promise);
         });
 
-    // Wait for all PNGs to be added, then generate the ZIP
+    if (!hasVisibleViews) {
+        M.toast({ html: 'No visible views to export!', classes: 'rounded toast-error', displayLength: 3000}); // Show error message if no views are visible
+        return;
+    }
+
+    // Wait for all promises to resolve before generating the ZIP
     Promise.all(promises).then(() => {
         zip.generateAsync({ type: 'blob' }).then(blob => {
             let link = document.createElement('a');

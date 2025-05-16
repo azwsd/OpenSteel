@@ -150,7 +150,6 @@ function drawContours() {
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
 
-                isClockwise = transformClock(view, isClockwise);
                 let arcAngle = calcArcAngle(startAngle, endAngle, isClockwise);
                 let rotationAngle = isClockwise ? startAngle : endAngle;
 
@@ -203,7 +202,6 @@ function drawContours() {
             let startAngle = calcAngle(sX, sY, cX, cY);
             let endAngle = calcAngle(eX, eY, cX, cY);
             
-            isClockwise = transformClock(view, isClockwise);
             let arcAngle = calcArcAngle(startAngle, endAngle, isClockwise);
             let rotationAngle = isClockwise ? startAngle : endAngle;
             
@@ -516,10 +514,6 @@ function calcArcAngle(start, end, isClockwise) {
     } else {
         return start > end ? start - end : 360 - end + start;
     }
-}
-
-function transformClock(view, isClockwise) {
-    return (view === 'v-view' || view === 'u-view') ? !isClockwise : isClockwise;
 }
 
 function calcAngle(pX, pY, cX, cY){

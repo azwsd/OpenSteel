@@ -210,6 +210,9 @@ function loadSubProfiles(btn) {
             instance.close();
         }
         else var profile = btn;
+
+        document.querySelector('#profileDropdownBtn p').innerHTML = profile; //Change profile button to show selected profile
+        document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
         
         const img = document.querySelector('#profileImage img');
         //If a new profile type is selected it removes profile data content

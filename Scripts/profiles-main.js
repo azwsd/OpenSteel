@@ -155,6 +155,8 @@ function deleteFile(btn, event){
         document.getElementById('Quantity').value = ''; //Clears quantity input
         document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
+        document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
+        document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
         selectedFile = '';
     }
     updateSessionData()
@@ -181,6 +183,8 @@ function clearAllFiles(){
     document.getElementById('Quantity').value = ''; //Clears quantity input
     document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
     document.getElementById('profileViewsImg').src = ''; //clears views img
+    document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
+    document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
     updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
@@ -363,6 +367,7 @@ function loadProfile(btn) {
     instance.close();
     if (index !== null) {
         const selectedProfile = csvData[index];
+        document.querySelector('#profileSizeDropdownBtn p').innerHTML = btn.innerHTML;
         displayProfile(selectedProfile); //Display full profile data in view
     }
 }
