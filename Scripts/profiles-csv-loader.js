@@ -212,12 +212,12 @@ function loadSubProfiles(btn) {
         else var profile = btn;
 
         document.querySelector('#profileDropdownBtn p').innerHTML = profile; //Change profile button to show selected profile
-        document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
         
         const img = document.querySelector('#profileImage img');
-        //If a new profile type is selected it removes profile data content
+        //If a new profile type is selected it removes profile data content and resets profile button content
         if (loadedProfileCode != profile) {
             loadedProfileCode = profile;
+            document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
             document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
         }
         if (['IPE', 'HE', 'M', 'W', 'UB', 'H-JS', 'H-KS', 'IPN', 'S', 'J', 'IB', 'HD', 'UC', 'HP', 'UBP'].includes(profile)) {
