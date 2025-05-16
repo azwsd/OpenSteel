@@ -375,7 +375,6 @@ function loadProfile(btn) {
 function displayProfile(selectedProfile) {
     if (loadedProfile == 'I' || loadedProfile == 'U') {
         clearViewProfileData();
-        const name = document.createElement('p');
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
         const height = document.createElement('p');
@@ -386,7 +385,6 @@ function displayProfile(selectedProfile) {
         const code = document.createElement('p');
         const profileData = document.getElementById('profileData');
 
-        name.innerHTML = `Profile name: ${selectedProfile.name}`;
         weight.innerHTML = `Weight: ${weightValue} kg/m`;
         height.innerHTML = `Height: ${selectedProfile.h} mm`;
         width.innerHTML = `Width: ${selectedProfile.b} mm`;
@@ -395,27 +393,24 @@ function displayProfile(selectedProfile) {
         radius.innerHTML = `Radius: ${selectedProfile.r} mm`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [name, weight, height, width, webThickness, flangeThickness, radius, code].forEach(e => { profileData.appendChild(e) });
+        [weight, height, width, webThickness, flangeThickness, radius, code].forEach(e => { profileData.appendChild(e) });
     }
     else if (loadedProfile == 'Rebar' || loadedProfile == 'Round') {
         clearViewProfileData();
-        const name = document.createElement('p');
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
         const od = document.createElement('p');
         const code = document.createElement('p');
         const profileData = document.getElementById('profileData');
 
-        name.innerHTML = `Profile name: ${selectedProfile.profileCode}`;
         weight.innerHTML = `Weight: ${weightValue} kg/m`;
         od.innerHTML = `Outside diameter: ${selectedProfile.od} mm`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [name, weight, od, code].forEach(e => { profileData.appendChild(e) });
+        [weight, od, code].forEach(e => { profileData.appendChild(e) });
     }
     else if (loadedProfile == 'CHS') {
         clearViewProfileData();
-        const name = document.createElement('p');
         const od = document.createElement('p');
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
@@ -425,7 +420,6 @@ function displayProfile(selectedProfile) {
         const sch = document.createElement('p');
         const profileData = document.getElementById('profileData');
 
-        name.innerHTML = `Profile name: ${selectedProfile.profileCode}`;
         weight.innerHTML = `Weight: ${weightValue} kg/m`;
         od.innerHTML = `Outside diameter: ${selectedProfile.od} mm`;
         thickness.innerHTML = `Wall thickness: ${selectedProfile.thk} mm`;
@@ -433,11 +427,10 @@ function displayProfile(selectedProfile) {
         sch.innerHTML = `Sch: ${selectedProfile.sch}`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [name, weight, od, thickness, nps, sch, code].forEach(e => { profileData.appendChild(e) });
+        [weight, od, thickness, nps, sch, code].forEach(e => { profileData.appendChild(e) });
     }
     else if (loadedProfile == 'Flat') {
         clearViewProfileData();
-        const name = document.createElement('p');
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
         const thickness = document.createElement('p');
@@ -445,33 +438,29 @@ function displayProfile(selectedProfile) {
         const code = document.createElement('p');
         const profileData = document.getElementById('profileData');
 
-        name.innerHTML = `Profile name: ${selectedProfile.profileCode}`;
         weight.innerHTML = `Weight: ${weightValue} kg/m`;
         thickness.innerHTML = `Thickness: ${selectedProfile.thk} mm`;
         width.innerHTML = `Width: ${selectedProfile.b} mm`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [name, weight, thickness, width, code].forEach(e => { profileData.appendChild(e) });
+        [weight, thickness, width, code].forEach(e => { profileData.appendChild(e) });
     }
     else if (loadedProfile == 'Square') {
         clearViewProfileData();
-        const name = document.createElement('p');
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
         const length = document.createElement('p');
         const code = document.createElement('p');
         const profileData = document.getElementById('profileData');
 
-        name.innerHTML = `Profile name: ${selectedProfile.profileCode}`;
         weight.innerHTML = `Weight: ${weightValue} kg/m`;
         length.innerHTML = `Side length: ${selectedProfile.l} mm`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [name, weight, length, code].forEach(e => { profileData.appendChild(e) });
+        [weight, length, code].forEach(e => { profileData.appendChild(e) });
     }
     else if (loadedProfile == 'RHS' || loadedProfile == 'SHS' || loadedProfile == 'L') {
         clearViewProfileData();
-        const name = document.createElement('p');
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
         const thickness = document.createElement('p');
@@ -480,14 +469,13 @@ function displayProfile(selectedProfile) {
         const code = document.createElement('p');
         const profileData = document.getElementById('profileData');
 
-        name.innerHTML = `Profile name: ${selectedProfile.profileCode}`;
         weight.innerHTML = `Weight: ${weightValue} kg/m approx.`;
         thickness.innerHTML = `Thickness: ${selectedProfile.thk} mm`;
         height.innerHTML = `Height: ${selectedProfile.h} mm`;
         width.innerHTML = `Width: ${selectedProfile.b} mm`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [name, weight, thickness, height, width, code].forEach(e => { profileData.appendChild(e) });
+        [weight, thickness, height, width, code].forEach(e => { profileData.appendChild(e) });
     }
     else M.toast({html: 'Please choose a correct profile!', classes: 'rounded toast-error', displayLength: 2000});
 }
