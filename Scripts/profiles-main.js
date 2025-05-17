@@ -66,6 +66,8 @@ function selectFile(file){
     });
     selectedFile = file;
     ncParseHeaderData(filePairs.get(selectedFile));
+    document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
+    document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
     findProfile();
     ncViewsImage(); //Shows the views image
     //Closes side nav
