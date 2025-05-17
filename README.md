@@ -1,6 +1,6 @@
 # OpenSteel
 
-## _A DSTV Viewer and Steel Profile Library_
+## _A DSTV Viewer, Steel Profile Library and Linear nesting engine_
 
 OpenSteel is a web app that not only allows you to view DSTV files but also provides a steel profile library for easy access to standard steel profiles. It also allows for profile linear nesting from DSTV and/or user input. Built with HTML, CSS, and JavaScript, OpenSteel is an open-source, lightweight web app designed to help engineers and fabricators.
 
