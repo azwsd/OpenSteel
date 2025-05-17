@@ -102,6 +102,7 @@ project
 ## License
 
 OpenSteel, Ahmed Mohamed Ragab.
+GNU General Public License v3.0
 
 ## Contributing
 
