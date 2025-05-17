@@ -102,7 +102,6 @@ function drawContours() {
         }
 
         if (arcData.length !== 0 && arcType === 'partial') {
-            //Get center point correctly
             let sX = arcData[0];
             let sY = arcData[1];
             let cX = arcData[2];
@@ -146,7 +145,7 @@ function drawContours() {
             }
             else {
                 let isClockwise = arcData[4] > 0 ? false : true;
-                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r);
+                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise); //Get center point correctly
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
 
@@ -161,7 +160,6 @@ function drawContours() {
                 angle: arcAngle,
                 stroke: 'black',
                 rotation: rotationAngle,
-                clockwise: true,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -521,7 +519,7 @@ function calcAngle(pX, pY, cX, cY){
     return angle < 0 ? angle + 360 : angle; // Convert negative angles to 0-360 range
 }
 
-function calcCenter(sX, sY, cX, cY, eX, eY, r) {
+function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise) {
     let [mX, mY] = [(sX + eX) / 2, (sY + eY) / 2]; //Center of start and end points
     let l = Math.sqrt(((sX - eX) ** 2) + ((sY - eY) ** 2)); //Distance between start and end points
     //Calculate the two possible centers
@@ -530,7 +528,18 @@ function calcCenter(sX, sY, cX, cY, eX, eY, r) {
     //Find the furthest away cX, xY and that's our solution
     let d1 =  Math.sqrt(((cX - solX1) ** 2) + ((cY - solY1) ** 2));
     let d2 =  Math.sqrt(((cX - solX2) ** 2) + ((cY - solY2) ** 2));
-    return d1 > d2 ? [solX1, solY1]: [solX2, solY2];
+    if (d1 > d2 && isClockwise) {
+        return [solX1, solY1];
+    }
+    else if (d1 < d2 && isClockwise) {
+        return [solX2, solY2];
+    }
+    else if  (d1 > d2 && !isClockwise) {
+        return [solX2, solY2];
+    }
+    else {
+        return [solX1, solY1];
+    }
 }
 
 //Draws blocs to the canves
