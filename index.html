@@ -34,10 +34,49 @@
                                 LinkedIn Profile
                             </a>
                         </li>
-                        <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
+                        <li><a href='#' data-target='DXFModal' class="waves-effect modal-trigger" onclick="loadDXFSettings()">DXF</a></li>
+                        <li><a href="#" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
                     </ul>
                 </div>
             </nav>
+        </div>
+        <!--DXF modal-->
+        <div id="DXFModal" class="modal">
+            <div class="modal-content">
+                <div>
+                    <span class="deep-purple-text lighten-3">Show Geometry:</span>
+                    <label>
+                        <input type="checkbox" id="geometryColor">
+                        <span for="geometryColor"></span>
+                    </label>
+                </div>
+                <div>
+                    <span class="deep-purple-text lighten-3">Show Holes:</span>
+                    <label>
+                        <input type="checkbox" id="holeColor">
+                        <span for="holeColor"></span>
+                    </label>
+                </div>
+                <div>
+                    <span class="deep-purple-text lighten-3">Show Text:</span>
+                    <label>
+                        <input type="checkbox" id="textColor">
+                        <span for="textColor"></span>
+                    </label>
+                </div>
+                <div>
+                    <span class="deep-purple-text lighten-3">Show Snap Points:</span>
+                    <label>
+                        <input type="checkbox" id="snapColor">
+                        <span for="snapColor"></span>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <a href='#' class="modal-close waves-effect waves-red btn green" onclick="batchExportToDXF()">Batch Export DXF</a>
+                    <a href='#' class="modal-close waves-effect waves-red btn green" onclick="exportToDXF()">Export DXF</a>
+                    <a href="#!" class="modal-close waves-effect waves-red btn red">Close</a>
+                </div>
+            </div>
         </div>
         <!--About me modal-->
         <div id="aboutMeModal" class="modal">
@@ -48,9 +87,9 @@
                 <p>In addition to NC file visualization, OpenSteel includes a comprehensive <b>Steel Profile Library</b>, allowing you to browse and reference standard steel sections with ease.</p>
                 <p>OpenSteel also performs <b>linear nesting</b> from user input and/or loaded DSTV files, optimizing material usage for your fabrication projects.</p>
                 <p>Whether you're inspecting part geometry, working with steel profiles, or optimizing material utilization through nesting, OpenSteel brings clarity and convenience to your everyday tasks.</p>
-            <div class="modal-footer">
-                <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
-              </div>
+                <div class="modal-footer">
+                    <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
+                </div>
             </div>
         </div>
         <!--Shortcuts  modal-->
@@ -119,7 +158,7 @@
             <li id="sideNavClearAll"><a data-target="clearAllModal" class="sidenav-close modal-trigger waves-effect float-bottom">Clear all</a></li>
             <ul class="sideNavBottom">
                 <li><a href="#" onclick="downloadActiveViews()" class="waves-effect float-left">Download active views</a></li>
-                <li><a href="#" onclick="exportToDXFZip()" class="waves-effect float-left">Export DXF</a></li>
+                <li><a href='#' data-target='DXFModal' class="waves-effect modal-trigger" onclick="loadDXFSettings()">DXF</a></li>
                 <li><a href="#" onclick="loadProfilesPage()" class="waves-effect float-left">Profiles library</a></li>
                 <li><a href="#" onclick="loadNestingPage()" class="waves-effect float-left">Linear nesting</a></li>
                 <li><a href="https://www.linkedin.com/in/ahmedmora" class="waves-effect float-left" target="_blank">LinkedIn Profile</a></li>
@@ -267,6 +306,7 @@
         <!--Includes js file for jszip-->
         <script src="Scripts/jszip.min.js"></script>
         <!--Custom js files-->
+        <script src="Scripts/konva-to-dxf.js"></script>
         <script src="Scripts/konva-scripts.js"></script>
         <script src="Scripts/blocDrawer.js"></script>
         <script src="Scripts/fileHandler.js"></script>
