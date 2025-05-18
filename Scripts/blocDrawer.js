@@ -10,6 +10,7 @@ function drawContours() {
     let arcData = [];
     let fX, fY, sX, sY, eX, eY, r, rTemp;
     let arcType = '';
+    let notchTool = '';
 
     for (dataLine of contourData) {
         currentView = dataLine[0];
@@ -58,6 +59,8 @@ function drawContours() {
         let canvasWidth = stage.width();
         let canvasHeight = stage.height();
 
+        if (arcLine == 1) notchTool = dataLine[10] == "" ? "t" : dataLine[10]; //Get notch tool type
+
         //Check if the line is an arc and stores it in arcData
         if(dataLine[4] != 0 && arcLine == 0) {
             fX = dataLine[1];
@@ -79,7 +82,7 @@ function drawContours() {
             eY = dataLine[3];
             cX = dataLine[1];
             cY = arcData[1];
-            arcData.push(cX, cY, rTemp, eX, eY);
+            arcData.push(cX, cY, rTemp, eX, eY, notchTool);
             arcType = 'partial';
         }
         else if(dataLine[4] == 0 && arcLine == 2) {
@@ -87,7 +90,7 @@ function drawContours() {
             eY = dataLine[3];
             arcLine = 0;
             arcType = 'partial';
-            arcData.push(eX, eY); 
+            arcData.push(eX, eY, notchTool);
         }
         else if(dataLine[4] != 0 && arcLine == 2) {
             arcLine++;
@@ -108,6 +111,7 @@ function drawContours() {
             let cY = arcData[3];
             let eX = arcData[5];
             let eY = arcData[6];
+            let notchTool = arcData[7];
             [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
             [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
             const r = Math.abs(arcData[4]);
@@ -145,7 +149,7 @@ function drawContours() {
             }
             else {
                 let isClockwise = arcData[4] > 0 ? false : true;
-                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise); //Get center point correctly
+                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool); //Get center point correctly
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
 
@@ -160,6 +164,7 @@ function drawContours() {
                 angle: arcAngle,
                 stroke: 'black',
                 rotation: rotationAngle,
+                clockwise: false,
                 strokeWidth: 3,
                 name: 'contour-arc',
                 snapPoints : [
@@ -519,7 +524,7 @@ function calcAngle(pX, pY, cX, cY){
     return angle < 0 ? angle + 360 : angle; // Convert negative angles to 0-360 range
 }
 
-function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise) {
+function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool) {
     let [mX, mY] = [(sX + eX) / 2, (sY + eY) / 2]; //Center of start and end points
     let l = Math.sqrt(((sX - eX) ** 2) + ((sY - eY) ** 2)); //Distance between start and end points
     //Calculate the two possible centers
@@ -528,6 +533,10 @@ function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise) {
     //Find the furthest away cX, xY and that's our solution
     let d1 =  Math.sqrt(((cX - solX1) ** 2) + ((cY - solY1) ** 2));
     let d2 =  Math.sqrt(((cX - solX2) ** 2) + ((cY - solY2) ** 2));
+    //Handle notch tool 't'
+    if (notchTool == 't') {
+        return [solX1, solY1];
+    }
     if (d1 > d2 && isClockwise) {
         return [solX1, solY1];
     }
