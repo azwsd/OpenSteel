@@ -79,11 +79,11 @@ function clickHoleData() {
 
 //Download all views when ctrl + s is pressed
 document.addEventListener('keydown', function (e) {
-    if (e.ctrlKey && e.key === 's') { //Detect Ctrl + S
+    if (e.ctrlKey && e.key.toLowerCase() === 's') { //Detect Ctrl + S
         e.preventDefault(); //Prevent default browser save behavior
         downloadActiveViews();
     }
-    else if(e.key === 's') { //Detect S
+    else if(e.key.toLowerCase() === 's') { //Detect S
         e.preventDefault(); //Prevent default browser save behavior
         let stage = stages[activeView]
         let dataURL = stage.toDataURL({ pixelRatio: 5 }); //High resolution export
@@ -162,6 +162,10 @@ document.addEventListener('keydown', function (e) {
         e.preventDefault(); //Prevent default browser save behavior
         document.getElementById('snapDistance').stepDown();
         document.getElementById('saveSettings').click();
+    }
+    else if (e.key.toLowerCase() === 'd') { //Detect d
+        e.preventDefault(); //Prevent default browser save behavior
+        M.Modal.getInstance(document.getElementById('DXFModal')).open(); //Open DXF modal
     }
 });
 
