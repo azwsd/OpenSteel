@@ -97,6 +97,7 @@ function ncParseContourData(line, contourType){
     let values = line.trim().split(/\s+/); // Split by whitespace
     let face = "";  
     let xValue, dimensionRef, yValue;
+    let notchTool;
 
     // Check if the first value is a face (single letter)
     if (values[0].length == 1 && /[A-Za-z]/.test(values[0])) {
@@ -115,6 +116,10 @@ function ncParseContourData(line, contourType){
 
     yValue = parseFloat(values[1]);  // Y-value (always at index 1)
 
+    // Extract notch tool
+    let toolMatch = values[1].match(/([\d.]+)([A-Za-z]*)$/);
+    notchTool = toolMatch[2] || "";  // Notch tool (if present)
+
     // Extract remaining values (starting from index 2)
     let parsedValues = values.slice(2).map(v => v ? parseFloat(v) : 0.00);
 
@@ -124,7 +129,7 @@ function ncParseContourData(line, contourType){
     }
 
     // Add parsed line to contourBlocks
-    contourData.push([face, xValue, dimensionRef, yValue, ...parsedValues, contourType]);
+    contourData.push([face, xValue, dimensionRef, yValue, ...parsedValues, contourType, notchTool]);
 }
 
 //Parse hole blocs and add them to the holeData array
