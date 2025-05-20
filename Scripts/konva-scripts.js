@@ -488,6 +488,10 @@ function clearMeasurements() {
     document.getElementById('historyDropdown').innerHTML = ''; //Clears measurement history
     measurementCounter = 0; //Resets measuremtn counter
     document.getElementById('historyDropdownBtn').classList.add('lighten-3');
+    // Insures that active measurement is reset
+    measurementPoints = [];
+    activeMeasurementView = null;
+    isMeasuring = false;
 }
 
 let tool = 'pan'; // Default tool is panning
