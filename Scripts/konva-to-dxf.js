@@ -322,6 +322,11 @@ function loadDXFSettings() {
 //Function to export all loaded files to DXF
 function batchExportToDXF() {
     const files = document.querySelectorAll('#files .viewFiles');
+    // If no files are loaded, show an error message
+    if (files.length === 0) {
+        M.toast({ html: 'No files to export!', classes: 'rounded toast-error', displayLength: 3000});
+        return;
+    }
     //Clicks on each file to trigger the export
     for (let file of files) {
         file.click();
@@ -331,6 +336,11 @@ function batchExportToDXF() {
 
 // Function to export visible Konva stages to DXF and create a ZIP file
 function exportToDXF() {
+    // If no file is selected, show an error message
+    if (!selectedFile) {
+        M.toast({ html: 'No file selected!', classes: 'rounded toast-error', displayLength: 3000});
+        return;
+    }
     geometryColor = document.getElementById("geometryColor").checked;
     holeColor = document.getElementById("holeColor").checked;
     textColor = document.getElementById("textColor").checked;
