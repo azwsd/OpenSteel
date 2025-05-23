@@ -15,7 +15,7 @@ function calcAngles(angle, rotation, isClockwise) {
 function handleRectangleAsPolygon(rect, stageHeight, formatNum) {
     let dxf = '';
 
-    // 1. Read rectangle properties
+    //Read rectangle properties
     const x = rect.x();
     const y = rect.y();
     const ox = rect.offsetX() || 0;
@@ -50,17 +50,17 @@ function handleRectangleAsPolygon(rect, stageHeight, formatNum) {
     const curr = corners[i];
     const next = corners[(i + 1)%4];
 
-    // Edge vectors
+    //Edge vectors
     const vIn  = { x: curr.x - prev.x, y: curr.y - prev.y };
     const vOut = { x: next.x - curr.x, y: next.y - curr.y };
     const lenIn  = Math.hypot(vIn.x, vIn.y);
     const lenOut = Math.hypot(vOut.x, vOut.y);
 
-    // Unit vectors
+    //Unit vectors
     const uIn  = { x: vIn.x/lenIn,  y: vIn.y/lenIn };
     const uOut = { x: vOut.x/lenOut, y: vOut.y/lenOut };
 
-    // Tangent (start/end of arc) points
+    //Tangent (start/end of arc) points
     const p1 = { x: curr.x - uIn.x * r,  y: curr.y - uIn.y * r };
     const p2 = { x: curr.x + uOut.x * r, y: curr.y + uOut.y * r };
 
@@ -70,23 +70,23 @@ function handleRectangleAsPolygon(rect, stageHeight, formatNum) {
     //Compute the DXF bulge for a 90° arc: tan(θ/4), θ=90° → tan(22.5°)
     const bulge = - Math.tan((90 * Math.PI/180) / 4);
 
-    //R12‐compliant POLYLINE
-    dxf += '0\nPOLYLINE\n8\nHoles\n66\n1\n70\n1\n';
+    //Create R12‐compliant POLYLINE
+    dxf += `0\nPOLYLINE\n8\n${holesLayer}\n66\n1\n70\n1\n`;
 
     for (let i = 0; i < 4; i++) {
     const currT  = tangentPoints[i];
     const nextT  = tangentPoints[(i+1)%4];
 
     //Straight line from this corner’s out → next corner’s in
-    dxf += '0\nVERTEX\n8\nHoles\n';
+    dxf += `0\nVERTEX\n8\n${holesLayer}\n`;
     dxf += `10\n${formatNum(currT.out.x)}\n20\n${formatNum(stageHeight - currT.out.y)}\n`;
     dxf += `42\n0.0\n`;  // no bulge on straight segment
 
-    dxf += '0\nVERTEX\n8\nHoles\n';
+    dxf += `0\nVERTEX\n8\n${holesLayer}\n`;
     dxf += `10\n${formatNum(nextT.in.x)}\n20\n${formatNum(stageHeight - nextT.in.y)}\n`;
     dxf += `42\n0.0\n`;
 
-    dxf += '0\nVERTEX\n8\nHoles\n';
+    dxf += `0\nVERTEX\n8\n${holesLayer}\n`;
     dxf += `10\n${formatNum(nextT.in.x)}\n20\n${formatNum(stageHeight - nextT.in.y)}\n`;
     dxf += `42\n${formatNum(bulge)}\n`;
     }
@@ -124,16 +124,16 @@ function konvaToDXF(stage, viewName) {
     // Start LAYER table
     dxf += '0\nTABLE\n2\nLAYER\n70\n3\n'; // 3 layers
     
-    // Define Geometry layer (0)
-    dxf += `0\nLAYER\n2\nGeometry\n70\n0\n62\n${7 * geometryColor}\n6\nCONTINUOUS\n`;
+    // Define Geometry layer
+    dxf += `0\nLAYER\n2\n${geometryLayer}\n70\n0\n62\n${7 * geometryVisibility}\n6\nCONTINUOUS\n`;
     
     // Define Holes layer
-    dxf += `0\nLAYER\n2\nHoles\n70\n0\n62\n${1 * holeColor}\n6\nCONTINUOUS\n`;
+    dxf += `0\nLAYER\n2\n${holesLayer}\n70\n0\n62\n${1 * holeVisibility}\n6\nCONTINUOUS\n`;
     // Define Text layer
-    dxf += `0\nLAYER\n2\nText\n70\n0\n62\n${2 * textColor}\n6\nCONTINUOUS\n`;
+    dxf += `0\nLAYER\n2\n${textLayer}\n70\n0\n62\n${2 * textVisibility}\n6\nCONTINUOUS\n`;
 
     // Define Snap points layer
-    dxf += `0\nLAYER\n2\nSnapLayer\n70\n0\n62\n${3 * snapColor}\n6\nCONTINUOUS\n`;
+    dxf += `0\nLAYER\n2\n${snapLayer}\n70\n0\n62\n${3 * snapVisibility}\n6\nCONTINUOUS\n`;
     
     // End LAYER table
     dxf += '0\nENDTAB\n';
@@ -155,29 +155,23 @@ function konvaToDXF(stage, viewName) {
         
         if (!layers || layers.length === 0) {
             dxf += '0\nENDSEC\n0\nEOF\n';
-            return dxf; // Return minimal valid DXF
+            return dxf;
         }
         
-        // Helper function to flip Y coordinates
+        //Helper function to flip Y coordinates
         const transformY = (y) => {
-            return stageHeight - y; // Flip Y coordinate
+            return stageHeight - y; //
         };
         
-        // Helper function to adjust rotation values based on the view
-        const transformRotation = (rotation, view) => {
-            // You'll need to adapt this based on your coordinate system logic
-            return 180 - rotation; // Basic flip for Y-axis inversion
-        };
-        
-        // Format numbers to ensure they're valid for DXF
+        //Format numbers to ensure they're valid for DXF
         const formatNum = (num) => {
             if (num === undefined || num === null || isNaN(num)) return "0.0";
             return parseFloat(num).toFixed(6);
         };
         
-        // Process each layer in the stage
+        //Process each layer in the stage
         layers.forEach(layer => { 
-            // Process all shapes in this layer
+            //Process all shapes in this layer
             layer.getChildren().forEach((shape, index) => {
                 if (!shape.isVisible()) {
                     return;
@@ -186,9 +180,8 @@ function konvaToDXF(stage, viewName) {
                 try {
                     const className = shape.getClassName();
                     
-                    // Handling for text elements
+                    //Handling for text elements
                     if (className === 'Text') {
-                        // Handle text - place on Text layer
                         const text = shape.text ? shape.text() : 
                                     (shape.getText ? shape.getText() : 
                                     (shape.getAttr ? shape.getAttr('text') : "Text"));
@@ -196,76 +189,66 @@ function konvaToDXF(stage, viewName) {
                         const x = parseFloat(shape.x !== undefined ? (typeof shape.x === 'function' ? shape.x() : shape.x) : 0);
                         const y = parseFloat(shape.y !== undefined ? (typeof shape.y === 'function' ? shape.y() : shape.y) : 0);
                         
-                        // Transform Y coordinate for DXF
+                        //Transform Y coordinate for DXF
                         const transformedY = transformY(y);
                         
                         const fontSize = shape.fontSize ? 
                                        (typeof shape.fontSize === 'function' ? shape.fontSize() : shape.fontSize) : 
                                        (shape.getAttr && shape.getAttr('fontSize') ? shape.getAttr('fontSize') : 12);
                         
-                        // Convert font size to text height in DXF (approximate conversion)
+                        //Convert font size to text height in DXF (approximate conversion)
                         const textHeight = parseFloat(fontSize) * 0.75;
                         
                         dxf += '0\nTEXT\n';
-                        dxf += '8\nText\n'; // Text layer
-                        dxf += `10\n${formatNum(x)}\n`; // X position
-                        dxf += `20\n${formatNum(transformedY)}\n`; // Transformed Y position
+                        dxf += `8\n${textLayer}\n`; //Text layer
+                        dxf += `10\n${formatNum(x)}\n`; //X position
+                        dxf += `20\n${formatNum(transformedY)}\n`; //Transformed Y position
                         dxf += `30\n0.0\n`; // Z position
-                        dxf += `40\n${formatNum(textHeight)}\n`; // Text height
-                        dxf += `1\n${text}\n`; // Text content
-                        dxf += `7\nSTANDARD\n`; // Text style
+                        dxf += `40\n${formatNum(textHeight)}\n`; //Text height
+                        dxf += `1\n${text}\n`; //Text content
+                        dxf += `7\nSTANDARD\n`; //Text style
                         
-                        // Handle text rotation if available
+                        //Handle text rotation if available
                         if (typeof shape.rotation === 'function') {
-                            // Need to invert rotation angle when flipping Y
                             const rotation = -shape.rotation();
-                            dxf += `50\n${formatNum(rotation)}\n`; // Rotation angle in degrees
+                            dxf += `50\n${formatNum(rotation)}\n`; //Rotation angle in degrees
                         }
-                        
-                        // For debugging
-                        dxf += `999\nExported Text: "${text}" at (${x},${transformedY}) height=${textHeight}\n`;
                     } else if (className === 'Line') {
                         // Handle lines
                         const points = shape.points();
                         if (points && points.length >= 4) {
                             for (let i = 0; i < points.length - 2; i += 2) {
                                 dxf += '0\nLINE\n';
-                                dxf += '8\nGeometry\n'; // Geometry layer
-                                dxf += `10\n${formatNum(points[i])}\n`; // Start X
-                                dxf += `20\n${formatNum(transformY(points[i+1]))}\n`; // Transformed Start Y
-                                dxf += `30\n0.0\n`; // Start Z
+                                dxf += `8\n${geometryLayer}\n`; //Geometry layer
+                                dxf += `10\n${formatNum(points[i])}\n`; //Start X
+                                dxf += `20\n${formatNum(transformY(points[i+1]))}\n`; //Transformed Start Y
+                                dxf += `30\n0.0\n`; //Start Z
                                 dxf += `11\n${formatNum(points[i+2])}\n`; // End X
-                                dxf += `21\n${formatNum(transformY(points[i+3]))}\n`; // Transformed End Y
-                                dxf += `31\n0.0\n`; // End Z
+                                dxf += `21\n${formatNum(transformY(points[i+3]))}\n`; //Transformed End Y
+                                dxf += `31\n0.0\n`; //End Z
                             }
                         }
                     } else if (className === 'Circle') {
                         fill = shape.attrs.fill;
                         if (fill == undefined) {
-                            // Handle circles
+                            //Handle circles
                             dxf += '0\nCIRCLE\n';
-                            //Add shape to holes layer or snap layer
-                            if (fill === undefined) {
-                                dxf += '8\nHoles\n'; //Holes layer
-                            }
-                            else {
-                                dxf += '8\nSnapLayer\n'; //Snap layer
-                            }
-                            dxf += `10\n${formatNum(shape.attrs.x)}\n`; // Center X
-                            dxf += `20\n${formatNum(transformY(shape.attrs.y))}\n`; // Transformed Center Y
-                            dxf += `30\n0.0\n`; // Center Z
-                            dxf += `40\n${formatNum(shape.attrs.radius)}\n`; // Radius
+                            dxf += `8\n${holesLayer}\n`; //Holes layer
+                            dxf += `10\n${formatNum(shape.attrs.x)}\n`; //Center X
+                            dxf += `20\n${formatNum(transformY(shape.attrs.y))}\n`; //Transformed Center Y
+                            dxf += `30\n0.0\n`; //Center Z
+                            dxf += `40\n${formatNum(shape.attrs.radius)}\n`; //Radius
                         }
                         else {
                             //Create a point for the snap layer
                             dxf += '0\nPOINT\n';
-                            dxf += '8\nSnapLayer\n'; //Snap layer
+                            dxf += `8\n${snapLayer}\n`; //Snap layer
                             dxf += `10\n${formatNum(shape.attrs.x)}\n`; //X coordinate
                             dxf += `20\n${formatNum(transformY(shape.attrs.y))}\n`; //Y coordinate
                             dxf += `30\n0.0\n`; //Z coordinate
                         }
                     } else if (className === 'Arc') {
-                        // Get arc properties
+                        //Get arc properties
                         const centerX = shape.attrs.x;
                         const centerY = shape.attrs.y;
                         const radius = shape.attrs.innerRadius;
@@ -277,18 +260,18 @@ function konvaToDXF(stage, viewName) {
 
                         [startAngle, endAngle] = calcAngles(angle, rotation, isClockwise);
 
-                        // Transform Y coordinate for DXF
+                        //Transform Y coordinate for DXF
                         const transformedCenterY = stageHeight - centerY;
                         
-                        // Add the ARC entity to DXF
+                        //Add the ARC entity to DXF
                         dxf += '0\nARC\n';
-                        dxf += '8\nGeometry\n'; // Layer
-                        dxf += `10\n${formatNum(centerX)}\n`; // Center X
-                        dxf += `20\n${formatNum(transformedCenterY)}\n`; // Center Y
-                        dxf += `30\n0.0\n`; // Center Z
-                        dxf += `40\n${formatNum(radius)}\n`; // Radius
-                        dxf += `50\n${formatNum(startAngle)}\n`; // Start angle
-                        dxf += `51\n${formatNum(endAngle)}\n`; // End angle
+                        dxf += `8\n${geometryLayer}\n`; //Layer
+                        dxf += `10\n${formatNum(centerX)}\n`; //Center X
+                        dxf += `20\n${formatNum(transformedCenterY)}\n`; //Center Y
+                        dxf += `30\n0.0\n`; //Center Z
+                        dxf += `40\n${formatNum(radius)}\n`; //Radius
+                        dxf += `50\n${formatNum(startAngle)}\n`; //Start angle
+                        dxf += `51\n${formatNum(endAngle)}\n`; //End angle
                     } else if (className === 'Rect') {
                        dxf += handleRectangleAsPolygon(shape, stageHeight, formatNum);
                     }
@@ -301,22 +284,35 @@ function konvaToDXF(stage, viewName) {
         console.error('Error generating DXF for view', viewName, err);
     }
     
-    // End the entities section
+    //End the entities section
     dxf += '0\nENDSEC\n';
     
-    // End of file
+    //End of file
     dxf += '0\nEOF\n';
     
     return dxf;
 }
 
 // Function to load DXF settings from session storage
-let geometryColor, holeColor, textColor, snapColor;
+let geometryVisibility, holeVisibility, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer;
 function loadDXFSettings() {
-    geometryColor = sessionStorage.getItem("geometryColor") || 1;
-    holeColor = sessionStorage.getItem("holeColor") || 1;
-    textColor = sessionStorage.getItem("textColor") || 1;
-    snapColor = sessionStorage.getItem("snapColor") || 1;
+    geometryVisibility = sessionStorage.getItem("geometryVisibility") || 1;
+    holeVisibility = sessionStorage.getItem("holeVisibility") || 1;
+    textVisibility = sessionStorage.getItem("textVisibility") || 1;
+    snapVisibility = sessionStorage.getItem("snapVisibility") || 1;
+    geometryLayer = sessionStorage.getItem("geometryLayer") || "Geometry";
+    holesLayer = sessionStorage.getItem("holesLayer") || "Holes";
+    textLayer = sessionStorage.getItem("textLayer") || "Text";
+    snapLayer = sessionStorage.getItem("snapLayer") || "Snap";
+    //Load settings to the view
+    document.getElementById("geometryVisibility").checked = geometryVisibility == 'true' ? true : false;
+    document.getElementById("holeVisibility").checked = holeVisibility == 'true' ? true : false;
+    document.getElementById("textVisibility").checked = textVisibility == 'true' ? true : false;
+    document.getElementById("snapVisibility").checked = snapVisibility == 'true' ? true : false;
+    document.getElementById("geometryLayer").value = geometryLayer;
+    document.getElementById("holesLayer").value = holesLayer;
+    document.getElementById("textLayer").value = textLayer;
+    document.getElementById("snapLayer").value = snapLayer;
 }
 
 //Function to export all loaded files to DXF
@@ -341,18 +337,29 @@ function exportToDXF() {
         M.toast({ html: 'No file selected!', classes: 'rounded toast-error', displayLength: 3000});
         return;
     }
-    geometryColor = document.getElementById("geometryColor").checked;
-    holeColor = document.getElementById("holeColor").checked;
-    textColor = document.getElementById("textColor").checked;
-    snapColor = document.getElementById("snapColor").checked;
-    sessionStorage.setItem("geometryColor", geometryColor);
-    sessionStorage.setItem("holeColor", selectedFile);
-    sessionStorage.setItem("textColor", selectedFile);
-    sessionStorage.setItem("snapColor", selectedFile);
-    geometryColor == 1 ? geometryColor = 1 : geometryColor = -1;
-    holeColor == 1 ? holeColor = 1 : holeColor = -1;
-    textColor == 1 ? textColor = 1 : textColor = -1;
-    snapColor == 1 ? snapColor = 1 : snapColor = -1;
+    //Load DXF settings from session view
+    geometryVisibility = document.getElementById("geometryVisibility").checked;
+    holeVisibility = document.getElementById("holeVisibility").checked;
+    textVisibility = document.getElementById("textVisibility").checked;
+    snapVisibility = document.getElementById("snapVisibility").checked;
+    geometryLayer = document.getElementById("geometryLayer").value;
+    holesLayer = document.getElementById("holesLayer").value;
+    textLayer = document.getElementById("textLayer").value;
+    snapLayer = document.getElementById("snapLayer").value;
+    //Save settings to session storage
+    sessionStorage.setItem("geometryVisibility", geometryVisibility);
+    sessionStorage.setItem("holeVisibility", holeVisibility);
+    sessionStorage.setItem("textVisibility", textVisibility);
+    sessionStorage.setItem("snapVisibility", snapVisibility);
+    sessionStorage.setItem("geometryLayer", geometryLayer);
+    sessionStorage.setItem("holesLayer", holesLayer);
+    sessionStorage.setItem("textLayer", textLayer);
+    sessionStorage.setItem("snapLayer", snapLayer);
+    //Convert boolean values to 1 or -1 for DXF layer Visibility
+    geometryVisibility = geometryVisibility == 1 ? 1 : -1;
+    holeVisibility = holeVisibility == 1 ? 1 : -1;
+    textVisibility = textVisibility == 1 ? 1 : -1;
+    snapVisibility = snapVisibility == 1 ? 1 : -1;
 
     const zip = new JSZip();
     const views = ['o-view', 'v-view', 'u-view', 'h-view'];
