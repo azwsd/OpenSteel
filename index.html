@@ -52,6 +52,7 @@
                         <span for="geometryVisibility"></span>
                     </label>
                 </div>
+                <li class="divider" tabindex="-1"></li>
                 <div>
                     <span class="helper-text">Holes Layer:</span>
                     <input id="holesLayer" type="text" value="Holes" style="width: 7rem">
@@ -62,6 +63,11 @@
                     </label>
                 </div>
                 <div>
+                    <span class="helper-text">Ignore holes with diameter less than:</span>
+                    <input id="minHoleDia" type="number" min="0" max="9999" value="0" style="width: 7rem">
+                </div>
+                <li class="divider" tabindex="-1"></li>
+                <div>
                     <span class="helper-text">Text Layer:</span>
                     <input id="textLayer" type="text" value="Text" style="width: 7rem">
                     <span class="deep-purple-text lighten-3">Show Text:</span>
@@ -70,6 +76,7 @@
                         <span for="textVisibility"></span>
                     </label>
                 </div>
+                <li class="divider" tabindex="-1"></li>
                 <div>
                     <span class="helper-text">Snap Layer:</span>
                     <input id="snapLayer" type="text" value="Snap" style="width: 7rem">

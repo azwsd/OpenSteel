@@ -231,13 +231,16 @@ function konvaToDXF(stage, viewName) {
                     } else if (className === 'Circle') {
                         fill = shape.attrs.fill;
                         if (fill == undefined) {
-                            //Handle circles
-                            dxf += '0\nCIRCLE\n';
-                            dxf += `8\n${holesLayer}\n`; //Holes layer
-                            dxf += `10\n${formatNum(shape.attrs.x)}\n`; //Center X
-                            dxf += `20\n${formatNum(transformY(shape.attrs.y))}\n`; //Transformed Center Y
-                            dxf += `30\n0.0\n`; //Center Z
-                            dxf += `40\n${formatNum(shape.attrs.radius)}\n`; //Radius
+                            //Handle circles with radius greater than minHoleDia
+                            if (formatNum(shape.attrs.radius) > minHoleDia)
+                            {
+                                dxf += '0\nCIRCLE\n';
+                                dxf += `8\n${holesLayer}\n`; //Holes layer
+                                dxf += `10\n${formatNum(shape.attrs.x)}\n`; //Center X
+                                dxf += `20\n${formatNum(transformY(shape.attrs.y))}\n`; //Transformed Center Y
+                                dxf += `30\n0.0\n`; //Center Z
+                                dxf += `40\n${formatNum(shape.attrs.radius)}\n`; //Radius
+                            }
                         }
                         else {
                             //Create a point for the snap layer
@@ -294,10 +297,11 @@ function konvaToDXF(stage, viewName) {
 }
 
 // Function to load DXF settings from session storage
-let geometryVisibility, holeVisibility, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer;
+let geometryVisibility, holeVisibility, minHoleDia, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer;
 function loadDXFSettings() {
     geometryVisibility = sessionStorage.getItem("geometryVisibility") || 1;
     holeVisibility = sessionStorage.getItem("holeVisibility") || 1;
+    minHoleDia = sessionStorage.getItem("minHoleDia") || 0;
     textVisibility = sessionStorage.getItem("textVisibility") || 1;
     snapVisibility = sessionStorage.getItem("snapVisibility") || 1;
     geometryLayer = sessionStorage.getItem("geometryLayer") || "Geometry";
@@ -307,6 +311,7 @@ function loadDXFSettings() {
     //Load settings to the view
     document.getElementById("geometryVisibility").checked = geometryVisibility == 'true' ? true : false;
     document.getElementById("holeVisibility").checked = holeVisibility == 'true' ? true : false;
+    document.getElementById("minHoleDia").value = minHoleDia;
     document.getElementById("textVisibility").checked = textVisibility == 'true' ? true : false;
     document.getElementById("snapVisibility").checked = snapVisibility == 'true' ? true : false;
     document.getElementById("geometryLayer").value = geometryLayer;
@@ -340,6 +345,8 @@ function exportToDXF() {
     //Load DXF settings from session view
     geometryVisibility = document.getElementById("geometryVisibility").checked;
     holeVisibility = document.getElementById("holeVisibility").checked;
+    minHoleDia = document.getElementById("minHoleDia").value;
+    if (minHoleDia < 0 || typeof minHoleDia === "number") minHoleDia = 0; //Ensure minHoleDia is not negative and is a number
     textVisibility = document.getElementById("textVisibility").checked;
     snapVisibility = document.getElementById("snapVisibility").checked;
     geometryLayer = document.getElementById("geometryLayer").value;
@@ -349,6 +356,7 @@ function exportToDXF() {
     //Save settings to session storage
     sessionStorage.setItem("geometryVisibility", geometryVisibility);
     sessionStorage.setItem("holeVisibility", holeVisibility);
+    sessionStorage.setItem("minHoleDia", minHoleDia);
     sessionStorage.setItem("textVisibility", textVisibility);
     sessionStorage.setItem("snapVisibility", snapVisibility);
     sessionStorage.setItem("geometryLayer", geometryLayer);
