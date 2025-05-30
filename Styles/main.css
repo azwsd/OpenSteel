@@ -27,6 +27,16 @@ html, body
     height: 2rem;
 }
 
+/*Make text behind the load files button more visable*/
+.fixed-action-btn {
+  opacity: 0.2;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.fixed-action-btn:hover {
+  opacity: 1;
+}
+
 /*Make the about me button in the mobile navbar at the bottom*/
 #mobile
 {
