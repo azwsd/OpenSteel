@@ -296,18 +296,18 @@ function konvaToDXF(stage, viewName) {
     return dxf;
 }
 
-// Function to load DXF settings from session storage
+// Function to load DXF settings from local storage
 let geometryVisibility, holeVisibility, minHoleDia, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer;
 function loadDXFSettings() {
-    geometryVisibility = sessionStorage.getItem("geometryVisibility") || 1;
-    holeVisibility = sessionStorage.getItem("holeVisibility") || 1;
-    minHoleDia = sessionStorage.getItem("minHoleDia") || 0;
-    textVisibility = sessionStorage.getItem("textVisibility") || 1;
-    snapVisibility = sessionStorage.getItem("snapVisibility") || 1;
-    geometryLayer = sessionStorage.getItem("geometryLayer") || "Geometry";
-    holesLayer = sessionStorage.getItem("holesLayer") || "Holes";
-    textLayer = sessionStorage.getItem("textLayer") || "Text";
-    snapLayer = sessionStorage.getItem("snapLayer") || "Snap";
+    geometryVisibility = localStorage.getItem("geometryVisibility") || 1;
+    holeVisibility = localStorage.getItem("holeVisibility") || 1;
+    minHoleDia = localStorage.getItem("minHoleDia") || 0;
+    textVisibility = localStorage.getItem("textVisibility") || 1;
+    snapVisibility = localStorage.getItem("snapVisibility") || 1;
+    geometryLayer = localStorage.getItem("geometryLayer") || "Geometry";
+    holesLayer = localStorage.getItem("holesLayer") || "Holes";
+    textLayer = localStorage.getItem("textLayer") || "Text";
+    snapLayer = localStorage.getItem("snapLayer") || "Snap";
     //Load settings to the view
     document.getElementById("geometryVisibility").checked = geometryVisibility == 'true' ? true : false;
     document.getElementById("holeVisibility").checked = holeVisibility == 'true' ? true : false;
@@ -342,7 +342,7 @@ function exportToDXF() {
         M.toast({ html: 'No file selected!', classes: 'rounded toast-error', displayLength: 3000});
         return;
     }
-    //Load DXF settings from session view
+    //Load DXF settings from view
     geometryVisibility = document.getElementById("geometryVisibility").checked;
     holeVisibility = document.getElementById("holeVisibility").checked;
     minHoleDia = document.getElementById("minHoleDia").value;
@@ -353,16 +353,16 @@ function exportToDXF() {
     holesLayer = document.getElementById("holesLayer").value;
     textLayer = document.getElementById("textLayer").value;
     snapLayer = document.getElementById("snapLayer").value;
-    //Save settings to session storage
-    sessionStorage.setItem("geometryVisibility", geometryVisibility);
-    sessionStorage.setItem("holeVisibility", holeVisibility);
-    sessionStorage.setItem("minHoleDia", minHoleDia);
-    sessionStorage.setItem("textVisibility", textVisibility);
-    sessionStorage.setItem("snapVisibility", snapVisibility);
-    sessionStorage.setItem("geometryLayer", geometryLayer);
-    sessionStorage.setItem("holesLayer", holesLayer);
-    sessionStorage.setItem("textLayer", textLayer);
-    sessionStorage.setItem("snapLayer", snapLayer);
+    //Save settings to local storage
+    localStorage.setItem("geometryVisibility", geometryVisibility);
+    localStorage.setItem("holeVisibility", holeVisibility);
+    localStorage.setItem("minHoleDia", minHoleDia);
+    localStorage.setItem("textVisibility", textVisibility);
+    localStorage.setItem("snapVisibility", snapVisibility);
+    localStorage.setItem("geometryLayer", geometryLayer);
+    localStorage.setItem("holesLayer", holesLayer);
+    localStorage.setItem("textLayer", textLayer);
+    localStorage.setItem("snapLayer", snapLayer);
     //Convert boolean values to 1 or -1 for DXF layer Visibility
     geometryVisibility = geometryVisibility == 1 ? 1 : -1;
     holeVisibility = holeVisibility == 1 ? 1 : -1;
