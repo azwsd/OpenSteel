@@ -299,6 +299,7 @@ function konvaToDXF(stage, viewName) {
 // Function to load DXF settings from local storage
 let geometryVisibility, holeVisibility, minHoleDia, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer;
 function loadDXFSettings() {
+    M.Sidenav.getInstance(document.getElementById('mobile')).close(); //Closes side nav
     geometryVisibility = localStorage.getItem("geometryVisibility") || 1;
     holeVisibility = localStorage.getItem("holeVisibility") || 1;
     minHoleDia = localStorage.getItem("minHoleDia") || 0;
