@@ -28,7 +28,7 @@ function verifyFile(fileName)
 {
     const acceptableFiles = ['nc', 'nc1'];
     if(acceptableFiles.includes(getFileExtension(fileName).toLowerCase())) return true;
-    M.toast({html: 'Please insert correct file format!', classes: 'rounded toast-warning', displayLength: 2000})
+    M.toast({html: 'Please insert correct file format!', classes: 'rounded toast-warning', displayLength: 2000});
     return false;
 };
 
@@ -1733,3 +1733,159 @@ function generatePDF(nests, allUsed, remaining) {
     // Save the PDF
     doc.save('nesting_report.pdf');
   }
+
+//Create hidden file input on document load for loading stock and pieces files
+const loadStockInput = document.createElement('input');
+const loadPiecesInput = document.createElement('input');
+document.addEventListener('DOMContentLoaded', function() {
+    //Create a hidden file input element for loading stock files
+    loadStockInput.type = 'file';
+    loadStockInput.id = 'load-stock-input';
+    loadStockInput.style.display = 'none';
+    loadStockInput.accept = '.csv';
+    document.body.appendChild(loadStockInput);
+    //Create a hidden file input element for loading pieces files
+    loadPiecesInput.type = 'file';
+    loadPiecesInput.id = 'load-pieces-input';
+    loadPiecesInput.style.display = 'none';
+    loadPiecesInput.accept = '.csv';
+    document.body.appendChild(loadPiecesInput);
+});
+
+//Get references to elements
+const loadStockButton = document.getElementById('load-stock');
+const loadPiecesButton = document.getElementById('load-pieces');
+const saveStockButton = document.getElementById('save-stock');
+const savePiecesButton = document.getElementById('save-pieces');
+
+//clicks a hidden insert element when the list item is clicked
+loadStockButton.addEventListener('click', function() {
+    loadStockInput.click();
+});
+loadPiecesButton.addEventListener('click', function() {
+    loadPiecesInput.click();
+});
+saveStockButton.addEventListener('click', function() {
+    downloadStockCSV();
+});
+savePiecesButton.addEventListener('click', function() {
+    downloadPiecesCSV();
+});
+
+//File input change handler for loading stock files
+loadStockInput.addEventListener('change', async function(event) {
+    //reset file counter
+    fileCounter = 0;
+    //retrieves selected file
+    const file = event.target.files[0];
+    //check if a file was selected
+    if (!file) return;
+    const fileData = await file.text();
+    //Loads the stock data from the file
+    loadStockData(fileData);
+    //clears the file input, so the same file can be imported again
+    loadStockInput.value = "";
+});
+
+//File input change handler for loading pieces files
+loadPiecesInput.addEventListener('change', async function(event) {
+    //reset file counter
+    fileCounter = 0;
+    //retrieves selected file
+    const file = event.target.files[0];
+    //check if a file was selected
+    if (!file) return;
+    const fileData = await file.text();
+    //Loads the pieces data from the file
+    loadPiecesData(fileData);
+    //clears the file input, so the same file can be imported again
+    loadPiecesInput.value = "";
+});
+
+function loadStockData(fileData) {
+    const lines = fileData.trim().split('\n');
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const columns = line.split(',').map(item => item.trim());
+        if (columns.length < 3) continue; // Skip invalid lines
+        const profile = columns[0].trim();
+        const length = parseFloat(columns[1].trim());
+        const amount = parseFloat(columns[2].trim());
+        if (isNaN(length) || isNaN(amount)) continue; // Skip invalid lines
+        stockItems.push({ profile, length, amount });
+    }
+    renderStockTable();
+    M.toast({html: 'Stock loaded successfully!', classes: 'rounded toast-success', displayLength: 2000});
+}
+
+function loadPiecesData(fileData) {
+    const lines = fileData.trim().split('\n');
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const columns = line.split(',').map(item => item.trim());
+        if (columns.length < 3) continue; // Skip invalid lines
+        const profile = columns[0].trim();
+        const length = parseFloat(columns[1].trim());
+        const amount = parseFloat(columns[2].trim());
+        const label = columns[3].trim() == '' ? length : columns[3].trim(); //Set label to the value of the input if it exists, otherwise use length
+        const color = stringToColor(label);
+        if (isNaN(length) || isNaN(amount)) continue; // Skip invalid lines
+        pieceItems.push({ profile, length, amount, label, color, id: Date.now() });
+    }
+    renderPieceTable();
+    M.toast({html: 'Pieces loaded successfully!', classes: 'rounded toast-success', displayLength: 2000});
+}
+
+//Download stock items as CSV
+function downloadStockCSV() {
+    if (!stockItems || stockItems.length === 0) {
+        M.toast({html: 'No stock items to download', classes: 'rounded toast-success', displayLength: 2000});
+        return;
+    }
+
+    // Create CSV header
+    let csvContent = 'Profile,Length,Amount\n';
+    
+    // Add data rows
+    stockItems.forEach(item => {
+        csvContent += `${item.profile},${item.length},${item.amount}\n`;
+    });
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'stock_items.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Download pieces as CSV
+function downloadPiecesCSV() {
+    if (!pieceItems || pieceItems.length === 0) {
+        M.toast({html: 'No piece items to download', classes: 'rounded toast-success', displayLength: 2000});
+        return;
+    }
+
+    // Create CSV header
+    let csvContent = 'Profile,Length,Amount,Label\n';
+    
+    // Add data rows
+    pieceItems.forEach(item => {
+        csvContent += `${item.profile},${item.length},${item.amount},${item.label}\n`;
+    });
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'piece_items.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
