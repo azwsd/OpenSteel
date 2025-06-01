@@ -22,10 +22,6 @@ html, body
   display: flex;
   align-items: center;
 }
-.linkedin
-{
-    height: 2rem;
-}
 
 /*Make text behind the load files button more visable*/
 .fixed-action-btn {
