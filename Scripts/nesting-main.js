@@ -1839,7 +1839,7 @@ function loadPiecesData(fileData) {
 //Download stock items as CSV
 function downloadStockCSV() {
     if (!stockItems || stockItems.length === 0) {
-        M.toast({html: 'No stock items to download', classes: 'rounded toast-success', displayLength: 2000});
+        M.toast({html: 'No stock items to download', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
 
@@ -1866,7 +1866,7 @@ function downloadStockCSV() {
 // Download pieces as CSV
 function downloadPiecesCSV() {
     if (!pieceItems || pieceItems.length === 0) {
-        M.toast({html: 'No piece items to download', classes: 'rounded toast-success', displayLength: 2000});
+        M.toast({html: 'No piece items to download', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
 
