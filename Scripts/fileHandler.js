@@ -60,7 +60,6 @@ function selectFile(file){
     ncParseHeaderData(filePairs.get(file));
     ncParseBlocData(filePairs.get(file));
     drawBlocs(); //Draw blocs to view
-    resetScale(); //Eesets scale and position of the view
     ncViewsImage(); //Shows the views image
     document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
     addHoleData(); //Adds hole data to hole info tap

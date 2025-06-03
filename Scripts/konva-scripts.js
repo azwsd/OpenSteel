@@ -11,42 +11,149 @@ let storedMeasurements = [];
 
 function handleResize(view) {
     const container = document.getElementById(view);
-    const stage = stages[view]; // Retrieve the correct stage instance
+    const stage = stages[view];
 
     if (stage && container) {
+        // Store current transformation to maintain view
+        const oldScale = stage.scaleX();
+        const oldX = stage.x();
+        const oldY = stage.y();
+        const oldWidth = stage.width();
+        const oldHeight = stage.height();
+        
+        // Update stage size
         stage.width(container.clientWidth);
         stage.height(container.clientHeight);
+        
+        // Adjust position to maintain relative positioning
+        const scaleX = container.clientWidth / oldWidth;
+        const scaleY = container.clientHeight / oldHeight;
+        
+        stage.x(oldX * scaleX);
+        stage.y(oldY * scaleY);
+        
+        stage.batchDraw();
     }
+}
+
+//Function to auto-fit all views
+function autoFitAllViews(padding = 0) {
+    views.forEach(view => {
+        autoFitSingleView(view, padding);
+    });
+}
+
+//Function to auto-fit a single view
+function autoFitSingleView(view, padding) {
+    const stage = stages[view];
+    if (!stage) return;
+    
+    //Get bounds of content of current view
+    const bounds = getVisibleContentBounds(stage);
+    
+    if (!bounds) {
+        //No content found in this view, reset to default view
+        resetView(view);
+        return;
+    }
+    
+    const stageWidth = stage.width();
+    const stageHeight = stage.height();
+    
+    //Calculate scale to fit this view's content with padding
+    const scaleX = (stageWidth - padding * 2) / bounds.width;
+    const scaleY = (stageHeight - padding * 2) / bounds.height;
+    const scale = Math.min(scaleX, scaleY, 3); // Allow scaling up to 3x, but limit it
+    
+    //Calculate position to center this view's content
+    const centerX = (stageWidth / 2) - ((bounds.minX + bounds.width / 2) * scale);
+    const centerY = (stageHeight / 2) - ((bounds.minY + bounds.height / 2) * scale);
+    
+    //Apply transformation with smooth animation
+    stage.to({
+        x: centerX,
+        y: centerY,
+        scaleX: scale,
+        scaleY: scale,
+        duration: 0.3,
+        easing: Konva.Easings.EaseInOut
+    });
+}
+
+//Function to get bounds of visible content
+function getVisibleContentBounds(stage) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let hasContent = false;
+    
+    //Check all layers for content
+    stage.getLayers().forEach(layer => {
+        layer.getChildren().forEach(child => {
+            //Skip invisible elements
+            if (!child.visible() || child.opacity() === 0) {
+                return;
+            }
+
+            //Get the bounding box
+            const box = child.getClientRect();
+            
+            //Only include elements with actual size
+            if (box.width > 0 && box.height > 0) {
+                minX = Math.min(minX, box.x);
+                minY = Math.min(minY, box.y);
+                maxX = Math.max(maxX, box.x + box.width);
+                maxY = Math.max(maxY, box.y + box.height);
+                hasContent = true;
+            }
+        });
+    });
+    
+    //Return null if no content found
+    if (!hasContent) {
+        return null;
+    }
+    
+    return { 
+        minX, 
+        minY, 
+        maxX, 
+        maxY, 
+        width: maxX - minX, 
+        height: maxY - minY 
+    };
+}
+
+//Reset view
+function resetView(view) {
+    const stage = stages[view];
+    stage.to({
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 0.3,
+        easing: Konva.Easings.EaseInOut
+    });
 }
 
 //Initialize all views
 views.forEach(view => {
-    const container = document.getElementById(view); //Get the container div
+    const container = document.getElementById(view);
     const stage = new Konva.Stage({
         container: view,
-        width: container.clientWidth,  //Set to container's actual width
-        height: container.clientHeight //Set to container's actual height
+        width: container.clientWidth,
+        height: container.clientHeight,
+        // Enable dragging for better navigation
+        draggable: true
     });
     const layer = new Konva.Layer();
     const measurementLayer = new Konva.Layer();
     const snapLayer = new Konva.Layer();
-    snapLayer.visible(false); //Start the snap indicator layers as hidden
+    snapLayer.visible(false);
 
     stage.add(layer);
     stage.add(measurementLayer);
     stage.add(snapLayer);
-    snapLayers[view] = snapLayer; //Store snap layer for toggling visability
-
-    //Set up a large virtual area inside
-    const largeBackground = new Konva.Rect({
-        x: 0,
-        y: 0,
-        width: 13000,  
-        height: 3000,  
-        fill: 'white',
-    });
-
-    layer.add(largeBackground);
+    snapLayers[view] = snapLayer;
 
     stages[view] = stage;
     layers[view] = layer;
@@ -55,7 +162,6 @@ views.forEach(view => {
     stage.on('click touchstart', e => handleMeasurementClick(stage, e));
     stage.on('mousemove touchmove', e => handleMouseMove(stage, e));
 
-    // Resize views dynamically when the window is resized
     window.addEventListener("resize", () => handleResize(view));
 });
 
@@ -99,10 +205,10 @@ function getNearestSnapPoint(pos) {
 //Insures that the input numbers are in the correct range
 document.querySelectorAll("input[type=number]").forEach(input => {
     input.addEventListener("input", function() {
-        let value = parseInt(this.value, 10); // Ensure value is an integer
+        let value = parseInt(this.value, 10);
 
         if (isNaN(value)) {
-            this.value = this.min; // Default to min if value is invalid
+            this.value = this.min;
         } else if (value < this.min) {
             this.value = this.min;
         } else if (value > this.max) {
@@ -117,7 +223,6 @@ let snapDistanceMax = 20;
 let snapSizeMin = 1;
 let snapSizeMax = 20;
 document.addEventListener('DOMContentLoaded', function (){
-    //Set values in the settings dropdown menu to default
     let snapSizeElement = document.getElementById('snapSize');
     snapSizeElement.value = snapSize;
     snapSizeElement.min = snapSizeMin;
@@ -134,9 +239,7 @@ document.addEventListener('DOMContentLoaded', function (){
 });
 
 document.getElementById("saveSettings").addEventListener("click", function() {
-    //Set values in script to values from settings dropdown menu
     snapSize = document.getElementById("snapSize").value;
-    //Ensure snap size is in range
     if(snapSize < snapSizeMin) {
         document.getElementById("snapSize").value = snapSizeMin;
         snapSize = snapSizeMin;
@@ -152,7 +255,7 @@ document.getElementById("saveSettings").addEventListener("click", function() {
     }
     else if(snapDistance > snapDistanceMax) {
         document.getElementById("snapDistance").value = snapDistanceMax;
-        snapDistance = ssnapDistanceMax;
+        snapDistance = snapDistanceMax;
     }
     snapPointColor = document.getElementById('snapPointColor').value;
     originPointColor = document.getElementById('originPointColor').value;
@@ -160,50 +263,47 @@ document.getElementById("saveSettings").addEventListener("click", function() {
     measurementTextColor = document.getElementById('measurementTextColor').value;
     resizeVisible = document.getElementById('measurementTextTransform').checked;
 
-    //Iterate over all measurement layers
     Object.values(measurementLayers).forEach(layer => {
         layer.getChildren(node => 
             node.name()?.startsWith("final-measurement-line") ||
             node.name()?.startsWith("measurement-text")
         ).forEach(node => {
-            if (node.className === "Line") node.stroke(measurementColor); //Change Line color
+            if (node.className === "Line") node.stroke(measurementColor);
             else if (node.className === "Text") {
-                node.fill(measurementTextColor); //Change text color
-                node.draggable(resizeVisible); //Change draggable status
+                node.fill(measurementTextColor);
+                node.draggable(resizeVisible);
             }
         });
 
-        //Iterate over all transformer for measuring lables
         const labelTransformers = layer.find('Transformer');
         labelTransformers.forEach(labelTransformer => {
             resizeVisible == false ? labelTransformer.hide() : labelTransformer.show();
         });
 
-        layer.batchDraw(); //Redraw layer after updates
+        layer.batchDraw();
     });
 
-    //Iterate over all snap layers
     Object.values(snapLayers).forEach(layer => {
         layer.getChildren(node => node.name() === "origin-point").forEach(node => {
             if (node.className === "Circle") {
-                node.fill(originPointColor); //Change origin point color
-                node.radius(snapSize); //Change size
+                node.fill(originPointColor);
+                node.radius(snapSize);
             }
         });
 
-        layer.batchDraw(); //Redraw layer after updates
+        layer.batchDraw();
     });
     Object.values(snapLayers).forEach(layer => {
         layer.getChildren(node => node.name() === "snap-indicator").forEach(node => {
             if (node.className === "Circle") {
-                node.fill(snapPointColor); //Change snap point color
-                node.radius(snapSize); //Change size
+                node.fill(snapPointColor);
+                node.radius(snapSize);
             }
         });
 
-        layer.batchDraw(); //Redraw layer after updates
+        layer.batchDraw();
     });
-    //Save settings to local storage
+
     localStorage.setItem("snapSize", snapSize);
     localStorage.setItem("snapDistance", snapDistance);
     localStorage.setItem("snapPointColor", snapPointColor);
@@ -222,19 +322,17 @@ function handleMeasurementClick(stage, e) {
 
     let view = Object.keys(stages).find(v => stages[v] === stage);
 
-    //Lock measurement to the first clicked view
     if (measurementPoints.length === 0) {
         activeMeasurementView = view;
     }
 
-    //Prevent measurement clicks in other views
     if (view !== activeMeasurementView) return;
 
     let pos = getTransformedPosition(stage, stage.getPointerPosition());
     let snappedPos = getNearestSnapPoint(pos);
     measurementPoints.push(snappedPos);
 
-    const mLayer = measurementLayers[activeMeasurementView]; // Ensure correct layer
+    const mLayer = measurementLayers[activeMeasurementView];
 
     if (measurementPoints.length === 1) {
         if (tempLine) tempLine.destroy();
@@ -247,7 +345,7 @@ function handleMeasurementClick(stage, e) {
             name: 'temp-measurement-line'
         });
 
-        tempLine.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
+        tempLine.strokeScaleEnabled(false);
         mLayer.add(tempLine);
         mLayer.batchDraw();
         isMeasuring = true;
@@ -258,16 +356,14 @@ function handleMeasurementClick(stage, e) {
             tempLine = null;
         }
 
-        //Ensure measurement is drawn in activeMeasurementView
         measureDistance(measurementPoints[0], measurementPoints[1], activeMeasurementView, false);
 
         measurementPoints = [];
-        activeMeasurementView = null; // Unlock measurement for new interactions
+        activeMeasurementView = null;
         isMeasuring = false;
     }
 }
 
-//update preview measurement line
 function handleMouseMove(stage, e) {
     if (measurementPoints.length === 1 && tempLine) {
         let pos = getTransformedPosition(stage, stage.getPointerPosition());
@@ -278,7 +374,6 @@ function handleMouseMove(stage, e) {
     }
 }
 
-//measure distance between two points
 let measurementColor = localStorage.getItem("measurementColor") || '#808080';
 let measurementTextColor = localStorage.getItem("measurementTextColor") || '#008000';
 let resizeVisible = localStorage.getItem("resizeVisible") === "true" ? true : false;
@@ -322,8 +417,8 @@ function measureDistance(start, end, view, isRedrawing, index) {
     let labelTransformer = new Konva.Transformer({
         nodes: [label],
         name: labelTransformerName,
-        rotateEnabled: true, //allows rotation
-        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], //anchors for scaling, if desired
+        rotateEnabled: true,
+        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
     });
     resizeVisible == false ? labelTransformer.hide() : labelTransformer.show();
 
@@ -332,26 +427,23 @@ function measureDistance(start, end, view, isRedrawing, index) {
     mLayer.add(line, label, labelTransformer);
     mLayer.batchDraw();
 
-    if (measurementCounter > 0) document.getElementById('historyDropdownBtn').classList.remove('lighten-3'); //Make measurement history button active
+    if (measurementCounter > 0) document.getElementById('historyDropdownBtn').classList.remove('lighten-3');
 
-    //Only store new measurements, prevent duplicates on redraw
     if (!isRedrawing) {
-        addMeasurementData(measurementCounter, view, distance, hDistance, vDistance); //Adds measurement data to history menu
+        addMeasurementData(measurementCounter, view, distance, hDistance, vDistance);
         storedMeasurements.push({ start, end, view, measurementCounter });
-        //Show toast message for measurement
         M.toast({ html: `length: ${distance} mm, X: ${hDistance} mm, Y: ${vDistance} mm`, classes: 'rounded toast-success', displayLength: 3000});
     }
 }
 
-//Redraw all measurements in a view
 function redrawMeasurements() {
     Object.keys(measurementLayers).forEach(view => {
         const mLayer = measurementLayers[view];
-        mLayer.destroyChildren(); // Clear previous measurements
+        mLayer.destroyChildren();
 
         storedMeasurements.forEach(m => {
             if (m.view === view) {
-                measureDistance(m.start, m.end, view, true, m.measurementCounter); // Pass "isRedrawing = true"
+                measureDistance(m.start, m.end, view, true, m.measurementCounter);
             }
         });
 
@@ -362,7 +454,7 @@ function redrawMeasurements() {
 views.forEach(view => {
     const stage = stages[view];
 
-    // Handle mouse wheel zoom
+    // Enhanced mouse wheel zoom with limits
     stage.on('wheel', e => {
         e.evt.preventDefault();
         const scaleBy = 1.05;
@@ -370,6 +462,12 @@ views.forEach(view => {
         let pointer = stage.getPointerPosition();
 
         let newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+        
+        // Add zoom limits
+        const minScale = 0.1;
+        const maxScale = 10;
+        newScale = Math.max(minScale, Math.min(maxScale, newScale));
+        
         stage.scale({ x: newScale, y: newScale });
 
         let mousePointTo = {
@@ -389,24 +487,19 @@ views.forEach(view => {
     let touchStartDistance = null;
     let touchStartScale = null;
 
-    // Handle touch start for pan and pinch-to-zoom
     stage.on('mousedown touchstart', e => {
         e.evt.preventDefault();
         if (e.evt.touches && e.evt.touches.length === 2) {
-            // Pinch-to-zoom start
             touchStartDistance = getDistance(e.evt.touches);
             touchStartScale = stage.scaleX();
         } else {
-            // Pan start
             lastPos = stage.getPointerPosition();
         }
     });
 
-    // Handle touch move for pan and pinch-to-zoom
     stage.on('mousemove touchmove', e => {
         e.evt.preventDefault();
         if (e.evt.touches && e.evt.touches.length === 2) {
-            // Pinch-to-zoom
             const newDistance = getDistance(e.evt.touches);
             const scaleBy = newDistance / touchStartDistance;
             const newScale = touchStartScale * scaleBy;
@@ -429,7 +522,6 @@ views.forEach(view => {
 
             stage.batchDraw();
         } else if (lastPos && tool === 'pan') {
-            // Pan
             const pos = stage.getPointerPosition();
             stage.x(stage.x() + pos.x - lastPos.x);
             stage.y(stage.y() + pos.y - lastPos.y);
@@ -438,7 +530,6 @@ views.forEach(view => {
         }
     });
 
-    // Handle touch end
     stage.on('mouseup touchend', () => {
         lastPos = null;
         touchStartDistance = null;
@@ -446,7 +537,6 @@ views.forEach(view => {
     });
 });
 
-// Helper function to calculate the distance between two touch points
 function getDistance(touches) {
     const [touch1, touch2] = touches;
     return Math.sqrt(
@@ -455,48 +545,38 @@ function getDistance(touches) {
     );
 }
 
-//clears all views
 function clearAllViews() {
     Object.keys(layers).forEach(view => {
-        layers[view].destroyChildren(); //Remove all shapes
-        measurementLayers[view].destroyChildren(); //Remove all measurements
-        snapLayers[view].destroyChildren(); //Remove all snap indicators
+        layers[view].destroyChildren();
+        measurementLayers[view].destroyChildren();
+        snapLayers[view].destroyChildren();
         layers[view].batchDraw();
         measurementLayers[view].batchDraw();
         snapLayers[view].batchDraw();
     });
 }
 
-// Reset scale and position of all stages
+//Reset scale
 function resetScale() {
-    views.forEach(view => {
-        const stage = stages[view];
-        stage.scale({ x: 1, y: 1 });
-        stage.position({ x: 0, y: 0 });
-        stage.batchDraw();
-    });
+    views.forEach(view => resetView(view));
 }
 
-//clears all measurements
 function clearMeasurements() {
     Object.keys(measurementLayers).forEach(view => {
         measurementLayers[view].destroyChildren();
         storedMeasurements = [];
         measurementLayers[view].batchDraw();
-    }
-    );
-    document.getElementById('historyDropdown').innerHTML = ''; //Clears measurement history
-    measurementCounter = 0; //Resets measuremtn counter
+    });
+    document.getElementById('historyDropdown').innerHTML = '';
+    measurementCounter = 0;
     document.getElementById('historyDropdownBtn').classList.add('lighten-3');
-    // Insures that active measurement is reset
     measurementPoints = [];
     activeMeasurementView = null;
     isMeasuring = false;
 }
 
-let tool = 'pan'; // Default tool is panning
+let tool = 'pan';
 
-//Hnadles switching from panning tool to measuring tool
 function activatePanTool() {
     if (tool === 'measure' && isMeasuring === false) {
         tool = 'pan';
@@ -504,6 +584,7 @@ function activatePanTool() {
         document.getElementById('panTool').classList.remove('lighten-3');
     }
 }
+
 function activateMeasureTool() {
     if (tool === 'pan') {
         tool = 'measure';
@@ -512,15 +593,14 @@ function activateMeasureTool() {
     }
 }
 
-//Toggle snap indictaors
 function toggleSnapIndicators() {
     let isVisible;
     Object.values(snapLayers).forEach(layer => {
         isVisible = layer.visible();
-        layer.visible(!isVisible); // Toggle visibility
+        layer.visible(!isVisible);
         layer.batchDraw();
     });
     const btn = document.getElementById('toggleSnap');
     btn.classList.toggle('lighten-3')
-    isVisible == true ? btn.dataset.tooltip = 'Show snap points' : btn.dataset.tooltip = 'Hide snap points'; //Switches the tooltip text
+    isVisible == true ? btn.dataset.tooltip = 'Show snap points' : btn.dataset.tooltip = 'Hide snap points';
 }

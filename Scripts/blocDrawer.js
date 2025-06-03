@@ -560,6 +560,8 @@ function drawBlocs(){
     drawNumertaions();
     addOriginPoints();
     redrawMeasurements();
+    resetScale(); //Eesets scale and position of the view
+    stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
 }
 
 //Shows or hide views
