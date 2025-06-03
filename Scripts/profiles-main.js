@@ -243,25 +243,84 @@ function ncViewsImage(){
 }
 
 fileInput.addEventListener("change", async (event) => {
-    //reset file counter
-    fileCounter = 0;
-    //retrives selected files
-    const files = event.target.files;
-    //gets the number of files imported
-    let fileCount = event.target.files.length;
-    //converts file list into a file array
-    let filesArray = [...files]
-    if(!filesArray.length) return;
-    for (file of filesArray){
-        const fileName = file.name;
-        if(!verifyFile(fileName)) continue;
-        const fileData = await file.text();
-        //adds the file to the view
-        addFile(fileName, fileData, fileCount);
-        //Clears the file input, so the same file can be imported again
-        fileInput.value = "";
-    }
+    await handleFiles(event.target.files);
+    //Clear the file input, so the same file can be imported again
+    fileInput.value = "";
 });
+
+//File processing logic
+async function handleFiles(files) {
+    // Reset file counter
+    fileCounter = 0;
+    // Get the number of files imported
+    let fileCount = files.length;
+    // Convert file list into a file array
+    let filesArray = [...files];
+    if (!filesArray.length) return;
+    for (const file of filesArray) {
+        const fileName = file.name;
+        if (!verifyFile(fileName)) continue;
+        const fileData = await file.text();
+        // Add the file to the view
+        addFile(fileName, fileData, fileCount);
+    }
+}
+
+// Counter to track drag enter/leave events
+let dragCounter = 0;
+
+// Make the entire page a drag and drop zone
+const dropZone = document.body;
+
+// Prevent default drag behaviors on the entire page
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    document.addEventListener(eventName, preventDefaults, false);
+});
+
+//Handle drag enter
+document.addEventListener('dragenter', (e) => {
+    dragCounter++;
+    if (dragCounter === 1) {
+        highlight(e);
+    }
+}, false);
+
+// Handle drag over
+document.addEventListener('dragover', highlight, false);
+
+// Handle drag leave
+document.addEventListener('dragleave', (e) => {
+    dragCounter--;
+    if (dragCounter === 0) {
+        unhighlight(e);
+    }
+}, false);
+
+//Handle drop
+document.addEventListener('drop', (e) => {
+    dragCounter = 0;
+    unhighlight(e);
+    handleDrop(e);
+}, false);
+//Prevent default for an event
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+//Highlight the body when a file is dragged over it
+function highlight() {
+    document.body.classList.add('drag-over');
+}
+function unhighlight() {
+    document.body.classList.remove('drag-over');
+}
+//Load files when dropped on the page
+async function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    await handleFiles(files);
+}
 
 //Parses the header of DSTV file
 function ncParseHeaderData(fileData){

@@ -1,8 +1,27 @@
 html, body
 {
-    margin: 0;
-    padding: 0;
-    height: 100vh;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+body.drag-over {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+body.drag-over::before {
+  content: "Drop files anywhere to upload";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #311b92;
+  color: white;
+  padding: 20px 40px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 #logo
 {
