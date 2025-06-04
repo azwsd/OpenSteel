@@ -487,7 +487,8 @@ function drawNumertaions() {
             fontSize: height, // Set text height as font size
             fontFamily: 'Arial',
             fill: 'black',
-            rotation: angle // Rotate text by given angle
+            rotation: angle, // Rotate text by given angle
+            name: "text"
         });
     
         numeration.strokeScaleEnabled(false);

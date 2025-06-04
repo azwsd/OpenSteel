@@ -134,6 +134,9 @@ function konvaToDXF(stage, viewName) {
 
     // Define Snap points layer
     dxf += `0\nLAYER\n2\n${snapLayer}\n70\n0\n62\n${3 * snapVisibility}\n6\nCONTINUOUS\n`;
+
+    // Define Measurement layer
+    dxf += `0\nLAYER\n2\n${measurementLayer}\n70\n0\n62\n${12 * measurementVisibility}\n6\nCONTINUOUS\n`;
     
     // End LAYER table
     dxf += '0\nENDTAB\n';
@@ -196,11 +199,14 @@ function konvaToDXF(stage, viewName) {
                                        (typeof shape.fontSize === 'function' ? shape.fontSize() : shape.fontSize) : 
                                        (shape.getAttr && shape.getAttr('fontSize') ? shape.getAttr('fontSize') : 12);
                         
+                        const name = shape.getAttr("name");
+                        
                         //Convert font size to text height in DXF (approximate conversion)
                         const textHeight = parseFloat(fontSize) * 0.75;
                         
                         dxf += '0\nTEXT\n';
-                        dxf += `8\n${textLayer}\n`; //Text layer
+                        if (name.slice() == "text") dxf += `8\n${textLayer}\n`; //Text layer
+                        else dxf += `8\n${measurementLayer}\n`; //Text layer
                         dxf += `10\n${formatNum(x)}\n`; //X position
                         dxf += `20\n${formatNum(transformedY)}\n`; //Transformed Y position
                         dxf += `30\n0.0\n`; // Z position
@@ -216,10 +222,12 @@ function konvaToDXF(stage, viewName) {
                     } else if (className === 'Line') {
                         // Handle lines
                         const points = shape.points();
+                        const name = shape.getAttr("name");
                         if (points && points.length >= 4) {
                             for (let i = 0; i < points.length - 2; i += 2) {
                                 dxf += '0\nLINE\n';
-                                dxf += `8\n${geometryLayer}\n`; //Geometry layer
+                                if (name.slice(0, 7) == "contour") dxf += `8\n${geometryLayer}\n`; //Geometry layer
+                                else  dxf += `8\n${measurementLayer}\n`; //Measurement layer
                                 dxf += `10\n${formatNum(points[i])}\n`; //Start X
                                 dxf += `20\n${formatNum(transformY(points[i+1]))}\n`; //Transformed Start Y
                                 dxf += `30\n0.0\n`; //Start Z
@@ -279,12 +287,12 @@ function konvaToDXF(stage, viewName) {
                        dxf += handleRectangleAsPolygon(shape, stageHeight, formatNum);
                     }
                 } catch (shapeError) {
-                    console.error('Error processing shape:', shapeError);
+                    M.toast({ html: 'Error processing shape!', classes: 'rounded toast-error', displayLength: 3000});
                 }
             });
         });
     } catch (err) {
-        console.error('Error generating DXF for view', viewName, err);
+        M.toast({ html: `Error generating DXF for view: ${viewName}!`, classes: 'rounded toast-error', displayLength: 3000});
     }
     
     //End the entities section
@@ -297,7 +305,7 @@ function konvaToDXF(stage, viewName) {
 }
 
 // Function to load DXF settings from local storage
-let geometryVisibility, holeVisibility, minHoleDia, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer;
+let geometryVisibility, holeVisibility, minHoleDia, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer, measurementLayer, measurementVisibility;
 function loadDXFSettings() {
     M.Sidenav.getInstance(document.getElementById('mobile')).close(); //Closes side nav
     geometryVisibility = localStorage.getItem("geometryVisibility") || 1;
@@ -305,20 +313,24 @@ function loadDXFSettings() {
     minHoleDia = localStorage.getItem("minHoleDia") || 0;
     textVisibility = localStorage.getItem("textVisibility") || 1;
     snapVisibility = localStorage.getItem("snapVisibility") || 1;
+    measurementVisibility = localStorage.getItem("measurementVisibility") || 1;
     geometryLayer = localStorage.getItem("geometryLayer") || "Geometry";
     holesLayer = localStorage.getItem("holesLayer") || "Holes";
     textLayer = localStorage.getItem("textLayer") || "Text";
     snapLayer = localStorage.getItem("snapLayer") || "Snap";
+    measurementLayer = localStorage.getItem("measurementLayer") || "Measurement";
     //Load settings to the view
     document.getElementById("geometryVisibility").checked = geometryVisibility == 'true' ? true : false;
     document.getElementById("holeVisibility").checked = holeVisibility == 'true' ? true : false;
     document.getElementById("minHoleDia").value = minHoleDia;
     document.getElementById("textVisibility").checked = textVisibility == 'true' ? true : false;
     document.getElementById("snapVisibility").checked = snapVisibility == 'true' ? true : false;
+    document.getElementById("measurementVisibility").checked = measurementVisibility == 'true' ? true : false;
     document.getElementById("geometryLayer").value = geometryLayer;
     document.getElementById("holesLayer").value = holesLayer;
     document.getElementById("textLayer").value = textLayer;
     document.getElementById("snapLayer").value = snapLayer;
+    document.getElementById("measurementLayer").value = measurementLayer;
 }
 
 //Function to export all loaded files to DXF
@@ -354,6 +366,8 @@ function exportToDXF() {
     holesLayer = document.getElementById("holesLayer").value;
     textLayer = document.getElementById("textLayer").value;
     snapLayer = document.getElementById("snapLayer").value;
+    measurementVisibility = document.getElementById("measurementVisibility").checked;
+    measurementLayer = document.getElementById("measurementLayer").value;
     //Save settings to local storage
     localStorage.setItem("geometryVisibility", geometryVisibility);
     localStorage.setItem("holeVisibility", holeVisibility);
@@ -364,11 +378,14 @@ function exportToDXF() {
     localStorage.setItem("holesLayer", holesLayer);
     localStorage.setItem("textLayer", textLayer);
     localStorage.setItem("snapLayer", snapLayer);
+    localStorage.setItem("measurementVisibility", measurementVisibility);
+    localStorage.setItem("measurementLayer", measurementLayer);
     //Convert boolean values to 1 or -1 for DXF layer Visibility
     geometryVisibility = geometryVisibility == 1 ? 1 : -1;
     holeVisibility = holeVisibility == 1 ? 1 : -1;
     textVisibility = textVisibility == 1 ? 1 : -1;
     snapVisibility = snapVisibility == 1 ? 1 : -1;
+    measurementVisibility = measurementVisibility == 1 ? 1 : -1;
 
     const zip = new JSZip();
     const views = ['o-view', 'v-view', 'u-view', 'h-view'];
