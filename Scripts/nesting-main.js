@@ -65,11 +65,13 @@ function selectFile(file){
     selectedFile = file;
     ncParseHeaderData(filePairs.get(selectedFile));
     ncViewsImage(); //Shows the views image
-    //Load piece data
-    setInputValue('piece-profile', profile);
-    setInputValue('piece-length', length);
-    setInputValue('piece-amount', quantity);
-    setInputValue('piece-label', label);
+    //Load piece data for any profile but plate
+    if (profileCode.toUpperCase() != "B") {
+        setInputValue('piece-profile', profile);
+        setInputValue('piece-length', length);
+        setInputValue('piece-amount', quantity);
+        setInputValue('piece-label', label);
+    }
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
     let instance = M.Sidenav.getInstance(sideNav)
