@@ -237,10 +237,22 @@ document.addEventListener('keydown', function (e) {
         document.getElementById('saveSettings').click();
     } 
     //Switching views
-    else if(e.key.toLowerCase() === 'o') document.querySelector(`.viewSwitch[data-view="o"]`).click();
-    else if(e.key.toLowerCase() === 'v') document.querySelector(`.viewSwitch[data-view="v"]`).click();
-    else if(e.key.toLowerCase() === 'u') document.querySelector(`.viewSwitch[data-view="u"]`).click();
-    else if(e.key.toLowerCase() === 'h') document.querySelector(`.viewSwitch[data-view="h"]`).click();
+    else if(e.key.toLowerCase() === 'o') {
+        document.querySelector(`.viewSwitch[data-view="o"]`).click();
+        resetScale();
+    }
+    else if(e.key.toLowerCase() === 'v') {
+        document.querySelector(`.viewSwitch[data-view="v"]`).click();
+        resetScale();
+    }
+    else if(e.key.toLowerCase() === 'u') {
+        document.querySelector(`.viewSwitch[data-view="u"]`).click();
+        resetScale();
+    }
+    else if(e.key.toLowerCase() === 'h') {
+        document.querySelector(`.viewSwitch[data-view="h"]`).click();
+        resetScale();
+    }
 });
 
 function loadProfilesPage(){
