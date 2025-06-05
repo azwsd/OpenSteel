@@ -10,6 +10,7 @@ let tempLine = null;
 let storedMeasurements = [];
 
 function handleResize(view) {
+    if (document.getElementById(view).classList.contains('hide')) return; //Skip resizing if the view is hidden
     const container = document.getElementById(view);
     const stage = stages[view];
 
