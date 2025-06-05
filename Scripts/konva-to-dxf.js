@@ -203,14 +203,15 @@ function konvaToDXF(stage, viewName) {
                         
                         //Convert font size to text height in DXF (approximate conversion)
                         const textHeight = parseFloat(fontSize) * 0.75;
+                        const scaledTextHeight = formatNum(textHeight) * formatNum(shape.scaleY());
                         
                         dxf += '0\nTEXT\n';
                         if (name.slice() == "text") dxf += `8\n${textLayer}\n`; //Text layer
                         else dxf += `8\n${measurementLayer}\n`; //Text layer
                         dxf += `10\n${formatNum(x)}\n`; //X position
-                        dxf += `20\n${formatNum(transformedY)}\n`; //Transformed Y position
+                        dxf += `20\n${formatNum(transformedY) - scaledTextHeight}\n`; //Transformed Y position
                         dxf += `30\n0.0\n`; // Z position
-                        dxf += `40\n${formatNum(textHeight)}\n`; //Text height
+                        dxf += `40\n${scaledTextHeight}\n`; //Text height
                         dxf += `1\n${text}\n`; //Text content
                         dxf += `7\nSTANDARD\n`; //Text style
                         
