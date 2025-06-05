@@ -138,6 +138,7 @@ function clickHoleData() {
 
 //Download all views when ctrl + s is pressed
 document.addEventListener('keydown', function (e) {
+    if ( M.Modal.getInstance(document.getElementById('DXFModal')).isOpen ) return; //Ignore key events if DXF modal is open
     if (e.ctrlKey && e.key.toLowerCase() === 's') { //Detect Ctrl + S
         e.preventDefault(); //Prevent default browser save behavior
         downloadActiveViews();
@@ -226,23 +227,20 @@ document.addEventListener('keydown', function (e) {
         e.preventDefault(); //Prevent default browser save behavior
         M.Modal.getInstance(document.getElementById('DXFModal')).open(); //Open DXF modal
     }
-});
-
-//Function buttons shortcuts
-document.addEventListener('keydown', function (e) {
-    if(e.key.toLowerCase() === 'p') activatePanTool();
-    if(e.key.toLowerCase() === 'm') activateMeasureTool();
-    if(e.key.toLowerCase() === 't') toggleSnapIndicators()
-    if(e.key.toLowerCase() === 'c' && !e.ctrlKey) M.Modal.getInstance(document.getElementById('clearMeasurementsModal')).open();
-    if(e.key.toLowerCase() === 'f') {
+    //Function buttons shortcuts
+    else if(e.key.toLowerCase() === 'p') activatePanTool();
+    else if(e.key.toLowerCase() === 'm') activateMeasureTool();
+    else if(e.key.toLowerCase() === 't') toggleSnapIndicators();
+    else if(e.key.toLowerCase() === 'c' && !e.ctrlKey) M.Modal.getInstance(document.getElementById('clearMeasurementsModal')).open();
+    else if(e.key.toLowerCase() === 'f') {
         document.getElementById('measurementTextTransform').click();
         document.getElementById('saveSettings').click();
     } 
     //Switching views
-    if(e.key.toLowerCase() === 'o') document.querySelector(`.viewSwitch[data-view="o"]`).click();
-    if(e.key.toLowerCase() === 'v') document.querySelector(`.viewSwitch[data-view="v"]`).click();
-    if(e.key.toLowerCase() === 'u') document.querySelector(`.viewSwitch[data-view="u"]`).click();
-    if(e.key.toLowerCase() === 'h') document.querySelector(`.viewSwitch[data-view="h"]`).click();
+    else if(e.key.toLowerCase() === 'o') document.querySelector(`.viewSwitch[data-view="o"]`).click();
+    else if(e.key.toLowerCase() === 'v') document.querySelector(`.viewSwitch[data-view="v"]`).click();
+    else if(e.key.toLowerCase() === 'u') document.querySelector(`.viewSwitch[data-view="u"]`).click();
+    else if(e.key.toLowerCase() === 'h') document.querySelector(`.viewSwitch[data-view="h"]`).click();
 });
 
 function loadProfilesPage(){
