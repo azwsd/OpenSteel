@@ -1841,6 +1841,11 @@ loadStockInput.addEventListener('change', async function(event) {
     const file = event.target.files[0];
     //check if a file was selected
     if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        M.toast({html: 'Only CSV files are allowed!', classes: 'rounded toast-warning', displayLength: 2000});
+        loadPiecesInput.value = ""; // Clear the input
+        return;
+    }
     const fileData = await file.text();
     //Loads the stock data from the file
     loadStockData(fileData);
@@ -1856,6 +1861,12 @@ loadPiecesInput.addEventListener('change', async function(event) {
     const file = event.target.files[0];
     //check if a file was selected
     if (!file) return;
+    //Load csv files only
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        M.toast({html: 'Only CSV files are allowed!', classes: 'rounded toast-warning', displayLength: 2000});
+        loadPiecesInput.value = ""; // Clear the input
+        return;
+    }
     const fileData = await file.text();
     //Loads the pieces data from the file
     loadPiecesData(fileData);
