@@ -587,7 +587,8 @@ function switchView(view, btn) {
     M.Tooltip.getInstance(btn).close(); //Close tooltip
     M.Tooltip.init(document.querySelectorAll('.tooltipped')); //Reinitialize tooltips
 
-    views.forEach(v => handleResize(v)); //Resize views if necessary
+    resetScale(); //Reset scale and position of the view
+    stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
 }
 
 //Create a snap indicator point in a view at x, y
