@@ -240,18 +240,22 @@ document.addEventListener('keydown', function (e) {
     else if(e.key.toLowerCase() === 'o') {
         document.querySelector(`.viewSwitch[data-view="o"]`).click();
         resetScale();
+        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
     }
     else if(e.key.toLowerCase() === 'v') {
         document.querySelector(`.viewSwitch[data-view="v"]`).click();
         resetScale();
+        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
     }
     else if(e.key.toLowerCase() === 'u') {
         document.querySelector(`.viewSwitch[data-view="u"]`).click();
         resetScale();
+        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
     }
     else if(e.key.toLowerCase() === 'h') {
         document.querySelector(`.viewSwitch[data-view="h"]`).click();
         resetScale();
+        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
     }
 });
 
