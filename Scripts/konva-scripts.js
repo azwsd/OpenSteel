@@ -131,7 +131,7 @@ function resetView(view) {
         y: 0,
         scaleX: 1,
         scaleY: 1,
-        duration: 0.3,
+        duration: 0,
         easing: Konva.Easings.EaseInOut
     });
 }
