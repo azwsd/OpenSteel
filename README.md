@@ -10,6 +10,7 @@ OpenSteel is a web app that not only allows you to view DSTV files but also prov
 - [Supported DSTV Blocks](#supported-dstv-blocks)
 - [Tech Stack](#tech-stack)
 - [License](#license)
+- [Disclaimer](#Disclaimer)
 - [Contributing](#contributing)
 
 ## Features
@@ -47,6 +48,18 @@ OpenSteel is built using the following technologies:
 
 OpenSteel, Ahmed Mohamed Ragab.
 GNU General Public License v3.0
+
+## ⚠️ Disclaimer
+
+This project includes functionality to export files in a format compatible with certain proprietary systems used in steel fabrication.
+
+- The export logic is developed entirely through independent analysis and does **not** use or include any proprietary code, libraries, file specifications, or documentation from third-party vendors.
+- The project has **no affiliation with, endorsement by, or connection to any commercial software vendor or brand**.
+- File compatibility is provided solely for the purpose of interoperability.
+
+Use of this software is at your own risk. Ensure that your use of exported files complies with any applicable software licenses or agreements.
+
+This disclaimer is provided for transparency and to clarify the independent nature of the project.
 
 ## Contributing
 
