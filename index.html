@@ -46,6 +46,7 @@
                 <h4>Export Options</h4>
                 <a href="#" onclick="downloadActiveViews()" class="btn waves-effect">Download active views</a>
                 <a href='#' data-target='DXFModal' class="btn waves-effect modal-trigger" onclick="loadDXFSettings()">DXF Export</a>
+                <a href='#' class="btn waves-effect modal-trigger" onclick="ncToFnc()">FNC Export</a>
                 <div class="modal-footer">
                     <a href="#!" class="modal-close waves-effect waves-red btn red">Close</a>
                 </div>
@@ -342,6 +343,7 @@
         <!--Includes js file for jszip-->
         <script src="Scripts/jszip.min.js"></script>
         <!--Custom js files-->
+        <script src="Scripts/nc-to-fnc.js"></script>
         <script src="Scripts/konva-to-dxf.js"></script>
         <script src="Scripts/konva-scripts.js"></script>
         <script src="Scripts/blocDrawer.js"></script>
