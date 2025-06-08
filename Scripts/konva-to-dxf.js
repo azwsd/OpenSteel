@@ -309,6 +309,7 @@ function konvaToDXF(stage, viewName) {
 let geometryVisibility, holeVisibility, minHoleDia, textVisibility, snapVisibility, geometryLayer, holesLayer, textLayer, snapLayer, measurementLayer, measurementVisibility;
 function loadDXFSettings() {
     M.Sidenav.getInstance(document.getElementById('mobile')).close(); //Closes side nav
+    M.Modal.getInstance(document.getElementById('exportModal')).close(); //Hide export modal
     geometryVisibility = localStorage.getItem("geometryVisibility") || 1;
     holeVisibility = localStorage.getItem("holeVisibility") || 1;
     minHoleDia = localStorage.getItem("minHoleDia") || 0;

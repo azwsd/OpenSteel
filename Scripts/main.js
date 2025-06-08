@@ -91,6 +91,11 @@ window.addEventListener("scroll", function () {
 });
 
 function downloadActiveViews() {
+    M.Modal.getInstance(document.getElementById('exportModal')).close(); //Hide export modal
+    if (selectedFile == '') {
+        M.toast({ html: 'No file selected to export!', classes: 'rounded toast-error', displayLength: 3000}); // Show error message if no file is selected
+        return;
+    }
     let viewCount = 0;
     let lastView = '';
     const fileName = selectedFile.substring(0, selectedFile.lastIndexOf('.'));
