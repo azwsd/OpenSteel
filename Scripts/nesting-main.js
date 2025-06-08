@@ -1053,8 +1053,8 @@ function generateAllValidPatterns(pieces, stockLength, sawWidth, maxUniqueLabels
             const usedLength = currentPattern.reduce((sum, p, idx) => {
                 // Add piece length
                 let total = sum + p.length;
-                // Add saw width for all except last piece
-                if (idx < currentPattern.length - 1) {
+                // Add saw width
+                if (idx < currentPattern.length) {
                     total += sawWidth;
                 }
                 return total;
@@ -1086,8 +1086,7 @@ function generateAllValidPatterns(pieces, stockLength, sawWidth, maxUniqueLabels
             }
             
             // Calculate additional length needed including saw cut
-            const additionalLength = piece.length + 
-                (currentPattern.length > 0 ? sawWidth : 0);
+            const additionalLength = piece.length + sawWidth;
                 
             // Check if this piece fits
             if (additionalLength <= remainingLength) {
@@ -1131,7 +1130,7 @@ function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth)
             });
             
             // Calculate waste and offcut
-            const totalWaste = (stock.pieceAssignments.length - 1) * sawWidth + gripStart + gripEnd;
+            const totalWaste = (stock.pieceAssignments.length) * sawWidth + gripStart + gripEnd;
             const offcut = stock.length - usedLength - totalWaste;
             
             cuttingNests.push({
@@ -1288,7 +1287,7 @@ function renderCuttingNests(nests) {
         cursor += assign.piece.length;
         
         // Add saw cut
-        if (i < pattern.pieceAssignments.length - 1 && pattern.sawWidth > 0) {
+        if (i < pattern.pieceAssignments.length && pattern.sawWidth > 0) {
           const sawCut = createElem('div', 'saw-cut-segment');
           sawCut.style.left = `${(cursor / total * 100)}%`;
           sawCut.style.width = `${(pattern.sawWidth / total * 100)}%`;
@@ -1397,9 +1396,11 @@ function renderCuttingNests(nests) {
         ${nests.map((pat, i) => `
           <li class="collection-item">
             <div class="row">
-              <div class="col s12 m6">Nest #${i + 1} - Profile: ${pat.profile}</div>
-              <div class="col s6 m3">Stock: ${pat.stockLength} mm</div>
-              <div class="col s6 m3">Pieces: ${pat.pieceAssignments.length}</div>
+              <div class="col l4 s12 m12">Nest #${i + 1} - Profile: ${pat.profile}</div>
+              <div class="col l2 s6 m3">Stock: ${pat.stockLength} mm</div>
+              <div class="col l2 s6 m3">Pieces: ${pat.pieceAssignments.length}</div>
+              <div class="col l2 s6 m3">Offcut: ${pat.offcut} mm</div>
+              <div class="col l2 s6 m3">Waste: ${pat.waste} mm</div>
             </div>
           </li>
         `).join('')}
