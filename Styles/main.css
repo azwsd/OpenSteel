@@ -188,6 +188,10 @@ body.drag-over::before {
     background-color: black;
 }
 
+#FNCModal .input-field{
+  min-height: 15rem;
+}
+
 /*Styles the div created dynamically for hole data*/
 .holeInfoContainer {
     display: flex;
