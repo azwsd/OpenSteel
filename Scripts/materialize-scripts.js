@@ -66,3 +66,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     M.Tooltip.init(document.querySelectorAll('.tooltipped')); // Refresh tooltips
 });
+
+//Initialize select elements for dropdowns
+document.addEventListener('DOMContentLoaded', function() {
+    var elems = document.querySelectorAll('select');
+    var instances = M.FormSelect.init(elems, {});
+  });
