@@ -83,16 +83,16 @@ function ncLoadHeaderData(fileData){
             case 14:
                 weightPerMeter = line;
                 break;
-            case 15:
+            case 16:
                 webStartCut = line;
                 break;
-            case 16:
+            case 17:
                 webEndCut = line;
                 break;
-            case 17:
+            case 18:
                 flangeStartCut = line;
                 break;
-            case 18:
+            case 19:
                 flangeEndCut = line;
                 break;
         }
