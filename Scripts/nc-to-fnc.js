@@ -102,9 +102,10 @@ function ncLoadHeaderData(fileData){
 
 // Face mapping
 const faceMapping = {
-    'o': 'DB',  // original face
-    'u': 'DA',  // upper face
-    'h': 'DC'   // horizontal face
+    'o': 'DB',
+    'u': 'DA',
+    'v': 'DC',
+    'h': 'DD'
 };
 
 // Drill type mapping
@@ -120,6 +121,7 @@ function createHoleBlock(fileData) {
     
     const lines = fileData.split('\n');
     let inBoBlock = false;
+    let currentFace = '';
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -140,9 +142,11 @@ function createHoleBlock(fileData) {
         if (inBoBlock && line.length > 0) {
             // Parse hole line: face, x, y, diameter, angle
             const parts = line.trim().split(/\s+/);
-            
+
             if (parts.length >= 4) {
-                const face = parts[0];
+                let face = parts[0].toLowerCase();
+                if (face == '') face = currentFace; // Use the last face if current face is empty
+                else currentFace = face; // Update current face
                 let xCoord = parts[1];
                 const yCoord = parts[2];
                 const diameter = parts[3];
