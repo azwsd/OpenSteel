@@ -155,7 +155,7 @@ function createHoleBlock(fileData) {
                 xCoord = xCoord.replace(/[a-zA-Z]+$/, '');
                 
                 // Get FNC face based on face
-                const FNCFace = faceMapping[face] || 'DB'; // default to DB if face not found
+                const FNCFace = faceMapping[face];
 
                 // Format the hole string
                 const holeString = `[HOL]   ${drillTypeMapping[FNCDrillType]}   ${FNCFace}${diameter} X${xCoord} Y${yCoord}`;
