@@ -163,7 +163,11 @@ views.forEach(view => {
     stage.on('click touchstart', e => handleMeasurementClick(stage, e));
     stage.on('mousemove touchmove', e => handleMouseMove(stage, e));
 
-    window.addEventListener("resize", () => handleResize(view));
+    window.addEventListener("resize", () => {
+        for (const view of views) handleResize(view);
+        resetScale(); //Reset scale and position of the view
+        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
+    });
 });
 
 //changes the measurement view on click
