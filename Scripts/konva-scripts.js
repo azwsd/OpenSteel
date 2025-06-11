@@ -163,10 +163,14 @@ views.forEach(view => {
     stage.on('click touchstart', e => handleMeasurementClick(stage, e));
     stage.on('mousemove touchmove', e => handleMouseMove(stage, e));
 
+    let resizeTimeout;
     window.addEventListener("resize", () => {
-        for (const view of views) handleResize(view);
-        resetScale(); //Reset scale and position of the view
-        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            for (const view of views) handleResize(view);
+            resetScale();
+            stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() });
+        }, 250); // Wait 250ms after last resize event
     });
 });
 
