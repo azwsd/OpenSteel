@@ -115,6 +115,17 @@ const drillTypeMapping = {
     'Tap': 'TS41'
 };
 
+const profileCodeMapping = {
+    'I' : 'I',
+    'RO' : 'R',
+    'U' : 'U',
+    'L' : 'L',
+    'B' : 'P',
+    'T' : 'T',
+    'C' : 'C',
+    'M' : 'M'
+}
+
 function createHoleBlock(fileData) {
     // String to hold all hole data
     let holeData = '';
@@ -169,8 +180,64 @@ function createHoleBlock(fileData) {
     return holeData;
 }
 
+function createMarkBlock(fileData) {
+    // String to hold all mark data
+    let markData = '';
+
+    const lines = fileData.split('\n');
+    let inBoBlock = false;
+    let currentFace = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Check for SI block
+        if (line === 'SI') {
+            inBoBlock = true;
+            continue;
+        }
+
+        // Check for exiting a SI block (empty line or end of file or new block)
+        if (inBoBlock && (line === '' || line === 'EN' || line.match(/^[A-Z]{2}$/))) {
+            inBoBlock = false;
+            continue;
+        }
+
+        // Process mark data within SI block
+        if (inBoBlock && line.length > 0) {
+            // Parse mark line: face, x, y, angle, text
+            const parts = line.trim().split(/\s+/);
+
+            if (parts.length >= 4) {
+                let face = parts[0].toLowerCase();
+                if (face == '') face = currentFace; // Use the last face if current face is empty
+                else currentFace = face; // Update current face
+                let xCoord = parts[1];
+                const yCoord = parts[2];
+                const angle = parts[3];
+                const text = parts[5];
+                
+                // Remove any suffix from x coordinate (letters at the end)
+                xCoord = xCoord.replace(/[a-zA-Z]+$/, '');
+                
+                // Get FNC face based on face
+                const FNCFace = faceMapping[face];
+
+                // Format the mark string
+                const markString = `[MARK] ${FNCFace} X${xCoord} Y${yCoord} ANG${angle} N:${text}`;
+
+                // Add to global array
+                markData += markString + '\n';
+            }
+        }
+    }
+
+    return markData;
+}
+
 function createPRFBlock() {
-    return `[[PRF]]\n[PRF] CP:${profileCode} P:${profile} SA${height} TA${webThickness} SB${flangeWidth} TB${flangeThickness} WL${weightPerMeter}`;
+    const weightText = profileCode == 'B' ? '' : `WL${weightPerMeter}`;
+    return `[[PRF]]\n[PRF] CP:${profileCodeMapping[profileCode]} P:${profile} SA${height} TA${webThickness} SB${flangeWidth} TB${flangeThickness} ${weightText}`;
 }
 
 function createMaterialBlock() {
@@ -178,12 +245,13 @@ function createMaterialBlock() {
 }
 
 function createPCSBlock() {
-    return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${label}\nM:${steelQuality} CP:${profileCode} P:${profile}\nLP${length} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${quantity}`;
+    const partData = profileCode == 'B' ? `LP${length} SA${height} TA${webThickness}` : `LP${length} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}`;
+    return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${label} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\n${partData}\nQI${quantity}`;
 }
 
 function createFNC(fileData) {
     ncLoadHeaderData(fileData);
-    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock()}\n${createHoleBlock(fileData)}`;
+    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock()}\n${createHoleBlock(fileData)}\n${createMarkBlock(fileData)}`;
 }
 
 let FNCDrillType = localStorage.getItem('FNCDrillType') || 'Punch'; // Default to 'Punch' if not set
