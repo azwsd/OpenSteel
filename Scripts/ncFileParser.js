@@ -420,6 +420,8 @@ function deleteMeasurement(btn, event) {
     let view = div.firstElementChild.firstElementChild.innerHTML;
     let layer = measurementLayers[view];
     layer.findOne(`.final-measurement-line-${measurementCounter}`).destroy(); //Find the measurement line by its name
+    layer.findOne(`.final-guide-line-1-${measurementCounter}`).destroy(); //Find the guide line 1 by its name
+    layer.findOne(`.final-guide-line-2-${measurementCounter}`).destroy(); //Find the guide line 2 by its name
     layer.findOne(`.measurement-text-${measurementCounter}`).destroy(); //Find the measurement text by its name
     layer.findOne(`.measurement-transformer-${measurementCounter}`).destroy(); //Find the measurement text transformer by its name
     layer.batchDraw(); //Redraws the layer after modification
