@@ -117,29 +117,19 @@ function konvaToDXF(stage, viewName) {
     dxf += '0\nSECTION\n2\nTABLES\n';
     
     // Add LTYPE table
-    dxf += '0\nTABLE\n2\nLTYPE\n70\n1\n';
-    dxf += '0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0\n';
-    dxf += '0\nENDTAB\n';
-    
+    dxf += '0\nTABLE\n2\nLTYPE\n70\n2\n'; // 2 line types
+    dxf += '0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0\n'; // CONTINUOUS
+    dxf += '0\nLTYPE\n2\nDASHED\n70\n0\n3\nDashed line\n72\n65\n73\n2\n40\n0.75\n49\n0.5\n49\n-0.75\n'; // DASHED
+    dxf += '0\nENDTAB\n'; // End LTYPE table
+
     // Start LAYER table
-    dxf += '0\nTABLE\n2\nLAYER\n70\n3\n'; // 3 layers
-    
-    // Define Geometry layer
-    dxf += `0\nLAYER\n2\n${geometryLayer}\n70\n0\n62\n${7 * geometryVisibility}\n6\nCONTINUOUS\n`;
-    
-    // Define Holes layer
-    dxf += `0\nLAYER\n2\n${holesLayer}\n70\n0\n62\n${1 * holeVisibility}\n6\nCONTINUOUS\n`;
-    // Define Text layer
-    dxf += `0\nLAYER\n2\n${textLayer}\n70\n0\n62\n${2 * textVisibility}\n6\nCONTINUOUS\n`;
-
-    // Define Snap points layer
-    dxf += `0\nLAYER\n2\n${snapLayer}\n70\n0\n62\n${3 * snapVisibility}\n6\nCONTINUOUS\n`;
-
-    // Define Measurement layer
-    dxf += `0\nLAYER\n2\n${measurementLayer}\n70\n0\n62\n${12 * measurementVisibility}\n6\nCONTINUOUS\n`;
-    
-    // End LAYER table
-    dxf += '0\nENDTAB\n';
+    dxf += '0\nTABLE\n2\nLAYER\n70\n5\n'; // 5 layers
+    dxf += `0\nLAYER\n2\n${geometryLayer}\n70\n0\n62\n${7 * geometryVisibility}\n6\nCONTINUOUS\n`; // Define Geometry layer
+    dxf += `0\nLAYER\n2\n${holesLayer}\n70\n0\n62\n${1 * holeVisibility}\n6\nCONTINUOUS\n`; // Define Holes layer
+    dxf += `0\nLAYER\n2\n${textLayer}\n70\n0\n62\n${2 * textVisibility}\n6\nCONTINUOUS\n`; // Define Text layer
+    dxf += `0\nLAYER\n2\n${snapLayer}\n70\n0\n62\n${3 * snapVisibility}\n6\nCONTINUOUS\n`; // Define Snap points layer
+    dxf += `0\nLAYER\n2\n${measurementLayer}\n70\n0\n62\n${12 * measurementVisibility}\n6\nDASHED\n`; // Define Measurement layer
+    dxf += '0\nENDTAB\n'; // End LAYER table
     
     // Add STYLE table for text
     dxf += '0\nTABLE\n2\nSTYLE\n70\n1\n';
