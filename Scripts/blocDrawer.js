@@ -482,15 +482,15 @@ function drawNumertaions() {
     
         const numeration = new Konva.Text({
             x: tX,
-            y: tY - height,
+            y: tY,
             text: text,
             fontSize: height * 1.4, // Set text height as font size
             fontFamily: 'Arial',
             fill: 'black',
-            rotation: angle, // Rotate text by given angle
+            rotation: -angle, // Rotate text by given angle
+            offsetY: height * 1.4, // Shift rotation point to bottom-left
             name: "text"
-        }); 
-        numeration.strokeScaleEnabled(false);
+        });
         layer.add(numeration);
         layer.batchDraw();
     }
