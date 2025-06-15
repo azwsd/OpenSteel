@@ -418,28 +418,91 @@ function handleMouseMove(stage, e) {
     else if (measurementPoints.length === 2 && tempLine) {
         // Move the temp line parallel to the original line following mouse pointer
         let pos = getTransformedPosition(stage, stage.getPointerPosition());
-        const vectorPojection = ((pos.x - measurementPoints[0].x) * (measurementPoints[1].x - measurementPoints[0].x) +
-            (pos.y - measurementPoints[0].y) * (measurementPoints[1].y - measurementPoints[0].y)) /
-            (Math.pow(measurementPoints[1].x - measurementPoints[0].x, 2) +
-            Math.pow(measurementPoints[1].y - measurementPoints[0].y, 2));
-        const closestPoint = {
-            x: measurementPoints[0].x + vectorPojection * (measurementPoints[1].x - measurementPoints[0].x),
-            y: measurementPoints[0].y + vectorPojection * (measurementPoints[1].y - measurementPoints[0].y)
-        };
-        const translationVector = {
-            x: pos.x - closestPoint.x,
-            y: pos.y - closestPoint.y
-        };
-        const newPoint = {
-            x1: measurementPoints[0].x + translationVector.x,
-            y1: measurementPoints[0].y + translationVector.y,
-            x2: measurementPoints[1].x + translationVector.x,
-            y2: measurementPoints[1].y + translationVector.y
-        };
+
+        // Calculate the angle from the first measurement center point to the mouse cursor
+        const mouseAngle = Math.atan2(
+            pos.y - (measurementPoints[0].y + measurementPoints[1].y) / 2,
+            pos.x - (measurementPoints[0].x + measurementPoints[1].x) / 2
+        );
+        const mouseAngleDegrees = (mouseAngle * 180 / Math.PI + 360) % 360; // Convert to degrees
+
+        // Snap threshold (in degrees)
+        const snapThreshold = 15;
+
+        // Check if mouse angle is close to horizontal (0° or 180°) or vertical (90° or 270°)
+        let snapToAxis = false;
+        let snapType = null;
+        let lineType = null;
+
+        // Determine if the measurement line is aligned (horizontal or vertical)
+        if (measurementPoints[0].x === measurementPoints[1].x || measurementPoints[0].y === measurementPoints[1].y) lineType = 'aligned';
+
+        // Snap to horizontal (X-axis aligned) - mouse is roughly horizontal from first point
+        if ((mouseAngleDegrees <= snapThreshold) || (mouseAngleDegrees >= 360 - snapThreshold) || 
+            (Math.abs(mouseAngleDegrees - 180) <= snapThreshold)) {
+            snapToAxis = true;
+            snapType = 'horizontal';
+        }
+        // Snap to vertical (Y-axis aligned) - mouse is roughly vertical from first point
+        else if (Math.abs(mouseAngleDegrees - 90) <= snapThreshold || Math.abs(mouseAngleDegrees - 270) <= snapThreshold) {
+            snapToAxis = true;
+            snapType = 'vertical';
+        }
+
+        let newPoint;
+
+        // If snapping to axis, adjust the new point based on the snap type or if the line is aligned make it parallel to the original line
+        if (snapToAxis && lineType !== 'aligned') {
+            if (snapType === 'horizontal') {
+                // Snap to horizontal - show vertical measurement
+                const horizontalOffset = pos.x - measurementPoints[0].x;
+                newPoint = {
+                    x1: measurementPoints[0].x + horizontalOffset,
+                    y1: measurementPoints[0].y,
+                    x2: measurementPoints[0].x + horizontalOffset, // Same X coordinate for vertical line
+                    y2: measurementPoints[1].y
+                };
+            } else if (snapType === 'vertical') {
+                // Snap to vertical - show horizontal measurement
+                const verticalOffset = pos.y - measurementPoints[0].y;
+                newPoint = {
+                    x1: measurementPoints[0].x,
+                    y1: measurementPoints[0].y + verticalOffset,
+                    x2: measurementPoints[1].x,
+                    y2: measurementPoints[0].y + verticalOffset // Same Y coordinate for horizontal line
+                };
+            }
+        } else {
+            // Parallel to the original line
+            const vectorPojection = ((pos.x - measurementPoints[0].x) * (measurementPoints[1].x - measurementPoints[0].x) +
+                (pos.y - measurementPoints[0].y) * (measurementPoints[1].y - measurementPoints[0].y)) /
+                (Math.pow(measurementPoints[1].x - measurementPoints[0].x, 2) +
+                Math.pow(measurementPoints[1].y - measurementPoints[0].y, 2));
+            
+            const closestPoint = {
+                x: measurementPoints[0].x + vectorPojection * (measurementPoints[1].x - measurementPoints[0].x),
+                y: measurementPoints[0].y + vectorPojection * (measurementPoints[1].y - measurementPoints[0].y)
+            };
+            
+            const translationVector = {
+                x: pos.x - closestPoint.x,
+                y: pos.y - closestPoint.y
+            };
+            
+            newPoint = {
+                x1: measurementPoints[0].x + translationVector.x,
+                y1: measurementPoints[0].y + translationVector.y,
+                x2: measurementPoints[1].x + translationVector.x,
+                y2: measurementPoints[1].y + translationVector.y
+            };
+        }
+
         tempLine.points([newPoint.x1, newPoint.y1, newPoint.x2, newPoint.y2]);
+
         // Update guide lines to match the new position
         tempGuideLine1.points([measurementPoints[0].x, measurementPoints[0].y, newPoint.x1, newPoint.y1]);
         tempGuideLine2.points([measurementPoints[1].x, measurementPoints[1].y, newPoint.x2, newPoint.y2]);
+
         measurementLayers[activeMeasurementView].batchDraw();
     }
 }
