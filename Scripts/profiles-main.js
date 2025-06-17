@@ -159,6 +159,7 @@ function deleteFile(btn, event){
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
         document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
         document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
+        document.getElementById('weightResult').value = ''; //Reset weight result
         selectedFile = '';
     }
     updateSessionData()
@@ -187,6 +188,7 @@ function clearAllFiles(){
     document.getElementById('profileViewsImg').src = ''; //clears views img
     document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
     document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
+    document.getElementById('weightResult').value = ''; //Reset weight result
     updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
