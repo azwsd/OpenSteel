@@ -2,6 +2,7 @@
 //Global variables for important header data
 let order = '';
 let drawing = '';
+let phase = '';
 let label = '';
 let steelQuality = '';
 let quantity = '';
@@ -50,6 +51,9 @@ function ncLoadHeaderData(fileData){
             case 1:
                 drawing = line;
                 break;    
+            case 2:
+                phase = line;
+                break; 
             case 3:
             label = line;
                 break;
@@ -107,6 +111,10 @@ const faceMapping = {
     'v': 'DC',
     'h': 'DD'
 };
+const angleFaceMapping = {
+    'u': 'DA',
+    'v': 'DB'
+};
 
 // Drill type mapping
 const drillTypeMapping = {
@@ -117,13 +125,13 @@ const drillTypeMapping = {
 
 const profileCodeMapping = {
     'I' : 'I',
-    'RO' : 'R',
+    'RO' : 'RO',
     'U' : 'U',
     'L' : 'L',
     'B' : 'P',
     'T' : 'T',
     'C' : 'C',
-    'M' : 'M'
+    'M' : 'Q'
 }
 
 function createHoleBlock(fileData) {
@@ -166,7 +174,7 @@ function createHoleBlock(fileData) {
                 xCoord = xCoord.replace(/[a-zA-Z]+$/, '');
                 
                 // Get FNC face based on face
-                const FNCFace = faceMapping[face];
+                const FNCFace = profileCode == 'L' ? angleFaceMapping[face] : faceMapping[face];
 
                 // Format the hole string
                 const holeString = `[HOL]   ${drillTypeMapping[FNCDrillType]}   ${FNCFace}${diameter} X${xCoord} Y${yCoord}`;
@@ -246,7 +254,7 @@ function createMaterialBlock() {
 
 function createPCSBlock() {
     const partData = profileCode == 'B' ? `LP${length} SA${height} TA${webThickness}` : `LP${length} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}`;
-    return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${label} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\n${partData}\nQI${quantity}`;
+    return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\n${partData}\nQI${quantity}`;
 }
 
 function createFNC(fileData) {
