@@ -470,7 +470,7 @@ function handleUndefinedViews(){
     const flangeCutEnd = Math.abs(parseFloat(document.getElementById('flangeCutEnd').querySelector('p:first-of-type').innerHTML));
     const isNegativeFCE = (document.getElementById('flangeCutEnd').querySelector('p:first-of-type').innerHTML.trim().startsWith("-"));
 
-   if (['U', 'B', 'L', 'C', 'M'].includes(profile)) {
+   if (['U', 'B', 'L', 'C', 'M', 'RO', 'RU'].includes(profile)) {
         switch (profile) {
             case 'M':
                 if (!viewExists.h) addBackWeb(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
@@ -479,6 +479,8 @@ function handleUndefinedViews(){
                 if (!viewExists.o) addTopFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
             case 'L':
                 if (!viewExists.u) addBottomFlange(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+            case 'RO':
+            case 'RU':
             case 'B':
                 if (!viewExists.v) addFrontWeb(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
             default:
