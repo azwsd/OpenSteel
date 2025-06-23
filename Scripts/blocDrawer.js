@@ -20,11 +20,11 @@ function drawContours() {
             isFirstIteration = true;
         }
 
-        if(currentContour == 'IK' && isFirstIteration) {
+        if(isFirstIteration) {
             firstX = dataLine[1];
             firstY = dataLine[3];
         }
-        else if(currentContour == 'IK' && !isFirstIteration && dataLine[1] == firstX && dataLine[3] == firstY) resetIteration = true;
+        else if(!isFirstIteration && dataLine[1] == firstX && dataLine[3] == firstY) resetIteration = true;
 
         // Skip drawing the line if the face has changed
         if (prevView !== null && prevView !== currentView) {
@@ -102,6 +102,11 @@ function drawContours() {
             arcLine = 0;
             arcType = 'full';
             arcData.push(eX, eY);
+        }
+
+        if(resetIteration) {
+            resetIteration = false;
+            isFirstIteration = true;
         }
 
         if (arcData.length !== 0 && arcType === 'partial') {
@@ -265,11 +270,6 @@ function drawContours() {
         line.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
         layer.add(line);
         layer.batchDraw();
-
-        if(resetIteration) {
-            resetIteration = false;
-            isFirstIteration = true;
-        }
     }
 }
 
