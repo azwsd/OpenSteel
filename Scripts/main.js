@@ -161,7 +161,8 @@ function clickHoleData() {
 
 //Download all views when ctrl + s is pressed
 document.addEventListener('keydown', function (e) {
-    if ( M.Modal.getInstance(document.getElementById('DXFModal')).isOpen ) return; //Ignore key events if DXF modal is open
+    if ( M.Modal.getInstance(document.getElementById('DXFModal')).isOpen ||
+        M.Modal.getInstance(document.getElementById('createModal')).isOpen) return; //Ignore key events if DXF/create modals is open
     if (e.ctrlKey && e.key.toLowerCase() === 's') { //Detect Ctrl + S
         e.preventDefault(); //Prevent default browser save behavior
         downloadActiveViews();
@@ -247,9 +248,9 @@ document.addEventListener('keydown', function (e) {
         document.getElementById('snapDistance').stepDown();
         document.getElementById('saveSettings').click();
     }
-    else if (e.key.toLowerCase() === 'd') { //Detect d
+    else if (e.key.toLowerCase() === 'e') { //Detect e
         e.preventDefault(); //Prevent default browser save behavior
-        M.Modal.getInstance(document.getElementById('DXFModal')).open(); //Open DXF modal
+        M.Modal.getInstance(document.getElementById('exportModal')).open(); //Open export modal
     }
     //Function buttons shortcuts
     else if(e.key.toLowerCase() === 'p') activatePanTool();
