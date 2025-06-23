@@ -289,3 +289,37 @@ document.addEventListener('DOMContentLoaded', function(){
         selectFile(selectedFile); //Select saved selectedFile in session
     }
 });
+
+document.getElementById('exportNCButton').addEventListener('click', function(){
+    let link = document.createElement('a');
+    let data = filePairs.get(selectedFile);
+    let blob = new Blob([data], { type: 'text/plain' });
+    link.href = URL.createObjectURL(blob);
+    link.download = `${selectedFile}`; //Name of the ZIP file
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+document.getElementById('batchExportNCButton').addEventListener('click', function(){
+    let zip = new JSZip(); //Create a new ZIP archive
+    let promises = [];
+    for (let [key, value] of filePairs.entries()) {
+        let promise = fetch(value)
+            .then(res => res.blob())
+                .then(blob => {
+                    zip.file(`${key}`, blob); // Add PNG file to ZIP
+        });
+        promises.push(promise);
+    }
+    Promise.all(promises).then(() => {
+        zip.generateAsync({ type: 'blob' }).then(blob => {
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'DSTV-Export.zip'; //Name of the ZIP file
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    });
+});
