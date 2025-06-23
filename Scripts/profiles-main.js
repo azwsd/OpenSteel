@@ -457,7 +457,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, height, width, webThickness, flangeThickness, radius, code].forEach(e => { profileData.appendChild(e) });
-        calcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else if (loadedProfile == 'Rebar' || loadedProfile == 'Round') {
         clearViewProfileData();
@@ -472,7 +472,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, od, code].forEach(e => { profileData.appendChild(e) });
-        calcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else if (loadedProfile == 'CHS') {
         clearViewProfileData();
@@ -493,7 +493,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, od, thickness, nps, sch, code].forEach(e => { profileData.appendChild(e) });
-        calcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else if (loadedProfile == 'Flat') {
         clearViewProfileData();
@@ -510,7 +510,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, thickness, width, code].forEach(e => { profileData.appendChild(e) });
-        calcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else if (loadedProfile == 'Square') {
         clearViewProfileData();
@@ -525,7 +525,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, length, code].forEach(e => { profileData.appendChild(e) });
-        calcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else if (loadedProfile == 'RHS' || loadedProfile == 'SHS' || loadedProfile == 'L') {
         clearViewProfileData();
@@ -544,7 +544,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, thickness, height, width, code].forEach(e => { profileData.appendChild(e) });
-        calcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else M.toast({html: 'Please choose a correct profile!', classes: 'rounded toast-error', displayLength: 2000});
 }
@@ -571,6 +571,12 @@ function parseCSV(text) {
 document.getElementById('Length')?.addEventListener('input', calcWeight);
 document.getElementById('Quantity')?.addEventListener('input', calcWeight);
 let weightValue = 0;
+let debounceTimer;
+// Debounced version of calcWeight with 500ms delay
+function debouncedCalcWeight() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(calcWeight, 100);
+}
 function calcWeight() {
     if (weightValue == 0) {
         M.toast({html: 'Please choose a profile!', classes: 'rounded toast-error', displayLength: 2000})
