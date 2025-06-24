@@ -364,7 +364,6 @@ function BatchNcToFnc() {
 document.addEventListener('DOMContentLoaded', function(){
    const exportFNCButton = document.getElementById('exportFNCButton');
    exportFNCButton.addEventListener('click', function() {
-        M.Modal.getInstance(document.getElementById('exportModal')).close(); // Hide export modal
         const selectElement = document.getElementById('FNCDrillTypeSelect');
         selectElement.value = FNCDrillType; // Set FNC drill type export value
         M.FormSelect.init(selectElement); // Re-initialize to show the change
