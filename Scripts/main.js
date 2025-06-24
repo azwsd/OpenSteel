@@ -290,20 +290,60 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 });
 
-let exportHoles = localStorage.getItem("exportHoles") || 1;
-let exportCuts = localStorage.getItem("exportCuts") || 1;
+let removeHoles = localStorage.getItem("removeHoles") || 1;
+let removeCuts = localStorage.getItem("removeCuts") || 1;
+let removeMitre = localStorage.getItem("removeMitre") || 1;
 
 function getDSTVSettings () {
-    exportHoles = document.getElementById('exportHoles').checked;
-    exportCuts = document.getElementById('exportCuts').checked;
+    removeHoles = document.getElementById('removeHoles').checked;
+    removeCuts = document.getElementById('removeCuts').checked;
+    removeMitre = document.getElementById('removeMitre').checked;
 }
 
 function setDSTVSettings () {
-    localStorage.setItem("exportHoles", exportHoles);
-    localStorage.setItem("exportCuts", exportCuts);
+    localStorage.setItem("removeHoles", removeHoles);
+    localStorage.setItem("removeCuts", removeCuts);
+    localStorage.setItem("removeMitre", removeMitre);
 }
 
 document.getElementById('exportNCButton').addEventListener('click', getDSTVSettings()); //Loads stored DSTV settings into view
+
+function removeNCBlocks (data, blockCodes) {
+    let lines = data.split(/\r?\n/);
+    let updatedData = '';
+    let currentBlock = '';
+    let prevLine = '';
+    let blockOpening = false;
+    for (const line of lines) {
+        if (['BO', 'SI', 'AK', 'IK', 'PU', 'KO', 'SC', 'TO', 'UE', 'PR', 'KA', 'EN'].includes(line.trim().toUpperCase().slice(0, 2))) {
+            currentBlock = line.trim().toLocaleUpperCase().slice(0, 2);
+            prevLine = line;
+            blockOpening = true;
+            continue;
+        }
+        if (blockCodes.includes(currentBlock)) continue; //Skip block data
+        //Adds block code at the top of each block
+        if (blockOpening) {
+            updatedData += prevLine + '\n';
+            blockOpening = false;
+        }
+        updatedData += line + '\n';
+    }
+    return updatedData;
+}
+
+function removeNCMitre (data) {
+    let lines = data.split(/\r?\n/);
+    let updatedData = '';
+    let lineCounter = 0;
+    for (const line of lines) {
+        if (line.trim().slice(0, 2) == '**') continue;
+        lineCounter++;
+        if (lineCounter > 17 && lineCounter < 22) updatedData += '0.00\n';
+        else updatedData += line + '\n';
+    }
+    return updatedData;
+}
 
 document.getElementById('exportNCButton').addEventListener('click', function(){
     setDSTVSettings(); //Loads settings into local storage
@@ -317,6 +357,12 @@ document.getElementById('exportNCButton').addEventListener('click', function(){
     }
     let link = document.createElement('a');
     let data = filePairs.get(selectedFile);
+    //Removes DSTV blocks depending on user settings
+    if (removeCuts && removeHoles) data = removeNCBlocks(data, ['BO', 'IK', 'AK']);
+    else if (removeCuts) data = removeNCBlocks(data, ['IK', 'AK']);
+    else if (removeHoles) data = removeNCBlocks(data, ['BO']);
+    //Removes mitre depending on user settings
+    if (removeMitre) data = removeNCMitre(data);
     let blob = new Blob([data], { type: 'text/plain' });
     link.href = URL.createObjectURL(blob);
     link.download = `${selectedFile}`; //Name of the ZIP file
@@ -331,24 +377,27 @@ document.getElementById('batchExportNCButton').addEventListener('click', functio
         M.toast({ html: 'No files to export!', classes: 'rounded toast-warning', displayLength: 3000}); //Show error message if no files are loaded
         return;
     }
-    let zip = new JSZip(); //Create a new ZIP archive
-    let promises = [];
-    for (let [key, value] of filePairs.entries()) {
-        let promise = fetch(value)
-            .then(res => res.blob())
-                .then(blob => {
-                    zip.file(`${key}`, blob); // Add PNG file to ZIP
-        });
-        promises.push(promise);
+    else if (filePairs.size === 1) {
+        document.getElementById('exportNCButton').click();
+        return;
     }
-    Promise.all(promises).then(() => {
-        zip.generateAsync({ type: 'blob' }).then(blob => {
-            let link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'DSTV-Export.zip'; //Name of the ZIP file
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
+    let zip = new JSZip(); //Create a new ZIP archive
+    for (let [file, data] of filePairs.entries()) {
+        //Removes DSTV blocks depending on user settings
+        if (removeCuts && removeHoles) data = removeNCBlocks(data, ['BO', 'IK', 'AK']);
+        else if (removeCuts) data = removeNCBlocks(data, ['IK', 'AK']);
+        else if (removeHoles) data = removeNCBlocks(data, ['BO']);
+        //Removes mitre depending on user settings
+        if (removeMitre) data = removeNCMitre(data);
+        let blob = new Blob([data], { type: 'text/plain' });
+        zip.file(`${file}`, blob); // Add file to ZIP
+    }
+    zip.generateAsync({ type: 'blob' }).then(blob => {
+        let link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'DSTV-Export.zip'; //Name of the ZIP file
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 });
