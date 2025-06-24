@@ -125,7 +125,8 @@ const drillTypeMapping = {
 
 const profileCodeMapping = {
     'I' : 'I',
-    'RO' : 'RO',
+    'RO' : 'R',
+    'RU' : 'R',
     'U' : 'U',
     'L' : 'L',
     'B' : 'P',
@@ -244,7 +245,16 @@ function createMarkBlock(fileData) {
 }
 
 function createPRFBlock() {
-    const weightText = profileCode == 'B' ? '' : `WL${weightPerMeter}`;
+    let weightText = profileCode == 'B' ? '' : `WL${weightPerMeter}`;
+    switch (profileCode) {
+        case 'RU':
+        case 'RO':
+        case 'B':
+            weightText = '';
+        default:
+            weightText = `WL${weightPerMeter}`;
+            break;
+    }
     return `[[PRF]]\n[PRF] CP:${profileCodeMapping[profileCode]} P:${profile} SA${height} TA${webThickness} SB${flangeWidth} TB${flangeThickness} ${weightText}`;
 }
 
@@ -253,8 +263,15 @@ function createMaterialBlock() {
 }
 
 function createPCSBlock() {
-    const partData = profileCode == 'B' ? `LP${length} SA${height} TA${webThickness}` : `LP${length} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}`;
-    return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\n${partData}\nQI${quantity}`;
+    switch (profileCode) {
+        case 'B':
+            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\nLP${length} SA${height} TA${webThickness}\nQI${quantity}`;
+        case 'RO':
+        case 'RU':
+            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\nLP${length} SA${height} TA${profileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${quantity}`;
+        default:
+            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\nLP${length} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${quantity}`;
+    }
 }
 
 function createFNC(fileData) {
