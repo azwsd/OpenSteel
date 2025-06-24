@@ -290,7 +290,31 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 });
 
+let exportHoles = localStorage.getItem("exportHoles") || 1;
+let exportCuts = localStorage.getItem("exportCuts") || 1;
+
+function getDSTVSettings () {
+    exportHoles = document.getElementById('exportHoles').checked;
+    exportCuts = document.getElementById('exportCuts').checked;
+}
+
+function setDSTVSettings () {
+    localStorage.setItem("exportHoles", exportHoles);
+    localStorage.setItem("exportCuts", exportCuts);
+}
+
+document.getElementById('exportNCButton').addEventListener('click', getDSTVSettings()); //Loads stored DSTV settings into view
+
 document.getElementById('exportNCButton').addEventListener('click', function(){
+    setDSTVSettings(); //Loads settings into local storage
+    if (filePairs.size === 0) {
+        M.toast({ html: 'No files to export!', classes: 'rounded toast-warning', displayLength: 3000}); //Show error message if no files are loaded
+        return;
+    }
+    if (!selectedFile) {
+        M.toast({ html: 'No selected file to export!', classes: 'rounded toast-warning', displayLength: 3000}); //Show error message if no file is selected
+        return;
+    }
     let link = document.createElement('a');
     let data = filePairs.get(selectedFile);
     let blob = new Blob([data], { type: 'text/plain' });
@@ -302,6 +326,11 @@ document.getElementById('exportNCButton').addEventListener('click', function(){
 });
 
 document.getElementById('batchExportNCButton').addEventListener('click', function(){
+    setDSTVSettings(); //Loads settings into local storage
+    if (filePairs.size === 0) {
+        M.toast({ html: 'No files to export!', classes: 'rounded toast-warning', displayLength: 3000}); //Show error message if no files are loaded
+        return;
+    }
     let zip = new JSZip(); //Create a new ZIP archive
     let promises = [];
     for (let [key, value] of filePairs.entries()) {
