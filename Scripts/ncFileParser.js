@@ -415,7 +415,15 @@ function delHole(e, delHoleBtn) {
     });
     const removedCount = lines.length - filteredLines.length; //Gets the number of removed hole lines
     filePairs.set(selectedFile, filteredLines.join('\n'));
-    if (removedCount > 0) document.querySelector('.selected-file').click(); //Click on the file to reload it with updated data
+    if (removedCount > 0) {
+        const holeDiv = delHoleBtn.parentElement.parentElement;
+        const holeIndex = holeDiv.dataset.index;
+        const layer = layers[view + '-view'];
+        const hole = layer.findOne(`.circle-${holeIndex}`); //Find the hole by its name
+        hole.destroy(); //Remove hole from view
+        holeDiv.remove(); //Remove hole info card
+        layer.batchDraw();
+    }
 }
 
 //Adds measurement line to history dropdown menu
