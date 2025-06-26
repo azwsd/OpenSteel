@@ -212,6 +212,9 @@ body.drag-over::before {
     font-size: 14px;
     color: #333;
 }
+.delHoleBtn {
+  width: 100%;
+}
 
 /*Styles the div created dynamically for viewing, deleting and selecting files*/
 .viewFiles
