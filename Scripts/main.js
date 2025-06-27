@@ -162,7 +162,8 @@ function clickHoleData() {
 //Download all views when ctrl + s is pressed
 document.addEventListener('keydown', function (e) {
     if ( M.Modal.getInstance(document.getElementById('DXFModal')).isOpen ||
-        M.Modal.getInstance(document.getElementById('createModal')).isOpen) return; //Ignore key events if DXF/create modals is open
+        M.Modal.getInstance(document.getElementById('createModal')).isOpen ||
+        M.Modal.getInstance(document.getElementById('addHoleModal')).isOpen) return; //Ignore key events if DXF/create modals is open
     if (e.ctrlKey && e.key.toLowerCase() === 's') { //Detect Ctrl + S
         e.preventDefault(); //Prevent default browser save behavior
         downloadActiveViews();
