@@ -177,7 +177,7 @@ function ncParseHoleData(line) {
         angle = parseFloat(values[6]) || 0.00;
     }
     // Add parsed line to holeData array
-    holeData.push([view, xValue, dimensionRef, yValue, holeType, diameter, depth, slotType, width, height, angle]);
+    holeData.push([view, xValue, dimensionRef, yValue, holeType, diameter, depth, slotType, width, height, angle, holeData.length]);
 }
 
 //Parses Blocs
@@ -388,7 +388,8 @@ function delHole(e, delHoleBtn) {
     const view = delHoleBtn.dataset.view;
     const xVal = delHoleBtn.dataset.x;
     const yVal = delHoleBtn.dataset.y;
-    
+    const id = delHoleBtn.closest('.holeContainer').dataset.index;
+
     const lines = filePairs.get(selectedFile).split('\n');
     const filteredLines = lines.filter(line => {
         const trimmed = line.trim();
@@ -416,10 +417,16 @@ function delHole(e, delHoleBtn) {
     const removedCount = lines.length - filteredLines.length; //Gets the number of removed hole lines
     filePairs.set(selectedFile, filteredLines.join('\n'));
     if (removedCount > 0) {
-        const holeDiv = delHoleBtn.parentElement.parentElement;
-        const holeIndex = holeDiv.dataset.index;
+        for (const [index, holeLine] of holeData.entries()) {
+            console.log(holeLine[11], id, (index));
+            if (holeLine[11] == id) {
+                holeData.splice(index, 1);
+                break; //Exit after finding and deleting a match
+            }
+        }
+        const holeDiv = delHoleBtn.closest('.holeContainer');
         const layer = layers[view + '-view'];
-        const hole = layer.findOne(`.circle-${holeIndex}`); //Find the hole by its name
+        const hole = layer.findOne(`.circle-${id}`); //Find the hole by its name
         hole.destroy(); //Remove hole from view
         holeDiv.remove(); //Remove hole info card
         layer.batchDraw();

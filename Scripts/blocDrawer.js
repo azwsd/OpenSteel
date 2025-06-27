@@ -466,23 +466,9 @@ function addHole() {
 
     if (holeType === 'sl')  holeLine = `BO\n  ${view}  ${xPos}${dimRef}  ${yPos}  ${diameter}  ${depth}l  ${slotWidth}  ${slotHeight}  ${slotAngle}`;
     else holeLine = `BO\n  ${view}  ${xPos}${dimRef}  ${yPos}${holeType}  ${diameter}  ${depth}`;
-    holeData.push([view, xPos, dimRef, yPos, holeType, diameter, depth, 'l', slotWidth, slotHeight, slotAngle]);
-
-    //Delete all holes for each view/layer
-    views.forEach(view => {
-        const layer = layers[view];
-        if (layer) {
-            const circles = layer.find(node => { return node.name() && node.name().startsWith('circle-'); }); //Find all circles in layer
-            circles.forEach(circle => circle.destroy()); //Destroy all circles in layer
-            layer.batchDraw(); //Redraw the layer
-        }
-    });
-
-    drawHoles(); //Redraw all holes including the newly added hole
-    document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole info container
+    holeData.push([view, xPos, dimRef, yPos, holeType, diameter, depth, 'l', slotWidth, slotHeight, slotAngle, holeData.length]);
     filePairs.set(selectedFile, filePairs.get(selectedFile).replace('EN', holeLine + '\nEN'));
-    holeData = [];
-    addHoleData(); //Adds hole data to hole info tap
+    document.querySelector('#files .selected-file').click();
 }
 
 //Draws marks to the canvas
