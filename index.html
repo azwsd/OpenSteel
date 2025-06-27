@@ -355,6 +355,78 @@
               </div>
             </div>
         </div>
+        <!--Add hole modal-->
+        <div id="addHoleModal" class="modal">
+            <div class="modal-content">
+              <h4>Add Hole</h4>
+                    <div class="input-field">
+                        <select id="holeTypeSelect">
+                            <option value="" selected>Complete hole</option>
+                            <option value="g">Threaded hole</option>
+                            <option value="l">Left threaded hole</option>
+                            <option value="m">Mark</option>
+                            <option value="s">Countersunk hole</option>
+                            <option value="sl">Slotted hole</option>
+                        </select>
+                        <label>Hole type Select</label>
+                    </div>
+                    <div class="input-field">
+                        <select id="viewSelect">
+                            <option value="o" selected>O view</option>
+                            <option value="v">V view</option>
+                            <option value="u">U view</option>
+                            <option value="h">H view</option>
+                        </select>
+                        <label>View Select</label>
+                    </div>
+                    <div class="input-field">
+                        <select id="dimRefSelect">
+                            <option value="o" selected>Top edge</option>
+                            <option value="s">Axis</option>
+                            <option value="u">Bottom edge</option>
+                        </select>
+                        <label>Dimension reference Select</label>
+                    </div>
+                    <div class="row input-columns">
+                        <div class="col s12 m6 l6">
+                            <div class="input-group">
+                                <span class="helper-text">X position:</span>
+                                <input id="xPosInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                            <div class="input-group">
+                                <span class="helper-text">Y position:</span>
+                                <input id="yPosInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                            <div class="input-group">
+                                <span class="helper-text">Diameter:</span>
+                                <input id="diameterInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                            <div class="input-group">
+                                <span class="helper-text">depth:</span>
+                                <input id="depthInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                        </div>
+                        <div class="col s12 m6 l6">
+                            <div class="input-group">
+                                <span class="helper-text">Slot width:</span>
+                                <input id="slotWidthInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                            <div class="input-group">
+                                <span class="helper-text">Slot height:</span>
+                                <input id="slotHeightInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                            <div class="input-group">
+                                <span class="helper-text">Slot angle:</span>
+                                <input id="slotAngleInput" type="number" min="0" max="99999" step="0.01" class="compact-input">
+                            </div>
+                        </div>
+                    </div> 
+              <div class="modal-footer">
+                <a href='#' class="btn waves-effect modal-trigger" onclick="addHole()">Create</a>
+                <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
+              </div>
+            </div>
+        </div>
         <!--Mobile navbar-->
         <ul class="sidenav" id="mobile">
             <li><p class="filesPlaceHolder">Please insert a file/folder</p></li>
@@ -488,6 +560,10 @@
                         <div><img class="materialboxed" id="profileViewsImg" src=""></div>
                     </div>
                     <div id="tab2" class="tab-content">
+                        <a id="addHoleBtn" class="waves-effect waves-light btn-small deep-purple modal-trigger" data-target="addHoleModal">
+                            <i class="material-icons">add</i>
+                            Add Hole
+                        </a>
                         <div id="holeInfoContainer" class="holeInfoContainer"></div>
                         </div>
                     </div>

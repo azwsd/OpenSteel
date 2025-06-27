@@ -395,6 +395,96 @@ function changeHoleColor(holeDiv) {
     layer.batchDraw();
 }
 
+const slotInputIds = ['slotWidthInput', 'slotHeightInput', 'slotHeightInput', 'slotAngleInput'];
+
+function enableSlotInputs() {
+    for (inputId of slotInputIds) {
+        const input = document.getElementById(inputId);
+        const container = input?.closest('.input-group');
+        
+        if (input && container) {
+            input.disabled = false;
+            input.style.opacity = '1';
+            container.style.opacity = '1';
+            container.classList.remove('disabled-input');
+        }
+    }
+}
+
+function disableSlotInputs() {
+    for (inputId of slotInputIds) {
+        const input = document.getElementById(inputId);
+        const container = input?.closest('.input-group');
+        
+        if (input && container) {
+            input.disabled = true;
+            input.value = '0.00'; // Clear the value
+            input.style.opacity = '0.5';
+            container.style.opacity = '0.5';
+            container.classList.add('disabled-input');
+        }
+    }
+}
+
+//Disable or enable slot input depending on hole type
+document.addEventListener('DOMContentLoaded', function(){
+    function slotHandler (target) {
+        if (target.value.trim() === 'sl') enableSlotInputs();
+        else disableSlotInputs();
+    }
+    slotHandler(this.getElementById('holeTypeSelect'));
+    document.getElementById('holeTypeSelect').addEventListener('change', (event) => {slotHandler(event.target)});
+});
+
+function getInputValue(inputId) {
+    const input = document.getElementById(inputId);
+    return input.value.trim();
+}
+
+function addHole() {
+    let holeLine = '';
+    const view = getInputValue('viewSelect');
+    const xPos = parseFloat(getInputValue('xPosInput'));
+    const dimRef = getInputValue('dimRefSelect');
+    const yPos = parseFloat(getInputValue('yPosInput'));
+    const diameter = parseFloat(getInputValue('diameterInput'));
+    const holeType = getInputValue('holeTypeSelect');
+    const depth = parseFloat(getInputValue('depthInput'));
+    const slotWidth = parseFloat(getInputValue('slotWidthInput'));
+    const slotHeight = parseFloat(getInputValue('slotHeightInput'));
+    const slotAngle = parseFloat(getInputValue('slotAngleInput'));
+
+    // Check if any required values are empty/invalid
+    if (holeType === 'sl' && (isNaN(slotWidth) || isNaN(slotHeight) || isNaN(slotAngle))) {
+        M.toast({html: 'Please fill all fields!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+    if (!view || isNaN(xPos) || !dimRef || isNaN(yPos) || isNaN(diameter) || isNaN(depth)) {
+        M.toast({html: 'Please fill all fields!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+
+    if (holeType === 'sl')  holeLine = `BO\n  ${view}  ${xPos}${dimRef}  ${yPos}  ${diameter}  ${depth}l  ${slotWidth}  ${slotHeight}  ${slotAngle}`;
+    else holeLine = `BO\n  ${view}  ${xPos}${dimRef}  ${yPos}${holeType}  ${diameter}  ${depth}`;
+    holeData.push([view, xPos, dimRef, yPos, holeType, diameter, depth, 'l', slotWidth, slotHeight, slotAngle]);
+
+    //Delete all holes for each view/layer
+    views.forEach(view => {
+        const layer = layers[view];
+        if (layer) {
+            const circles = layer.find(node => { return node.name() && node.name().startsWith('circle-'); }); //Find all circles in layer
+            circles.forEach(circle => circle.destroy()); //Destroy all circles in layer
+            layer.batchDraw(); //Redraw the layer
+        }
+    });
+
+    drawHoles(); //Redraw all holes including the newly added hole
+    document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole info container
+    filePairs.set(selectedFile, filePairs.get(selectedFile).replace('EN', holeLine + '\nEN'));
+    holeData = [];
+    addHoleData(); //Adds hole data to hole info tap
+}
+
 //Draws marks to the canvas
 function drawMarks() {
     let currentView = null;
