@@ -296,12 +296,15 @@ let removeCuts = localStorage.getItem("removeCuts") || 1;
 let removeMitre = localStorage.getItem("removeMitre") || 1;
 
 function getDSTVSettings () {
-    removeHoles = document.getElementById('removeHoles').checked;
-    removeCuts = document.getElementById('removeCuts').checked;
-    removeMitre = document.getElementById('removeMitre').checked;
+    document.getElementById('removeHoles').checked = removeHoles;
+    document.getElementById('removeCuts').checked = removeCuts;
+    document.getElementById('removeMitre').checked = removeMitre;
 }
 
 function setDSTVSettings () {
+    removeHoles = document.getElementById('removeHoles').checked;
+    removeCuts = document.getElementById('removeCuts').checked;
+    removeMitre = document.getElementById('removeMitre').checked;
     localStorage.setItem("removeHoles", removeHoles);
     localStorage.setItem("removeCuts", removeCuts);
     localStorage.setItem("removeMitre", removeMitre);
