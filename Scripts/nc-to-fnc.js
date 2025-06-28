@@ -170,6 +170,8 @@ function createHoleBlock(fileData) {
                 let xCoord = parts[1];
                 const yCoord = parts[2];
                 const diameter = parts[3];
+
+                if (parts[5] != undefined && parseFloat(parts[5]) != 0) continue; // Skip slots
                 
                 // Remove any suffix from x coordinate (letters at the end)
                 xCoord = xCoord.replace(/[a-zA-Z]+$/, '');
