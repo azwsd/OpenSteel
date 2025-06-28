@@ -418,7 +418,6 @@ function delHole(e, delHoleBtn) {
     filePairs.set(selectedFile, filteredLines.join('\n'));
     if (removedCount > 0) {
         for (const [index, holeLine] of holeData.entries()) {
-            console.log(holeLine[11], id, (index));
             if (holeLine[11] == id) {
                 holeData.splice(index, 1);
                 break; //Exit after finding and deleting a match
