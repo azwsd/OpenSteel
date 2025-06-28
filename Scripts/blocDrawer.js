@@ -442,6 +442,14 @@ function getInputValue(inputId) {
 }
 
 function addHole() {
+    if (filePairs.size === 0) {
+        M.toast({html: 'No Files Loaded!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+    if(!selectedFile) {
+        M.toast({html: 'No fFile Selected!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
     let holeLine = '';
     const view = getInputValue('viewSelect');
     const xPos = parseFloat(getInputValue('xPosInput'));
