@@ -589,8 +589,8 @@ function transformCoordinates(view, x, y, width, height) {
         case 'v-view': // Bottom-left, X and Y negative
         case 'u-view': 
             return [x, height - y];
-        case 'o-view': // Bottom-right, X and Y negative
-            return [x, height - y];
+        case 'o-view': // Top-left
+            return [x, y];
         case 'h-view': // Top-right, Y negative only
         default:
             return [x, y];
