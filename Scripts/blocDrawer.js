@@ -586,12 +586,11 @@ function drawNumertaions() {
 //Function to apply coordinate transformations based on view
 function transformCoordinates(view, x, y, width, height) {
     switch (view) {
-        case 'v-view': // Bottom-left, X and Y negative
+        case 'v-view': // Bottom-left, Y negative
         case 'u-view': 
             return [x, height - y];
         case 'o-view': // Top-left
-            return [x, y];
-        case 'h-view': // Top-right, Y negative only
+        case 'h-view': // Top-left
         default:
             return [x, y];
     }
