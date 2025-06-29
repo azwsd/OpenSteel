@@ -587,7 +587,7 @@ function drawNumertaions() {
 function transformCoordinates(view, x, y, width, height) {
     switch (view) {
         case 'v-view': // Bottom-left, Y negative
-        case 'u-view': 
+        case 'u-view': // Bottom-left, Y negative
             return [x, height - y];
         case 'o-view': // Top-left
         case 'h-view': // Top-left
