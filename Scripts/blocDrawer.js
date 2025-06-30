@@ -154,7 +154,7 @@ function drawContours() {
             }
             else {
                 let isClockwise = arcData[4] > 0 ? false : true;
-                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool); //Get center point correctly
+                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view); //Get center point correctly
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
 
@@ -615,9 +615,6 @@ function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view) {
     //Calculate the two possible centers
     let [solX1, solY1] = [mX + Math.sqrt(r ** 2 - (l/2) ** 2) * (sY - eY) / l, mY + Math.sqrt(r ** 2 - (l/2) ** 2) * (eX - sX) / l];
     let [solX2, solY2] = [mX - Math.sqrt(r ** 2 - (l/2) ** 2) * (sY - eY) / l, mY - Math.sqrt(r ** 2 - (l/2) ** 2) * (eX - sX) / l];
-    //Find the furthest away cX, xY and that's our solution
-    let d1 =  Math.sqrt(((cX - solX1) ** 2) + ((cY - solY1) ** 2));
-    let d2 =  Math.sqrt(((cX - solX2) ** 2) + ((cY - solY2) ** 2));
 
     //Calculate the orientation of first solution and return the correct center based on this orientation
     const sol1Orientation = transformOrientation(view, getArcOrientation(sX, sY, solX1, solY1, eX, eY));
