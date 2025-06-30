@@ -609,7 +609,7 @@ function calcAngle(pX, pY, cX, cY){
     return angle < 0 ? angle + 360 : angle; // Convert negative angles to 0-360 range
 }
 
-function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool) {
+function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view) {
     let [mX, mY] = [(sX + eX) / 2, (sY + eY) / 2]; //Center of start and end points
     let l = Math.sqrt(((sX - eX) ** 2) + ((sY - eY) ** 2)); //Distance between start and end points
     //Calculate the two possible centers
@@ -618,22 +618,38 @@ function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool) {
     //Find the furthest away cX, xY and that's our solution
     let d1 =  Math.sqrt(((cX - solX1) ** 2) + ((cY - solY1) ** 2));
     let d2 =  Math.sqrt(((cX - solX2) ** 2) + ((cY - solY2) ** 2));
-    //Handle notch tool 't'
-    if (notchTool == 't') {
-        return [solX1, solY1];
+
+    //Calculate the orientation of first solution and return the correct center based on this orientation
+    const sol1Orientation = transformOrientation(view, getArcOrientation(sX, sY, solX1, solY1, eX, eY));
+    if (sol1Orientation == isClockwise) return [solX1, solY1];
+    else return [solX2, solY2];
+}       
+
+//Function to apply clockwise transformations based on view
+function transformOrientation(view, isClockwise) {
+    switch (view) {
+        case 'v-view':
+        case 'u-view': 
+            return !isClockwise;
+        case 'o-view':
+        case 'h-view':
+        default:
+            return isClockwise;
     }
-    if (d1 > d2 && isClockwise) {
-        return [solX1, solY1];
-    }
-    else if (d1 < d2 && isClockwise) {
-        return [solX2, solY2];
-    }
-    else if  (d1 > d2 && !isClockwise) {
-        return [solX2, solY2];
-    }
-    else {
-        return [solX1, solY1];
-    }
+}
+
+//Function to calculate if an arc is clockwise or counterclockwise
+function getArcOrientation(startX, startY, centerX, centerY, endX, endY) {
+    //Create vectors from center to start and center to end
+    let startVectorX = startX - centerX;
+    let startVectorY = startY - centerY;
+    let endVectorX = endX - centerX;
+    let endVectorY = endY - centerY;
+    
+    //Calculate cross product
+    let crossProduct = startVectorX * endVectorY - startVectorY * endVectorX;
+    
+    return crossProduct > 0 ? 0 : 1; //Positive counterclockwise, negative clockwise
 }
 
 //Draws blocs to the canves
