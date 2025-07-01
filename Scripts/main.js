@@ -190,7 +190,15 @@ document.addEventListener('keydown', function (e) {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
         // Select next file if available
-        if (selectedIndex !== -1 && selectedIndex - 1 > -1) fileElements[selectedIndex - 1].click();
+        if (selectedIndex !== -1 && selectedIndex - 1 > -1) { 
+            fileElements[selectedIndex - 1].click();
+            // Scroll the selected element into view
+            fileElements[selectedIndex - 1].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'nearest'
+        });
+        }
     }
     else if(e.key === 'ArrowDown') { //Detect arrow down
         e.preventDefault(); //Prevent default browser save behavior
@@ -201,33 +209,73 @@ document.addEventListener('keydown', function (e) {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
         // Select next file if available
-        if (selectedIndex !== -1 && selectedIndex + 1 < fileElements.length) fileElements[selectedIndex + 1].click();
+        if (selectedIndex !== -1 && selectedIndex + 1 < fileElements.length) { 
+            fileElements[selectedIndex + 1].click();
+            // Scroll the selected element into view
+            fileElements[selectedIndex + 1].scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        }
     }
-    else if(e.key === 'ArrowLeft') { //Detect arrow up
+    else if(e.key === 'ArrowLeft') { //Detect arrow left
+    e.preventDefault(); //Prevent default browser save behavior
+    let holeElements = document.querySelectorAll('.holeCard');
+    let selectedIndex = -1;
+
+    clickHoleData()
+    holeElements.forEach((el, index) => {
+        if (el.classList.contains('selected-file')) selectedIndex = index;
+    });
+    // Select next hole if available
+    if (selectedIndex !== -1 && selectedIndex - 1 > -1) {
+        holeElements[selectedIndex - 1].click();
+        // Scroll the selected element into view
+        holeElements[selectedIndex - 1].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'nearest'
+        });
+    }
+        else if(holeElements.length != 0) {
+            holeElements[0].click(); //If no hole is selected select first hole
+            // Scroll the first element into view
+            holeElements[0].scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        }
+    }
+    else if(e.key === 'ArrowRight') { //Detect arrow right
         e.preventDefault(); //Prevent default browser save behavior
         let holeElements = document.querySelectorAll('.holeCard');
         let selectedIndex = -1;
-    
+
         clickHoleData()
         holeElements.forEach((el, index) => {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
-        // Select next file if available
-        if (selectedIndex !== -1 && selectedIndex - 1 > -1) holeElements[selectedIndex - 1].click();
-        else if(holeElements.length != 0) holeElements[0].click(); //If no hole is selected select first hole
-    }
-    else if(e.key === 'ArrowRight') { //Detect arrow down
-        e.preventDefault(); //Prevent default browser save behavior
-        let holeElements = document.querySelectorAll('.holeCard');
-        let selectedIndex = -1;
-    
-        clickHoleData()
-        holeElements.forEach((el, index) => {
-            if (el.classList.contains('selected-file')) selectedIndex = index;
-        });
-        // Select next file if available
-        if (selectedIndex !== -1 && selectedIndex + 1 < holeElements.length) holeElements[selectedIndex + 1].click();
-        else if(holeElements.length != 0) holeElements[0].click(); //If no hole is selected select first hole
+        // Select next hole if available
+        if (selectedIndex !== -1 && selectedIndex + 1 < holeElements.length) {
+            holeElements[selectedIndex + 1].click();
+            // Scroll the selected element into view
+            holeElements[selectedIndex + 1].scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        }
+        else if(holeElements.length != 0) {
+            holeElements[0].click(); //If no hole is selected select first hole
+            // Scroll the first element into view
+            holeElements[0].scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        }
     }
     else if(e.key === 'Home') {
         e.preventDefault(); //Prevent default browser save behavior
