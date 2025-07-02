@@ -59,7 +59,7 @@ function drawContours() {
         let canvasWidth = stage.width();
         let canvasHeight = stage.height();
 
-        if (arcLine == 1) notchTool = dataLine[10] == "" ? "t" : dataLine[10]; //Get notch tool type
+        if (arcLine == 1) notchTool = dataLine[10];
 
         //Check if the line is an arc and stores it in arcData
         if(dataLine[4] != 0 && arcLine == 0) {
@@ -90,6 +90,7 @@ function drawContours() {
             eY = dataLine[3];
             arcLine = 0;
             arcType = 'partial';
+            if (notchTool == '') notchTool = 'w';
             arcData.push(eX, eY, notchTool);
         }
         else if(dataLine[4] != 0 && arcLine == 2) {
@@ -618,8 +619,14 @@ function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view) {
 
     //Calculate the orientation of first solution and return the correct center based on this orientation
     const sol1Orientation = transformOrientation(view, getArcOrientation(sX, sY, solX1, solY1, eX, eY));
-    if (sol1Orientation == isClockwise) return [solX1, solY1];
-    else return [solX2, solY2];
+    if (sol1Orientation == isClockwise) {
+        if (notchTool.toLowerCase() == 'w') return [solX2, solY2];
+        return [solX1, solY1];
+    }
+    else {
+        if (notchTool.toLowerCase() == 'w') return [solX1, solY1];
+        return [solX2, solY2];
+    }
 }       
 
 //Function to apply clockwise transformations based on view
