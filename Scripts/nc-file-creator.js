@@ -166,30 +166,34 @@ function getInputValue(inputId) {
 
 // Generate NC1 file content based on input values
 function getNC() {
-    const data = `ST
-    ** Created by OpenSteel on ${new Date().toLocaleDateString()}
-    ${getInputValue('orderInput')}
-    ${getInputValue('drawingInput')}
-    ${getInputValue('PhaseInput')}
-    ${getInputValue('positionInput')}
-    ${getInputValue('gradeInput')}
-    ${getInputValue('quantityInput')}
-    ${getInputValue('sectionTypeInput')}
-    ${getInputValue('sectionTypeSelect')}
-    ${getInputValue('lengthInput')}
-    ${getInputValue('heighthInput')}
-    ${getInputValue('flangeWidthInput')}
-    ${getInputValue('flangeThicknessInput')}
-    ${getInputValue('webThicknessInput')}
-    ${getInputValue('radiusInput')}
-    ${getInputValue('weightInput')}
-    ${getInputValue('paintSurfaceInput')}
-    ${getInputValue('webStartCutInput')}
-    ${getInputValue('webEndCutInput')}
-    ${getInputValue('flangeStartCutInput')}
-    ${getInputValue('flangeEndCutInput')}
-    \n\n\n\n
-    EN`;
+    const data = [
+        'ST',
+        `** Created by OpenSteel on ${new Date().toLocaleDateString()}`,
+        getInputValue('orderInput'),
+        getInputValue('drawingInput'),
+        getInputValue('PhaseInput'),
+        getInputValue('positionInput'),
+        getInputValue('gradeInput'),
+        getInputValue('quantityInput'),
+        getInputValue('sectionTypeInput'),
+        getInputValue('sectionTypeSelect'),
+        getInputValue('lengthInput'),
+        getInputValue('heighthInput'),
+        getInputValue('flangeWidthInput'),
+        getInputValue('flangeThicknessInput'),
+        getInputValue('webThicknessInput'),
+        getInputValue('radiusInput'),
+        getInputValue('weightInput'),
+        getInputValue('paintSurfaceInput'),
+        getInputValue('webStartCutInput'),
+        getInputValue('webEndCutInput'),
+        getInputValue('flangeStartCutInput'),
+        getInputValue('flangeEndCutInput'),
+        '',
+        '',
+        '',
+        'EN'
+    ].join('\n');
 
     return data;
 }
