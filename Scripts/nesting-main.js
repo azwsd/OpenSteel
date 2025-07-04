@@ -1834,6 +1834,8 @@ savePiecesButton.addEventListener('click', function() {
     downloadPiecesCSV();
 });
 
+let idCounter = 0; //ID Counter for unique ID's
+
 //File input change handler for loading stock files
 loadStockInput.addEventListener('change', async function(event) {
     //reset file counter
@@ -1903,7 +1905,7 @@ function loadPiecesData(fileData) {
         const label = columns[3].trim() == '' ? length : columns[3].trim(); //Set label to the value of the input if it exists, otherwise use length
         const color = stringToColor(label);
         if (isNaN(length) || isNaN(amount)) continue; // Skip invalid lines
-        pieceItems.push({ profile, length, amount, label, color, id: Date.now() });
+        pieceItems.push({ profile, length, amount, label, color, id: Date.now() + (++idCounter) });
     }
     renderPieceTable();
     M.toast({html: 'Pieces loaded successfully!', classes: 'rounded toast-success', displayLength: 2000});
