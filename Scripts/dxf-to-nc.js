@@ -12,6 +12,9 @@ function parseDxf(dxfString) {
   let inEntitiesSection = false;
   let currentEntity = null;
 
+  // Helper to convert degrees to radians
+  const degToRad = (degrees) => degrees * (Math.PI / 180);
+
   // Helper to process and push the completed entity
   const finalizeEntity = () => {
     if (!currentEntity) return;
@@ -37,15 +40,19 @@ function parseDxf(dxfString) {
         break;
       case 'ARC':
          if (currentEntity.center && currentEntity.radius && currentEntity.startAngle !== undefined && currentEntity.endAngle !== undefined) {
+          // Convert angles from degrees to radians before calculating points
+          const startAngleRad = degToRad(currentEntity.startAngle);
+          const endAngleRad = degToRad(currentEntity.endAngle);
+          
           // Calculate start and end points from center, radius, and angles
           const startPoint = {
-            x: currentEntity.center.x + currentEntity.radius * Math.cos(currentEntity.startAngle),
-            y: currentEntity.center.y + currentEntity.radius * Math.sin(currentEntity.startAngle)
+            x: currentEntity.center.x + currentEntity.radius * Math.cos(startAngleRad),
+            y: currentEntity.center.y + currentEntity.radius * Math.sin(startAngleRad)
           };
 
           const endPoint = {
-            x: currentEntity.center.x + currentEntity.radius * Math.cos(currentEntity.endAngle),
-            y: currentEntity.center.y + currentEntity.radius * Math.sin(currentEntity.endAngle)
+            x: currentEntity.center.x + currentEntity.radius * Math.cos(endAngleRad),
+            y: currentEntity.center.y + currentEntity.radius * Math.sin(endAngleRad)
           };
           result.arcs.push({
             type: 'ARC',
@@ -189,4 +196,315 @@ function parseDxf(dxfString) {
   finalizeEntity(); // Finalize the very last entity in the file
 
   return result;
+}
+
+function findContour(parsedData) {
+  // Helper function to get all points from a shape
+  const getShapePoints = (shape) => {
+    switch (shape.type) {
+      case 'LINE':
+        return [shape.start, shape.end];
+      case 'ARC':
+        return [shape.startPoint, shape.endPoint];
+      case 'CIRCLE':
+        // Skip circles for contour detection
+        return [];
+      case 'RECT':
+        // Calculate rectangle corners based on position, length, height, and angle
+        const cos = Math.cos(shape.angle * Math.PI / 180);
+        const sin = Math.sin(shape.angle * Math.PI / 180);
+        
+        const corners = [
+          { x: shape.x, y: shape.y }, // bottom-left
+          { x: shape.x + shape.length * cos, y: shape.y + shape.length * sin }, // bottom-right
+          { x: shape.x + shape.length * cos - shape.height * sin, y: shape.y + shape.length * sin + shape.height * cos }, // top-right
+          { x: shape.x - shape.height * sin, y: shape.y + shape.height * cos } // top-left
+        ];
+        return corners;
+      default:
+        return [];
+    }
+  };
+
+  // Helper function to check if two points are approximately equal
+  const pointsEqual = (p1, p2, tolerance = 0.001) => {
+    return Math.abs(p1.x - p2.x) < tolerance && Math.abs(p1.y - p2.y) < tolerance;
+  };
+
+  // Helper function to find the point with lowest x, then lowest y
+  const findLowestPoint = (shapes) => {
+    let lowestPoint = null;
+    let lowestShape = null;
+    
+    shapes.forEach(shape => {
+      const points = getShapePoints(shape);
+      points.forEach(point => {
+        if (!lowestPoint || 
+            point.x < lowestPoint.x || 
+            (point.x === lowestPoint.x && point.y < lowestPoint.y)) {
+          lowestPoint = point;
+          lowestShape = shape;
+        }
+      });
+    });
+    
+    return { point: lowestPoint, shape: lowestShape };
+  };
+
+  // Helper function to get the other point of a shape given one point
+  const getOtherPoint = (shape, knownPoint) => {
+    const points = getShapePoints(shape);
+    if (points.length === 2) {
+      // For lines and arcs
+      if (pointsEqual(points[0], knownPoint)) {
+        return points[1];
+      } else if (pointsEqual(points[1], knownPoint)) {
+        return points[0];
+      }
+    } else if (points.length === 4) {
+      // For rectangles, find the next point in sequence
+      for (let i = 0; i < points.length; i++) {
+        if (pointsEqual(points[i], knownPoint)) {
+          return points[(i + 1) % points.length];
+        }
+      }
+    }
+    return null;
+  };
+
+  // Helper function to find a shape that contains a specific point
+  const findShapeContainingPoint = (shapes, targetPoint, excludeShape = null) => {
+    return shapes.find(shape => {
+      if (shape === excludeShape) return false;
+      
+      const points = getShapePoints(shape);
+      return points.some(point => pointsEqual(point, targetPoint));
+    });
+  };
+
+  // Get all shapes that can form contours (exclude circles and texts)
+  const contourShapes = [
+    ...parsedData.lines,
+    ...parsedData.arcs,
+    ...parsedData.rects
+  ];
+
+  if (contourShapes.length === 0) {
+    return false;
+  }
+
+  // Find the starting point (lowest x, then lowest y)
+  const startResult = findLowestPoint(contourShapes);
+  if (!startResult.point || !startResult.shape) {
+    return false;
+  }
+
+  const startPoint = startResult.point;
+  const startShape = startResult.shape;
+  
+  // Track the contour
+  const contourShapes_found = [startShape];
+  let currentShape = startShape;
+  let currentPoint = getOtherPoint(startShape, startPoint);
+  
+  if (!currentPoint) {
+    return false;
+  }
+
+  // Follow the contour
+  while (true) {
+    // Find the next shape that contains the current point
+    const nextShape = findShapeContainingPoint(contourShapes, currentPoint, currentShape);
+    
+    if (!nextShape) {
+      // No connecting shape found, not a closed contour
+      return false;
+    }
+    
+    // Check if closed contour condition is met
+    if (nextShape === startShape) {
+      // Verify that the current point connects back to the start point
+      const points = getShapePoints(startShape);
+      if (pointsEqual(currentPoint, startPoint)) {
+        // Successfully found a closed contour
+        break;
+      } else {
+        // Current point doesn't connect properly to start
+        return false;
+      }
+    }
+    
+    // Check if shape already been visited (infinite loop detection)
+    if (contourShapes_found.includes(nextShape)) {
+      return false;
+    }
+    
+    // Add to contour and move to next point
+    contourShapes_found.push(nextShape);
+    currentShape = nextShape;
+    currentPoint = getOtherPoint(nextShape, currentPoint);
+    
+    if (!currentPoint) {
+      return false;
+    }
+  }
+
+  // If contour found, tag the shapes
+  if (contourShapes_found.length > 0) {
+    // Create a deep copy of the parsed data
+    const result = JSON.parse(JSON.stringify(parsedData));
+    
+    // Tag contour shapes
+    contourShapes_found.forEach(shape => {
+      // Find the corresponding shape in the result and tag it
+      const findAndTag = (shapeArray) => {
+        const index = parsedData.lines.indexOf(shape);
+        if (index !== -1) {
+          result.lines[index].contour = true;
+          return true;
+        }
+        
+        const arcIndex = parsedData.arcs.indexOf(shape);
+        if (arcIndex !== -1) {
+          result.arcs[arcIndex].contour = true;
+          return true;
+        }
+        
+        const rectIndex = parsedData.rects.indexOf(shape);
+        if (rectIndex !== -1) {
+          result.rects[rectIndex].contour = true;
+          return true;
+        }
+        
+        return false;
+      };
+      
+      findAndTag();
+    });
+    
+    return result;
+  }
+
+  return false;
+}
+
+function getPartDimensions(shapes) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  // Helper function to update bounds with a point
+  const updateBounds = (x, y) => {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  };
+
+  // Process lines
+  shapes.lines.forEach(line => {
+    updateBounds(line.start.x, line.start.y);
+    updateBounds(line.end.x, line.end.y);
+  });
+
+  // Process circles
+  shapes.circles.forEach(circle => {
+    updateBounds(circle.center.x - circle.radius, circle.center.y - circle.radius);
+    updateBounds(circle.center.x + circle.radius, circle.center.y + circle.radius);
+  });
+
+  // Process arcs
+  shapes.arcs.forEach(arc => {
+    updateBounds(arc.startPoint.x, arc.startPoint.y);
+    updateBounds(arc.endPoint.x, arc.endPoint.y);
+  });
+
+  // Process text
+  shapes.texts.forEach(text => {
+    updateBounds(text.position.x, text.position.y);
+  });
+
+  // Process rectangles
+  shapes.rects.forEach(rect => {
+    const cos = Math.cos(rect.angle * Math.PI / 180);
+    const sin = Math.sin(rect.angle * Math.PI / 180);
+    
+    // Calculate all four corners of the rotated rectangle
+    const corners = [
+      { x: 0, y: 0 }, // bottom-left (relative to rect origin)
+      { x: rect.length, y: 0 }, // bottom-right
+      { x: rect.length, y: rect.height }, // top-right
+      { x: 0, y: rect.height } // top-left
+    ];
+
+    corners.forEach(corner => {
+      // Apply rotation and translation
+      const rotatedX = corner.x * cos - corner.y * sin + rect.x;
+      const rotatedY = corner.x * sin + corner.y * cos + rect.y;
+      updateBounds(rotatedX, rotatedY);
+    });
+  });
+
+  // Check if we found any shapes
+  if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
+    return {
+      width: 0,
+      height: 0,
+      minX: 0,
+      maxX: 0,
+      minY: 0,
+      maxY: 0
+    };
+  }
+
+  return {
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+function getInputValue(inputId) {
+    const input = document.getElementById(inputId);
+    return input.value.trim();
+}
+
+function convertDxfToNc(dxfFileData, fileName) {
+  const parsedData = parseDxf(dxfFileData);
+  const contourData = findContour(parsedData);
+  const partDimensions = getPartDimensions(parsedData);
+  if (!contourData) {
+    console.error('No valid contour found in the DXF data.');
+    return null;
+  }
+  let ncContent = [
+        'ST',
+        `** Created by OpenSteel on ${new Date().toLocaleDateString()}`,
+        getInputValue('dxfOrderInput'),
+        getInputValue('dxfDrawingInput'),
+        getInputValue('dxfPhaseInput'),
+        fileName.replace(/\.nc1$/, ""),
+        getInputValue('dxfGradeInput'),
+        getInputValue('dxfQuantityInput'),
+        'PL',
+        'B',
+        partDimensions.length.toFixed(2),
+        partDimensions.height.toFixed(2),
+        getInputValue('dxfThicknessInput'),
+        getInputValue('dxfThicknessInput'),
+        getInputValue('dxfThicknessInput'),
+        '0.00',
+        '0.00',
+        '0.00',
+        '0.00',
+        '0.00',
+        '0.00',
+        '0.00',
+        '',
+        '',
+        '',
+        'EN'
+    ].join('\n');
+
+  return contourData;
 }
