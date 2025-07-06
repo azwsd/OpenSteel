@@ -35,6 +35,40 @@
                 </div>
             </nav>
         </div>
+        <!--DXF to DSTV modal-->
+        <div id="dxfToNCModla" class="modal">
+            <div class="modal-content">
+                <h4>DXF to DSTV Options</h4>
+                    <div class="input-group">
+                        <span class="helper-text">Order:</span>
+                        <input id="dxfOrderInput" type="text" class="compact-input">
+                    </div>
+                    <div class="input-group">
+                        <span class="helper-text">Drawing:</span>
+                        <input id="dxfDrawingInput" type="text" class="compact-input">
+                    </div>
+                    <div class="input-group">
+                        <span class="helper-text">Phase:</span>
+                        <input id="dxfPhaseInput" type="text" class="compact-input">
+                    </div>
+                    <div class="input-group">
+                        <span class="helper-text">Grade:</span>
+                        <input id="dxfGradeInput" type="text" class="compact-input">
+                    </div>
+                    <div class="input-group">
+                        <span class="helper-text">Quantity:</span>
+                        <input id="dxfQuantityInput" type="number" min="0" step="1" max="99999" class="compact-input">
+                    </div>
+                    <div class="input-group">
+                        <span class="helper-text">Thcikness:</span>
+                        <input id="dxfThicknessInput" type="number" min="0" step="0.1" max="99999" class="compact-input">
+                    </div>
+                <div class="modal-footer">
+                    <a href='#' data-target='' class="btn waves-effect" id="dxfToNCButton">Done</a>
+                    <a href="#!" class="waves-effect waves-red btn red" id="dxfToNCCloseButton">Close</a>
+                </div>
+            </div>
+        </div>
         <!--DSTV export modal-->
         <div id="NCModal" class="modal">
             <div class="modal-content">
@@ -584,6 +618,7 @@
         <!--Includes js file for jszip-->
         <script src="Scripts/jszip.min.js"></script>
         <!--Custom js files-->
+        <script src="Scripts/dxf-to-nc.js"></script>
         <script src="Scripts/nc-file-creator.js"></script>
         <script src="Scripts/nc-to-fnc.js"></script>
         <script src="Scripts/konva-to-dxf.js"></script>
