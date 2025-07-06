@@ -353,6 +353,8 @@ function findContour(parsedData) {
   if (contourShapes_found.length > 0) {
     // Create a deep copy of the parsed data
     const result = JSON.parse(JSON.stringify(parsedData));
+
+    contourIndex = 0; // Reset contour index for tagging
     
     // Tag contour shapes
     contourShapes_found.forEach(shape => {
@@ -360,19 +362,19 @@ function findContour(parsedData) {
       const findAndTag = (shapeArray) => {
         const index = parsedData.lines.indexOf(shape);
         if (index !== -1) {
-          result.lines[index].contour = true;
+          result.lines[index].contourIndex = contourIndex++;
           return true;
         }
         
         const arcIndex = parsedData.arcs.indexOf(shape);
         if (arcIndex !== -1) {
-          result.arcs[arcIndex].contour = true;
+          result.arcs[arcIndex].contourIndex = contourIndex++;
           return true;
         }
         
         const rectIndex = parsedData.rects.indexOf(shape);
         if (rectIndex !== -1) {
-          result.rects[rectIndex].contour = true;
+          result.rects[rectIndex].contourIndex = contourIndex++;
           return true;
         }
         
@@ -469,26 +471,150 @@ function getInputValue(inputId) {
     return input.value.trim();
 }
 
+// Input validation
+function validateDxfInputs() {
+    const requiredFields = ['dxfOrderInput', 'dxfDrawingInput', 'dxfPhaseInput', 'dxfGradeInput', 'dxfQuantityInput', 'dxfThicknessInput'];
+    
+    for (const fieldId of requiredFields) {
+        if (getInputValue(fieldId) === '') {
+            M.toast({html: 'Please fill in all required fields!', classes: 'rounded toast-warning', displayLength: 2000});
+            return false;
+        }
+    }
+    return true;
+}
+
+function dxfToNcHoleCreator(parsedDxf) {
+  let result = 'BO\n';
+  
+  parsedDxf.circles.forEach(circle => {
+    const x = circle.center.x;
+    const y = circle.center.y;
+    const diameter = circle.radius * 2;
+
+    result += `v ${x.toFixed(2)} ${y.toFixed(2)} ${diameter.toFixed(2)}\n`;
+  });
+  
+  return result;
+}
+
+function contourDataToNc(parsedData) {
+  // Helper function to get all points from a shape
+  const getShapePoints = (shape) => {
+    switch (shape.type) {
+      case 'LINE':
+        return [shape.start, shape.end];
+      case 'ARC':
+        return [shape.startPoint, shape.endPoint];
+      default:
+        return [];
+    }
+  };
+
+  // Helper function to check if two points are approximately equal
+  const pointsEqual = (p1, p2, tolerance = 0.001) => {
+    return Math.abs(p1.x - p2.x) < tolerance && Math.abs(p1.y - p2.y) < tolerance;
+  };
+
+  // Collect all contour shapes with their indices
+  const contourShapes = [];
+  
+  // Collect from lines
+  parsedData.lines.forEach(line => {
+    if (line.hasOwnProperty('contourIndex')) {
+      contourShapes.push(line);
+    }
+  });
+  
+  // Collect from arcs
+  parsedData.arcs.forEach(arc => {
+    if (arc.hasOwnProperty('contourIndex')) {
+      contourShapes.push(arc);
+    }
+  });
+  
+  // Collect from rects
+  parsedData.rects.forEach(rect => {
+    if (rect.hasOwnProperty('contourIndex')) {
+      contourShapes.push(rect);
+    }
+  });
+
+  if (contourShapes.length === 0) {
+    return '';
+  }
+
+  // Sort by contourIndex
+  contourShapes.sort((a, b) => a.contourIndex - b.contourIndex);
+
+  let result = 'AK\n';
+  let lastPoint = null;
+
+  contourShapes.forEach((shape, index) => {
+    const points = getShapePoints(shape);
+    
+    // Handle lines and arcs
+    if (index === 0) {
+      // First shape - add both points
+      if (shape.type === 'ARC') {
+        result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} -${shape.radius}\n`;
+        result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)} -${shape.radius}\n`;
+        result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
+      } else {
+        result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}\n`;
+        result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
+      }
+      lastPoint = points[1];
+    } else {
+      // Subsequent shapes - check which point is new
+      if (lastPoint && pointsEqual(points[0], lastPoint)) {
+        // First point matches last point, add second point
+        if (shape.type === 'ARC') {
+          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
+          result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
+          result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
+        } else {
+          result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
+        }
+        lastPoint = points[1];
+      } else if (lastPoint && pointsEqual(points[1], lastPoint)) {
+        // Second point matches last point, add first point
+        if (shape.type === 'ARC') {
+          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
+          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
+          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}\n`;
+        } else {
+          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}\n`;
+        }
+        lastPoint = points[0];
+      }
+    }
+  });
+
+  return result.trim();
+}
+
 function convertDxfToNc(dxfFileData, fileName) {
   const parsedData = parseDxf(dxfFileData);
   const contourData = findContour(parsedData);
   const partDimensions = getPartDimensions(parsedData);
   if (!contourData) {
-    console.error('No valid contour found in the DXF data.');
+    M.toast({html: 'No valid contour found in the DXF data!', classes: 'rounded toast-error', displayLength: 2000});
     return null;
   }
+
   let ncContent = [
         'ST',
         `** Created by OpenSteel on ${new Date().toLocaleDateString()}`,
         getInputValue('dxfOrderInput'),
         getInputValue('dxfDrawingInput'),
         getInputValue('dxfPhaseInput'),
-        fileName.replace(/\.nc1$/, ""),
+        fileName.replace(/\.dxf$/, ""),
         getInputValue('dxfGradeInput'),
         getInputValue('dxfQuantityInput'),
         'PL',
         'B',
-        partDimensions.length.toFixed(2),
+        partDimensions.width.toFixed(2),
         partDimensions.height.toFixed(2),
         getInputValue('dxfThicknessInput'),
         getInputValue('dxfThicknessInput'),
@@ -503,8 +629,19 @@ function convertDxfToNc(dxfFileData, fileName) {
         '',
         '',
         '',
-        'EN'
+        '',
     ].join('\n');
 
-  return contourData;
+    // Add contour data
+
+    ncContent += '\n' + contourDataToNc(contourData);
+
+    // Add hole data
+    if (parsedData.circles.length > 0) {
+        ncContent += '\n' + dxfToNcHoleCreator(parsedData);
+    }
+
+    console.log(contourData)
+    ncContent += 'EN';
+  return ncContent;
 }

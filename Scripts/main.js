@@ -22,8 +22,7 @@ async function handleFiles(files) {
         const fileData = await file.text();
         // Handle DXF files
         if (getFileExtension(fileName) === 'dxf') {
-            const parsedData = parseDxf(fileData); // Parse DXF files
-            const element = document.getElementById('dxfToNCModla')
+            const element = document.getElementById('dxfToNCModal')
             const modal = M.Modal.getInstance(element);
             const processBtn = document.getElementById('dxfToNCButton');
             const closeBtn = document.getElementById('dxfToNCCloseButton');
@@ -33,11 +32,21 @@ async function handleFiles(files) {
             // Wait for action from the user
             await new Promise((resolve) => {
                 const onProcessClick = () => {
-                    fileData = convertDxfToNc(fileData, fileName);
-                    if (fileData === null) resolve(); // If no valid contour found, resolve immediately
-
-                    addFile(fileName, fileData, fileCount);
+                    // Validate inputs first
+                    if (!validateDxfInputs()) {
+                        return; // Stay in the modal - don't resolve
+                    }
                     
+                    // Convert the file
+                    const result = convertDxfToNc(fileData, fileName);
+                    if (result === null) {
+                        resolve(); // No valid contour found, resolve immediately
+                        return;
+                    }
+
+                    console.log(result);
+                    addFile(fileName, result, fileCount);
+
                     // Clean up listeners
                     processBtn.removeEventListener('click', onProcessClick);
                     closeBtn.removeEventListener('click', onCloseClick);
