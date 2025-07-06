@@ -641,7 +641,6 @@ function convertDxfToNc(dxfFileData, fileName) {
         ncContent += '\n' + dxfToNcHoleCreator(parsedData);
     }
 
-    console.log(contourData)
     ncContent += 'EN';
   return ncContent;
 }

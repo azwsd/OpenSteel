@@ -148,7 +148,6 @@ function downloadActiveViews() {
     let viewCount = 0;
     let lastView = '';
     const fileName = selectedFile.substring(0, selectedFile.lastIndexOf('.'));
-    console.log(selectedFile);
     let zip = new JSZip(); //Create a new ZIP archive
         let promises = [];
 
