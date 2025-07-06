@@ -19,7 +19,7 @@ function getFileExtension(fileName){
 //make sure the file format is supported
 function verifyFile(fileName)
 {
-    const acceptableFiles = ['nc', 'nc1'];
+    const acceptableFiles = ['nc', 'nc1', 'dxf'];
     if(acceptableFiles.includes(getFileExtension(fileName).toLowerCase())) return true;
     M.toast({html: 'Please insert correct file format!', classes: 'rounded toast-warning', displayLength: 2000})
     return false;
