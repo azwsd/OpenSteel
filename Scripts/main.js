@@ -20,6 +20,46 @@ async function handleFiles(files) {
         const fileName = file.name;
         if (!verifyFile(fileName)) continue;
         const fileData = await file.text();
+        // Handle DXF files
+        if (getFileExtension(fileName) === 'dxf') {
+            const parsedData = parseDxf(fileData); // Parse DXF files
+            const element = document.getElementById('dxfToNCModla')
+            const modal = M.Modal.getInstance(element);
+            const processBtn = document.getElementById('dxfToNCButton');
+            const closeBtn = document.getElementById('dxfToNCCloseButton');
+            
+            modal.open(); // Open settings modal
+            
+            // Wait for action from the user
+            await new Promise((resolve) => {
+                const onProcessClick = () => {
+                    fileData = convertDxfToNc(fileData, fileName);
+                    if (fileData === null) resolve(); // If no valid contour found, resolve immediately
+
+                    addFile(fileName, fileData, fileCount);
+                    
+                    // Clean up listeners
+                    processBtn.removeEventListener('click', onProcessClick);
+                    closeBtn.removeEventListener('click', onCloseClick);
+                    modal.close(); // Close the modal
+                    resolve();
+                };
+                
+                const onCloseClick = () => {
+                    // Clean up listeners
+                    processBtn.removeEventListener('click', onProcessClick);
+                    closeBtn.removeEventListener('click', onCloseClick);
+                    modal.close(); // Close the modal
+                    resolve();
+                };
+                
+                processBtn.addEventListener('click', onProcessClick);
+                closeBtn.addEventListener('click', onCloseClick);
+            });
+            
+            // Continue to next file
+            continue;
+        }
         // Add the file to the view
         addFile(fileName, fileData, fileCount);
     }
