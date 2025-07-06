@@ -13,14 +13,14 @@ let fileCounter = 0;
 //Return extinsion of file
 function getFileExtension(fileName){
     if (typeof fileName === "undefined") return;
-    return fileName.split('.').pop();
+    return fileName.split('.').pop().toLowerCase();
 };
 
 //make sure the file format is supported
 function verifyFile(fileName)
 {
     const acceptableFiles = ['nc', 'nc1', 'dxf'];
-    if(acceptableFiles.includes(getFileExtension(fileName).toLowerCase())) return true;
+    if(acceptableFiles.includes(getFileExtension(fileName))) return true;
     M.toast({html: 'Please insert correct file format!', classes: 'rounded toast-warning', displayLength: 2000})
     return false;
 };
