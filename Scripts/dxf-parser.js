@@ -37,12 +37,21 @@ function parseDxf(dxfString) {
         break;
       case 'ARC':
          if (currentEntity.center && currentEntity.radius && currentEntity.startAngle !== undefined && currentEntity.endAngle !== undefined) {
+          // Calculate start and end points from center, radius, and angles
+          const startPoint = {
+            x: currentEntity.center.x + currentEntity.radius * Math.cos(currentEntity.startAngle),
+            y: currentEntity.center.y + currentEntity.radius * Math.sin(currentEntity.startAngle)
+          };
+
+          const endPoint = {
+            x: currentEntity.center.x + currentEntity.radius * Math.cos(currentEntity.endAngle),
+            y: currentEntity.center.y + currentEntity.radius * Math.sin(currentEntity.endAngle)
+          };
           result.arcs.push({
             type: 'ARC',
-            center: { x: currentEntity.center.x, y: currentEntity.center.y },
             radius: currentEntity.radius,
-            startAngle: currentEntity.startAngle,
-            endAngle: currentEntity.endAngle,
+            startPoint: startPoint,
+            endPoint: endPoint
           });
         }
         break;
