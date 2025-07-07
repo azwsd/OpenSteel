@@ -70,12 +70,15 @@ function parseDxf(dxfString) {
                 text: currentEntity.text,
                 position: { x: currentEntity.position.x, y: currentEntity.position.y },
                 height: currentEntity.height || 0,
+                rotation: currentEntity.rotation || 0,
             });
         }
         break;
       case 'LWPOLYLINE':
-        // Check if it's a closed rectangle
-        if (currentEntity.closed && currentEntity.vertices && currentEntity.vertices.length === 4) {
+      case 'POLYLINE':
+        if (currentEntity.vertices && currentEntity.vertices.length >= 2) {
+          // Check if it's a closed rectangle (4 vertices)
+          if (currentEntity.closed && currentEntity.vertices.length === 4) {
             const vertices = currentEntity.vertices;
 
             // Find the bottom-left corner
@@ -123,6 +126,25 @@ function parseDxf(dxfString) {
                 height: height,
                 angle: rotation * (180 / Math.PI), // Angle in degrees
             });
+          } else {
+            // Convert polyline to individual line segments
+            for (let j = 0; j < currentEntity.vertices.length - 1; j++) {
+              result.lines.push({
+                type: 'LINE',
+                start: { x: currentEntity.vertices[j].x, y: currentEntity.vertices[j].y },
+                end: { x: currentEntity.vertices[j + 1].x, y: currentEntity.vertices[j + 1].y },
+              });
+            }
+            
+            // If closed, add a line from the last vertex back to the first
+            if (currentEntity.closed && currentEntity.vertices.length > 2) {
+              result.lines.push({
+                type: 'LINE',
+                start: { x: currentEntity.vertices[currentEntity.vertices.length - 1].x, y: currentEntity.vertices[currentEntity.vertices.length - 1].y },
+                end: { x: currentEntity.vertices[0].x, y: currentEntity.vertices[0].y },
+              });
+            }
+          }
         }
         break;
     }
@@ -163,7 +185,7 @@ function parseDxf(dxfString) {
       case 1: currentEntity.text = value; break;
       case 8: currentEntity.layer = value; break;
       case 10:
-        if (currentEntity.type === 'LWPOLYLINE') {
+        if (currentEntity.type === 'LWPOLYLINE' || currentEntity.type === 'POLYLINE') {
             currentEntity.vertices.push({ x: parseFloat(value) });
         } else {
             currentEntity.p1 = currentEntity.p1 || {}; currentEntity.p1.x = parseFloat(value);
@@ -172,7 +194,7 @@ function parseDxf(dxfString) {
         }
         break;
       case 20:
-        if (currentEntity.type === 'LWPOLYLINE') {
+        if (currentEntity.type === 'LWPOLYLINE' || currentEntity.type === 'POLYLINE') {
             const lastVertex = currentEntity.vertices[currentEntity.vertices.length - 1];
             if (lastVertex && lastVertex.y === undefined) { lastVertex.y = parseFloat(value); }
         } else {
@@ -187,7 +209,13 @@ function parseDxf(dxfString) {
         currentEntity.radius = parseFloat(value);
         currentEntity.height = parseFloat(value);
         break;
-      case 50: currentEntity.startAngle = parseFloat(value); break;
+      case 50: 
+        if (currentEntity.type === 'ARC') {
+        currentEntity.startAngle = parseFloat(value);
+        } else if (currentEntity.type === 'TEXT') {
+          currentEntity.rotation = parseFloat(value);
+        }
+        break;
       case 51: currentEntity.endAngle = parseFloat(value); break;
       case 70: if (parseInt(value, 10) & 1) { currentEntity.closed = true; } break; // Bitwise check for closed flag
       case 90: currentEntity.vertexCount = parseInt(value, 10); break;
@@ -576,6 +604,22 @@ function dxfToNcHoleCreator(parsedDxf) {
   return result;
 }
 
+function dxfToNcTextCreator(parsedDxf) {
+  let result = 'SI\n';
+  
+  parsedDxf.texts.forEach(text => {
+    const textContent = text.text;
+    const x = text.position.x;
+    const y = text.position.y;
+    const height = text.height;
+    const rotation = text.rotation;
+
+    result += `v ${x.toFixed(2)} ${y.toFixed(2)} ${rotation.toFixed(2)} ${height.toFixed(2)} ${textContent}\n`;
+  });
+  
+  return result;
+}
+
 function contourDataToNc(parsedData) {
   // Helper function to get all points from a shape
   const getShapePoints = (shape) => {
@@ -764,6 +808,11 @@ function convertDxfToNc(dxfFileData, fileName) {
     // Add hole data
     if (parsedData.circles.length > 0) {
         ncContent += '\n' + dxfToNcHoleCreator(parsedData);
+    }
+
+    // Add text data
+    if (parsedData.texts.length > 0) {
+        ncContent += '\n' + dxfToNcTextCreator(parsedData);
     }
 
     ncContent += '\nEN';
