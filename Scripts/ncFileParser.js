@@ -556,7 +556,8 @@ function handleUndefinedViews(){
     }
     else if (profile == 'T')
     {
-        if (!viewExists.h) addFlangeT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+        if (!viewExists.v) addFlangeT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
+        if (!viewExists.h) addOtherFlangeT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
         if (!viewExists.u) addWebT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE);
     }
     else if(!(viewExists.o && viewExists.v && viewExists.u && viewExists.h)) M.toast({html: `Profile ${profile} not supported!`, classes: 'rounded toast-error', displayLength: 2000}); //Handles if there are not contour data and profile is not supported
@@ -700,6 +701,40 @@ function addBottomFlange(length, height, flangeWidth, flangeThickness, webThickn
 }
 
 function addFlangeT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) {
+    const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
+    const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
+    const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
+    const fCE = (flangeWidth - webThickness) * Math.tan((flangeCutEnd * Math.PI) / 180);
+    let firstPoint = [];
+
+    const sValue = wCS > fCS ? wCS : fCS;
+    const eValue = wCE > fCE ? wCE : fCE;
+    //Calculate web points
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['v', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['v', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    else firstPoint = ['v', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    contourData.push(firstPoint);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length- wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', length - eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v',wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['v',fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    else contourData.push(['v', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+
+    contourData.push(firstPoint);
+}
+
+function addOtherFlangeT(length, height, flangeWidth, flangeThickness, webThickness, webCutStart, isNegativeWCS, webCutEnd, isNegativeWCE, flangeCutStart, isNegativeFCS, flangeCutEnd, isNegativeFCE) {
     const wCS = (height - flangeThickness) * Math.tan((webCutStart * Math.PI) / 180);
     const wCE = (height - flangeThickness) * Math.tan((webCutEnd * Math.PI) / 180);
     const fCS = (flangeWidth - webThickness) * Math.tan((flangeCutStart * Math.PI) / 180);
