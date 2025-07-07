@@ -44,8 +44,7 @@ async function handleFiles(files) {
                         return;
                     }
 
-                    console.log(result);
-                    addFile(fileName, result, fileCount);
+                    addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
 
                     // Clean up listeners
                     processBtn.removeEventListener('click', onProcessClick);
