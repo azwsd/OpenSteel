@@ -37,8 +37,9 @@ body.drag-over::before {
     position: fixed !important;
 }
 
-/* Center all materialize icons */
+/* Center all materialize icons and remove built in margin */
 .material-icons {
+  margin: 0 !important;
   vertical-align: middle;
 }
 
