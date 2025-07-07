@@ -679,7 +679,7 @@ function contourDataToNc(parsedData) {
         // We've returned to the start point, contour is complete
         break;
       } else {
-        console.warn('Contour is not closed - no connecting shape found');
+        M.toast({html: 'No closed contours were found!', classes: 'rounded toast-error', displayLength: 2000})
         break;
       }
     }
@@ -767,7 +767,5 @@ function convertDxfToNc(dxfFileData, fileName) {
     }
 
     ncContent += '\nEN';
-    console.log(ncContent);
-    console.log(parsedData);
   return ncContent;
 }
