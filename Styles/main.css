@@ -78,6 +78,10 @@ body.drag-over::before {
     flex-wrap: nowrap; /* Prevents wrapping */
     gap: 5px;
 }
+#functionButtons a:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+}
 
 /* Decrease gap for mobile devices */
 @media (max-width: 600px) {
@@ -320,33 +324,70 @@ body.drag-over::before {
 .delHoleBtn {
   width: 100%;
 }
+.delHoleBtn:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+}
 #addHoleBtn {
   width: 100%;
 }
+#addHoleBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
 
 /*Styles the div created dynamically for viewing, deleting and selecting files*/
-.viewFiles
-{
-    border: 1px black solid;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    margin-bottom: 0.5em;
+.viewFiles {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
-.viewFiles p
-{
-    display: inline;
+.viewFiles:hover {
+  border-color: #bdbdbd;
+  background: #f5f5f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.viewFiles a
-{
-    width: 4em;
-    border-radius: 1em;
+.viewFiles p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #212121;
+  flex: 1;
+  padding-right: 12px;
+  word-wrap: break-word;
 }
-.selected-file
-{
-    border: 2px #311b92 solid;
+.viewFiles .fileDelete {
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.viewFiles .fileDelete:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+.selected-file {
+  border: 2px solid #311b92;
+  background: #f3e5f5;
+  box-shadow: 0 2px 12px rgba(49, 27, 146, 0.15);
+}
+.selected-file:hover {
+  border-color: #311b92;
+  background: #ede7f6;
+  box-shadow: 0 4px 16px rgba(49, 27, 146, 0.2);
+}
+.selected-file p {
+  color: #311b92;
+  font-weight: 600;
 }
 
 /*Center Materialize Toast for medium and large screens only*/
