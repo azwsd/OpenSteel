@@ -15,6 +15,18 @@ function parseDxf(dxfString) {
   // Helper to convert degrees to radians
   const degToRad = (degrees) => degrees * (Math.PI / 180);
 
+  // Helper to determine arc direction
+  const getArcDirection = (startAngle, endAngle) => {
+    // Normalize angles to [0, 360)
+    const start = (startAngle % 360 + 360) % 360;
+    const end = (endAngle % 360 + 360) % 360;
+    // Calculate angular difference
+    let delta = end - start;
+    if (delta < 0) delta += 360;
+    // DXF arcs are counterclockwise by default, but check if shortest path suggests otherwise
+    return delta <= 180 ? -1 : 1;
+  };
+
   // Helper to process and push the completed entity
   const finalizeEntity = () => {
     if (!currentEntity) return;
@@ -54,12 +66,15 @@ function parseDxf(dxfString) {
             x: currentEntity.center.x + currentEntity.radius * Math.cos(endAngleRad),
             y: currentEntity.center.y + currentEntity.radius * Math.sin(endAngleRad)
           };
+          // Determine direction
+          const direction = getArcDirection(currentEntity.startAngle, currentEntity.endAngle);
           result.arcs.push({
             type: 'ARC',
             center: { x: currentEntity.center.x, y: currentEntity.center.y },
             radius: currentEntity.radius,
             startPoint: startPoint,
-            endPoint: endPoint
+            endPoint: endPoint,
+            direction: direction
           });
         }
         break;
@@ -149,7 +164,6 @@ function parseDxf(dxfString) {
         break;
     }
   };
-
 
   while (i < lines.length) {
     const groupCode = parseInt(lines[i].trim(), 10);
@@ -744,8 +758,7 @@ function contourDataToNc(parsedData) {
     if (index === 0) {
       // First shape - add both points
       if (item.shape.type === 'ARC') {
-        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} -${item.shape.radius.toFixed(2)}\n`;
-        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} -${item.shape.radius.toFixed(2)}\n`;
+        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} ${item.shape.direction * item.shape.radius.toFixed(2)}\n`;
         result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       } else {
         result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)}\n`;
@@ -754,7 +767,8 @@ function contourDataToNc(parsedData) {
     } else {
       // Subsequent shapes - only add the end point
       if (item.shape.type === 'ARC') {
-        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} ${item.shape.radius.toFixed(2)}\n`;
+        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} ${item.shape.direction * item.shape.radius.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       } else {
         result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       }
