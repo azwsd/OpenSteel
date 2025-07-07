@@ -56,6 +56,7 @@ function parseDxf(dxfString) {
           };
           result.arcs.push({
             type: 'ARC',
+            center: { x: currentEntity.center.x, y: currentEntity.center.y },
             radius: currentEntity.radius,
             startPoint: startPoint,
             endPoint: endPoint
@@ -194,6 +195,83 @@ function parseDxf(dxfString) {
   }
 
   finalizeEntity(); // Finalize the very last entity in the file
+
+  // Find the minimum x and y values across all shapes
+  let minX = Infinity;
+  let minY = Infinity;
+
+  // Check lines
+  result.lines.forEach(line => {
+    minX = Math.min(minX, line.start.x, line.end.x);
+    minY = Math.min(minY, line.start.y, line.end.y);
+  });
+
+  // Check circles (consider the leftmost and bottommost points)
+  result.circles.forEach(circle => {
+    minX = Math.min(minX, circle.center.x - circle.radius);
+    minY = Math.min(minY, circle.center.y - circle.radius);
+  });
+
+  // Check arcs (consider center, start, and end points)
+  result.arcs.forEach(arc => {
+    minX = Math.min(minX, arc.center.x - arc.radius, arc.startPoint.x, arc.endPoint.x);
+    minY = Math.min(minY, arc.center.y - arc.radius, arc.startPoint.y, arc.endPoint.y);
+  });
+
+  // Check texts
+  result.texts.forEach(text => {
+    minX = Math.min(minX, text.position.x);
+    minY = Math.min(minY, text.position.y);
+  });
+
+  // Check rectangles
+  result.rects.forEach(rect => {
+    minX = Math.min(minX, rect.x);
+    minY = Math.min(minY, rect.y);
+  });
+
+  // If no shapes were found, set defaults
+  if (minX === Infinity) minX = 0;
+  if (minY === Infinity) minY = 0;
+
+  // Translate all shapes by subtracting the minimum values
+  if (minX !== 0 || minY !== 0) {
+    // Translate lines
+    result.lines.forEach(line => {
+      line.start.x -= minX;
+      line.start.y -= minY;
+      line.end.x -= minX;
+      line.end.y -= minY;
+    });
+
+    // Translate circles
+    result.circles.forEach(circle => {
+      circle.center.x -= minX;
+      circle.center.y -= minY;
+    });
+
+    // Translate arcs
+    result.arcs.forEach(arc => {
+      arc.center.x -= minX;
+      arc.center.y -= minY;
+      arc.startPoint.x -= minX;
+      arc.startPoint.y -= minY;
+      arc.endPoint.x -= minX;
+      arc.endPoint.y -= minY;
+    });
+
+    // Translate texts
+    result.texts.forEach(text => {
+      text.position.x -= minX;
+      text.position.y -= minY;
+    });
+
+    // Translate rectangles
+    result.rects.forEach(rect => {
+      rect.x -= minX;
+      rect.y -= minY;
+    });
+  }
 
   return result;
 }
@@ -516,7 +594,7 @@ function contourDataToNc(parsedData) {
     return Math.abs(p1.x - p2.x) < tolerance && Math.abs(p1.y - p2.y) < tolerance;
   };
 
-  // Collect all contour shapes with their indices
+  // Collect all contour shapes
   const contourShapes = [];
   
   // Collect from lines
@@ -544,49 +622,97 @@ function contourDataToNc(parsedData) {
     return '';
   }
 
-  // Sort by contourIndex
-  contourShapes.sort((a, b) => a.contourIndex - b.contourIndex);
-
-  let result = 'AK\n';
-  let lastPoint = null;
-
-  contourShapes.forEach((shape, index) => {
-    const points = getShapePoints(shape);
+  // Build the contour by following connectivity
+  const usedShapes = new Set();
+  const orderedShapes = [];
+  
+  // Start with the first shape
+  let currentShape = contourShapes[0];
+  let currentPoints = getShapePoints(currentShape);
+  
+  if (currentPoints.length < 2) {
+    return '';
+  }
+  
+  // Choose the first point as our starting point
+  let startPoint = currentPoints[0];
+  let currentPoint = currentPoints[1]; // Move to the other end
+  
+  orderedShapes.push({
+    shape: currentShape,
+    startPoint: startPoint,
+    endPoint: currentPoint
+  });
+  usedShapes.add(currentShape);
+  
+  // Follow the connectivity until we return to the start point
+  while (usedShapes.size < contourShapes.length) {
+    let nextShape = null;
+    let nextStartPoint = null;
+    let nextEndPoint = null;
     
-    // Handle lines and arcs
+    // Find the next shape that connects to currentPoint
+    for (let shape of contourShapes) {
+      if (usedShapes.has(shape)) continue;
+      
+      const points = getShapePoints(shape);
+      if (points.length < 2) continue;
+      
+      if (pointsEqual(points[0], currentPoint)) {
+        // Current point matches first point of this shape
+        nextShape = shape;
+        nextStartPoint = points[0];
+        nextEndPoint = points[1];
+        break;
+      } else if (pointsEqual(points[1], currentPoint)) {
+        // Current point matches second point of this shape
+        nextShape = shape;
+        nextStartPoint = points[1];
+        nextEndPoint = points[0];
+        break;
+      }
+    }
+    
+    if (!nextShape) {
+      // No connecting shape found - check if we've completed the contour
+      if (pointsEqual(currentPoint, startPoint)) {
+        // We've returned to the start point, contour is complete
+        break;
+      } else {
+        console.warn('Contour is not closed - no connecting shape found');
+        break;
+      }
+    }
+    
+    orderedShapes.push({
+      shape: nextShape,
+      startPoint: nextStartPoint,
+      endPoint: nextEndPoint
+    });
+    usedShapes.add(nextShape);
+    currentPoint = nextEndPoint;
+  }
+  
+  // Generate the NC code
+  let result = 'AK\n';
+  
+  orderedShapes.forEach((item, index) => {
     if (index === 0) {
       // First shape - add both points
-      if (shape.type === 'ARC') {
-        result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} -${shape.radius}\n`;
-        result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)} -${shape.radius}\n`;
-        result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
+      if (item.shape.type === 'ARC') {
+        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} -${item.shape.radius.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} -${item.shape.radius.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       } else {
-        result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}\n`;
-        result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
+        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       }
-      lastPoint = points[1];
     } else {
-      // Subsequent shapes - check which point is new
-      if (lastPoint && pointsEqual(points[0], lastPoint)) {
-        // First point matches last point, add second point
-        if (shape.type === 'ARC') {
-          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
-          result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
-          result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
-        } else {
-          result += `v ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}\n`;
-        }
-        lastPoint = points[1];
-      } else if (lastPoint && pointsEqual(points[1], lastPoint)) {
-        // Second point matches last point, add first point
-        if (shape.type === 'ARC') {
-          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
-          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${shape.radius.toFixed(2)}\n`;
-          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}\n`;
-        } else {
-          result += `v ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}\n`;
-        }
-        lastPoint = points[0];
+      // Subsequent shapes - only add the end point
+      if (item.shape.type === 'ARC') {
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} ${item.shape.radius.toFixed(2)}\n`;
+      } else {
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       }
     }
   });
@@ -612,7 +738,7 @@ function convertDxfToNc(dxfFileData, fileName) {
         fileName.replace(/\.dxf$/, ""),
         getInputValue('dxfGradeInput'),
         getInputValue('dxfQuantityInput'),
-        'PL',
+        `PL${getInputValue('dxfThicknessInput')}`,
         'B',
         partDimensions.width.toFixed(2),
         partDimensions.height.toFixed(2),
@@ -633,7 +759,6 @@ function convertDxfToNc(dxfFileData, fileName) {
     ].join('\n');
 
     // Add contour data
-
     ncContent += '\n' + contourDataToNc(contourData);
 
     // Add hole data
@@ -641,6 +766,8 @@ function convertDxfToNc(dxfFileData, fileName) {
         ncContent += '\n' + dxfToNcHoleCreator(parsedData);
     }
 
-    ncContent += 'EN';
+    ncContent += '\nEN';
+    console.log(ncContent);
+    console.log(parsedData);
   return ncContent;
 }
