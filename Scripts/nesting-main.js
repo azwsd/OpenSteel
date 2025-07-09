@@ -874,12 +874,14 @@ document.addEventListener('DOMContentLoaded', function(){
     let sawWidth = localStorage.getItem("sawWidth") || 3;
     let preferShorterStocks = localStorage.getItem("preferShorterStocks") || false;
     let maxUniqueLabels = localStorage.getItem("maxUniqueLabels") || 999;
+    let minOffcut = localStorage.getItem("minOffcut") || 1000;
 
     document.getElementById('grip-start').value = gripStart;
     document.getElementById('grip-end').value = gripEnd;
     document.getElementById('saw-width').value = sawWidth;
     document.getElementById('shorter-length-preference').checked = preferShorterStocks == 'true';
     document.getElementById('max-unique-labels').value = maxUniqueLabels;
+    document.getElementById('min-offcut').value = minOffcut;
 });
 
 function optimizeCuttingNests() {
@@ -893,12 +895,14 @@ function optimizeCuttingNests() {
     const sawWidth = parseFloat(document.getElementById('saw-width').value);
     const preferShorterStocks = document.getElementById('shorter-length-preference').checked;
     const maxUniqueLabels = parseInt(document.getElementById('max-unique-labels').value);
+    const minOffcut = parseInt(document.getElementById('min-offcut').value);
 
     localStorage.setItem("gripStart", gripStart);
     localStorage.setItem("gripEnd", gripEnd);
     localStorage.setItem("sawWidth", sawWidth);
     localStorage.setItem("preferShorterStocks", preferShorterStocks);
     localStorage.setItem("maxUniqueLabels", maxUniqueLabels);
+    localStorage.setItem("minOffcut", minOffcut);
 
     // Group pieces by profile
     const profileGroups = {};
@@ -1193,8 +1197,13 @@ function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth)
             });
             
             // Calculate waste and offcut
-            const totalWaste = sawCuts * sawWidth + gripStart + gripEnd;
-            const offcut = stock.length - usedLength - totalWaste;
+            let totalWaste = sawCuts * sawWidth + gripStart + gripEnd;
+            let offcut = stock.length - usedLength - totalWaste;
+            const minOffcut = parseInt(document.getElementById('min-offcut').value);
+            if (offcut < minOffcut) {
+                totalWaste += offcut; // Add offcut to waste if it's less than minOffcut
+                offcut = 0; // If offcut is less than minOffcut, set to 0
+            }
             
             cuttingNests.push({
                 profile: stock.originalStock.profile,
