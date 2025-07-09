@@ -868,17 +868,37 @@ function calculateAndDisplayResults(cuttingNests) {
     document.getElementById('total-waste').textContent = Math.round(totalWaste);
 }
 
+document.addEventListener('DOMContentLoaded', function(){
+    let gripStart = localStorage.getItem("gripStart") || 20;
+    let gripEnd = localStorage.getItem("gripEnd") || 20;
+    let sawWidth = localStorage.getItem("sawWidth") || 3;
+    let preferShorterStocks = localStorage.getItem("preferShorterStocks") || false;
+    let maxUniqueLabels = localStorage.getItem("maxUniqueLabels") || 999;
+
+    document.getElementById('grip-start').value = gripStart;
+    document.getElementById('grip-end').value = gripEnd;
+    document.getElementById('saw-width').value = sawWidth;
+    document.getElementById('shorter-length-preference').checked = preferShorterStocks == 'true';
+    document.getElementById('max-unique-labels').value = maxUniqueLabels;
+});
+
 function optimizeCuttingNests() {
     if (stockItems.length === 0 || pieceItems.length === 0) {
         M.toast({html: 'Please add stock and piece items first!', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
 
-    const gripStart = parseFloat(document.getElementById('grip-start').value) || 0;
-    const gripEnd = parseFloat(document.getElementById('grip-end').value) || 0;
-    const sawWidth = parseFloat(document.getElementById('saw-width').value) || 0;
+    const gripStart = parseFloat(document.getElementById('grip-start').value);
+    const gripEnd = parseFloat(document.getElementById('grip-end').value);
+    const sawWidth = parseFloat(document.getElementById('saw-width').value);
     const preferShorterStocks = document.getElementById('shorter-length-preference').checked;
-    const maxUniqueLabels = parseInt(document.getElementById('max-unique-labels').value) || 999;
+    const maxUniqueLabels = parseInt(document.getElementById('max-unique-labels').value);
+
+    localStorage.setItem("gripStart", gripStart);
+    localStorage.setItem("gripEnd", gripEnd);
+    localStorage.setItem("sawWidth", sawWidth);
+    localStorage.setItem("preferShorterStocks", preferShorterStocks);
+    localStorage.setItem("maxUniqueLabels", maxUniqueLabels);
 
     // Group pieces by profile
     const profileGroups = {};
