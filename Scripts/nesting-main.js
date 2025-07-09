@@ -915,7 +915,8 @@ function optimizeCuttingNests() {
                 pieceAssignments: [],
                 offcut: 0,
                 waste: 0,
-                used: false
+                used: false,
+                hasLastPieceWithoutSaw: false // New flag to track if last piece was placed without saw width
             });
         }
     });
@@ -937,6 +938,7 @@ function optimizeCuttingNests() {
             s.used = false;
             s.pieceAssignments = [];
             s.remainingLength = s.usableLength;
+            s.hasLastPieceWithoutSaw = false;
         });
 
         // Sort stocks by length if preferShorterStocks is checked
@@ -1007,15 +1009,21 @@ function binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, ma
                     position: currentPos,
                     length: unassignedPieces[pieceIndex].length,
                     label: unassignedPieces[pieceIndex].label,
-                    color: unassignedPieces[pieceIndex].color
+                    color: unassignedPieces[pieceIndex].color,
+                    withoutSawWidth: piece.withoutSawWidth || false // Track if placed without saw width
                 });
                 
                 // Update position for next piece
                 currentPos += unassignedPieces[pieceIndex].length;
                 
-                // Add saw width
-                if (index < bestPattern.pieces.length - 1) {
+                // Add saw width only if this piece was placed with saw width
+                if (index < bestPattern.pieces.length - 1 && !piece.withoutSawWidth) {
                     currentPos += sawWidth;
+                }
+                
+                // Update flag if this is the last piece and it was placed without saw width
+                if (index === bestPattern.pieces.length - 1 && piece.withoutSawWidth) {
+                    currentStock.hasLastPieceWithoutSaw = true;
                 }
                 
                 // Remove from unassigned pieces
@@ -1053,8 +1061,8 @@ function generateAllValidPatterns(pieces, stockLength, sawWidth, maxUniqueLabels
             const usedLength = currentPattern.reduce((sum, p, idx) => {
                 // Add piece length
                 let total = sum + p.length;
-                // Add saw width
-                if (idx < currentPattern.length) {
+                // Add saw width only if not the last piece or if it's not marked as withoutSawWidth
+                if (idx < currentPattern.length - 1 && !p.withoutSawWidth) {
                     total += sawWidth;
                 }
                 return total;
@@ -1085,20 +1093,49 @@ function generateAllValidPatterns(pieces, stockLength, sawWidth, maxUniqueLabels
                 continue; // Skip this piece if it would exceed the max unique labels
             }
             
-            // Calculate additional length needed including saw cut
-            const additionalLength = piece.length + sawWidth;
-                
-            // Check if this piece fits
-            if (additionalLength <= remainingLength) {
-                // Add piece to current pattern
-                currentPattern.push(piece);
+            // Try fitting with saw width first
+            const additionalLengthWithSaw = piece.length + sawWidth;
+            
+            if (additionalLengthWithSaw <= remainingLength) {
+                // Add piece to current pattern (with saw width)
+                const pieceWithSaw = { ...piece, withoutSawWidth: false };
+                currentPattern.push(pieceWithSaw);
                 
                 // Update unique labels
                 const updatedUniqueLabels = new Set(uniqueLabels);
                 updatedUniqueLabels.add(newLabel);
                 
                 // Recursive call with remaining length
-                backtrack(i + 1, currentPattern, remainingLength - additionalLength, updatedUniqueLabels);
+                backtrack(i + 1, currentPattern, remainingLength - additionalLengthWithSaw, updatedUniqueLabels);
+                
+                // Backtrack
+                currentPattern.pop();
+            } 
+            // If it doesn't fit with saw width, try without saw width
+            else if (piece.length <= remainingLength) {
+                // Add piece to current pattern (without saw width)
+                const pieceWithoutSaw = { ...piece, withoutSawWidth: true };
+                currentPattern.push(pieceWithoutSaw);
+                
+                // Update unique labels
+                const updatedUniqueLabels = new Set(uniqueLabels);
+                updatedUniqueLabels.add(newLabel);
+                
+                const usedLength = currentPattern.reduce((sum, p, idx) => {
+                    let total = sum + p.length;
+                    if (idx < currentPattern.length - 1 && !p.withoutSawWidth) {
+                        total += sawWidth;
+                    }
+                    return total;
+                }, 0);
+                
+                const waste = stockLength - usedLength;
+                
+                patterns.push({
+                    pieces: [...currentPattern],
+                    waste: waste,
+                    utilization: (usedLength / stockLength) * 100
+                });
                 
                 // Backtrack
                 currentPattern.pop();
@@ -1125,12 +1162,18 @@ function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth)
         if (stock.used && stock.pieceAssignments.length > 0) {
             // Calculate total used length
             let usedLength = 0;
+            let sawCuts = 0;
+            
             stock.pieceAssignments.forEach((assignment, index) => {
                 usedLength += assignment.length;
+                // Count saw cuts (all pieces except the last one, unless last one is without saw width)
+                if (index < stock.pieceAssignments.length && !assignment.withoutSawWidth) {
+                    sawCuts++;
+                }
             });
             
             // Calculate waste and offcut
-            const totalWaste = (stock.pieceAssignments.length) * sawWidth + gripStart + gripEnd;
+            const totalWaste = sawCuts * sawWidth + gripStart + gripEnd;
             const offcut = stock.length - usedLength - totalWaste;
             
             cuttingNests.push({
@@ -1141,7 +1184,8 @@ function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth)
                 sawWidth: sawWidth,
                 pieceAssignments: stock.pieceAssignments,
                 offcut: offcut,
-                waste: totalWaste
+                waste: totalWaste,
+                hasLastPieceWithoutSaw: stock.hasLastPieceWithoutSaw
             });
         }
     });
@@ -1288,6 +1332,7 @@ function renderCuttingNests(nests) {
         
         // Add saw cut
         if (i < pattern.pieceAssignments.length && pattern.sawWidth > 0) {
+          if (pattern.pieceAssignments[i].withoutSawWidth) return; // Skip saw cut if last piece was placed without saw width
           const sawCut = createElem('div', 'saw-cut-segment');
           sawCut.style.left = `${(cursor / total * 100)}%`;
           sawCut.style.width = `${(pattern.sawWidth / total * 100)}%`;
@@ -1668,6 +1713,7 @@ function generatePDF(nests, allUsed, remaining) {
         
         // Add saw cut
         if (i < pat.pieceAssignments.length && pat.sawWidth > 0) {
+            if (pat.pieceAssignments[i].withoutSawWidth) return; // Skip saw cut if last piece was placed without saw width
             const sawWidthSize = pat.sawWidth < 1 ? 1 : pat.sawWidth; // Ensure saw width is at least 1mm
             const sawWidth = sawWidthSize * scale;
             doc.setFillColor(0, 0, 0); // Black for saw cut
