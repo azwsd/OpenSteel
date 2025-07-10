@@ -23,8 +23,52 @@ function parseDxf(dxfString) {
     // Calculate angular difference
     let delta = end - start;
     if (delta < 0) delta += 360;
-    // DXF arcs are counterclockwise by default, but check if shortest path suggests otherwise
-    return delta <= 180 ? -1 : 1;
+    return delta <= 180 ? 1 : -1;
+  };
+
+  // Helper to check if two points are approximately equal
+  const pointsEqual = (p1, p2, tolerance = 0.0001) => {
+    return Math.abs(p1.x - p2.x) < tolerance && Math.abs(p1.y - p2.y) < tolerance;
+  };
+
+  // Helper to check if two arcs form a complete circle
+  const checkAndCombineArcs = () => {
+    const arcsToRemove = [];
+    
+    for (let i = 0; i < result.arcs.length; i++) {
+      for (let j = i + 1; j < result.arcs.length; j++) {
+        const arc1 = result.arcs[i];
+        const arc2 = result.arcs[j];
+        
+        // Check if they have the same center point and radius
+        if (pointsEqual(arc1.center, arc2.center) && 
+            Math.abs(arc1.radius - arc2.radius) < 0.0001) {
+          
+          // Check if one arc's end point matches the other's start point
+          const arc1EndMatchesArc2Start = pointsEqual(arc1.endPoint, arc2.startPoint);
+          const arc2EndMatchesArc1Start = pointsEqual(arc2.endPoint, arc1.startPoint);
+          
+          if (arc1EndMatchesArc2Start && arc2EndMatchesArc1Start) {
+            // These two arcs can be combined into a complete circle
+            result.circles.push({
+              type: 'CIRCLE',
+              center: { x: arc1.center.x, y: arc1.center.y },
+              radius: arc1.radius,
+            });
+            
+            // Mark these arcs for removal
+            arcsToRemove.push(i, j);
+            break; // Break when match is found
+          }
+        }
+      }
+    }
+    
+    // Remove the arcs that were combined into circles (in reverse order to maintain indices)
+    const uniqueIndices = [...new Set(arcsToRemove)].sort((a, b) => b - a);
+    uniqueIndices.forEach(index => {
+      result.arcs.splice(index, 1);
+    });
   };
 
   // Helper to process and push the completed entity
@@ -238,6 +282,9 @@ function parseDxf(dxfString) {
 
   finalizeEntity(); // Finalize the very last entity in the file
 
+  // Check for arcs that can be combined into circles
+  checkAndCombineArcs();
+
   // Find the minimum x and y values across all shapes
   let minX = Infinity;
   let minY = Infinity;
@@ -446,6 +493,53 @@ function findContour(parsedData) {
     });
   };
 
+  // Helper function to find the largest circle
+  const findLargestCircle = (circles) => {
+    if (circles.length === 0) return null;
+    
+    return circles.reduce((largest, current) => {
+      return current.radius > largest.radius ? current : largest;
+    });
+  };
+
+  // Helper function to convert circle to two arcs
+  const convertCircleToArcs = (circle) => {
+    // Create two 180-degree arcs
+    const arc1 = {
+      type: 'ARC',
+      center: { x: circle.center.x, y: circle.center.y },
+      radius: circle.radius,
+      startPoint: { 
+        x: circle.center.x + circle.radius, 
+        y: circle.center.y 
+      },
+      endPoint: { 
+        x: circle.center.x - circle.radius, 
+        y: circle.center.y 
+      },
+      direction: -1, // counterclockwise
+      contourIndex: 0
+    };
+
+    const arc2 = {
+      type: 'ARC',
+      center: { x: circle.center.x, y: circle.center.y },
+      radius: circle.radius,
+      startPoint: { 
+        x: circle.center.x - circle.radius, 
+        y: circle.center.y 
+      },
+      endPoint: { 
+        x: circle.center.x + circle.radius, 
+        y: circle.center.y 
+      },
+      direction: -1, // counterclockwise
+      contourIndex: 1
+    };
+
+    return [arc1, arc2];
+  };
+
   // Get all shapes that can form contours (exclude circles and texts)
   const contourShapes = [
     ...parsedData.lines,
@@ -454,12 +548,40 @@ function findContour(parsedData) {
   ];
 
   if (contourShapes.length === 0) {
+    // If no contour shapes, try to find the largest circle
+    const largestCircle = findLargestCircle(parsedData.circles);
+    if (largestCircle) {
+      const result = JSON.parse(JSON.stringify(parsedData));
+      const circleIndex = parsedData.circles.indexOf(largestCircle);
+      if (circleIndex !== -1) {
+        // Remove the circle from the circles array
+        result.circles.splice(circleIndex, 1);
+        // Convert to two arcs and add to arcs array
+        const arcs = convertCircleToArcs(largestCircle);
+        result.arcs.push(...arcs);
+      }
+      return result;
+    }
     return false;
   }
 
   // Find the starting point (lowest x, then lowest y)
   const startResult = findLowestPoint(contourShapes);
   if (!startResult.point || !startResult.shape) {
+    // If no valid starting point, try to find the largest circle
+    const largestCircle = findLargestCircle(parsedData.circles);
+    if (largestCircle) {
+      const result = JSON.parse(JSON.stringify(parsedData));
+      const circleIndex = parsedData.circles.indexOf(largestCircle);
+      if (circleIndex !== -1) {
+        // Remove the circle from the circles array
+        result.circles.splice(circleIndex, 1);
+        // Convert to two arcs and add to arcs array
+        const arcs = convertCircleToArcs(largestCircle);
+        result.arcs.push(...arcs);
+      }
+      return result;
+    }
     return false;
   }
 
@@ -473,6 +595,20 @@ function findContour(parsedData) {
   let currentPoint = getNextPoint(startShape, startPoint, null);
   
   if (!currentPoint) {
+    // If can't get next point, try to find the largest circle
+    const largestCircle = findLargestCircle(parsedData.circles);
+    if (largestCircle) {
+      const result = JSON.parse(JSON.stringify(parsedData));
+      const circleIndex = parsedData.circles.indexOf(largestCircle);
+      if (circleIndex !== -1) {
+        // Remove the circle from the circles array
+        result.circles.splice(circleIndex, 1);
+        // Convert to two arcs and add to arcs array
+        const arcs = convertCircleToArcs(largestCircle);
+        result.arcs.push(...arcs);
+      }
+      return result;
+    }
     return false;
   }
 
@@ -483,6 +619,20 @@ function findContour(parsedData) {
     
     if (!nextShape) {
       // No connecting shape found, not a closed contour
+      // Try to find the largest circle as fallback
+      const largestCircle = findLargestCircle(parsedData.circles);
+      if (largestCircle) {
+        const result = JSON.parse(JSON.stringify(parsedData));
+        const circleIndex = parsedData.circles.indexOf(largestCircle);
+        if (circleIndex !== -1) {
+          // Remove the circle from the circles array
+          result.circles.splice(circleIndex, 1);
+          // Convert to two arcs and add to arcs array
+          const arcs = convertCircleToArcs(largestCircle);
+          result.arcs.push(...arcs);
+        }
+        return result;
+      }
       return false;
     }
     
@@ -495,12 +645,40 @@ function findContour(parsedData) {
         break;
       } else {
         // Current point doesn't connect properly to start
+        // Try to find the largest circle as fallback
+        const largestCircle = findLargestCircle(parsedData.circles);
+        if (largestCircle) {
+          const result = JSON.parse(JSON.stringify(parsedData));
+          const circleIndex = parsedData.circles.indexOf(largestCircle);
+          if (circleIndex !== -1) {
+            // Remove the circle from the circles array
+            result.circles.splice(circleIndex, 1);
+            // Convert to two arcs and add to arcs array
+            const arcs = convertCircleToArcs(largestCircle);
+            result.arcs.push(...arcs);
+          }
+          return result;
+        }
         return false;
       }
     }
     
     // Check if shape already been visited (infinite loop detection)
     if (contourShapes_found.includes(nextShape)) {
+      // Infinite loop detected, try to find the largest circle as fallback
+      const largestCircle = findLargestCircle(parsedData.circles);
+      if (largestCircle) {
+        const result = JSON.parse(JSON.stringify(parsedData));
+        const circleIndex = parsedData.circles.indexOf(largestCircle);
+        if (circleIndex !== -1) {
+          // Remove the circle from the circles array
+          result.circles.splice(circleIndex, 1);
+          // Convert to two arcs and add to arcs array
+          const arcs = convertCircleToArcs(largestCircle);
+          result.arcs.push(...arcs);
+        }
+        return result;
+      }
       return false;
     }
     
@@ -509,6 +687,20 @@ function findContour(parsedData) {
     const nextPoint = getNextPoint(nextShape, currentPoint, previousPoint);
     
     if (!nextPoint) {
+      // Can't get next point, try to find the largest circle as fallback
+      const largestCircle = findLargestCircle(parsedData.circles);
+      if (largestCircle) {
+        const result = JSON.parse(JSON.stringify(parsedData));
+        const circleIndex = parsedData.circles.indexOf(largestCircle);
+        if (circleIndex !== -1) {
+          // Remove the circle from the circles array
+          result.circles.splice(circleIndex, 1);
+          // Convert to two arcs and add to arcs array
+          const arcs = convertCircleToArcs(largestCircle);
+          result.arcs.push(...arcs);
+        }
+        return result;
+      }
       return false;
     }
     
@@ -553,6 +745,21 @@ function findContour(parsedData) {
       findAndTag();
     });
     
+    return result;
+  }
+
+  // Final fallback: try to find the largest circle
+  const largestCircle = findLargestCircle(parsedData.circles);
+  if (largestCircle) {
+    const result = JSON.parse(JSON.stringify(parsedData));
+    const circleIndex = parsedData.circles.indexOf(largestCircle);
+    if (circleIndex !== -1) {
+      // Remove the circle from the circles array
+      result.circles.splice(circleIndex, 1);
+      // Convert to two arcs and add to arcs array
+      const arcs = convertCircleToArcs(largestCircle);
+      result.arcs.push(...arcs);
+    }
     return result;
   }
 
