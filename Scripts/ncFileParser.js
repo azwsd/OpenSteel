@@ -107,7 +107,7 @@ function ncParseContourData(line, contourType){
         face = lastFace; // Use the previous face if not present
     }
     lastFace = face; // Update last seen face
-    viewExists[face] = true; //Set the view exists for the current view as true
+    if (contourType == 'AK') viewExists[face] = true; //Set the view exists for the current view as true for contour type AK only
 
     // Extract X-value and check for dimension reference
     let xMatch = values[0].match(/([\d.]+)([A-Za-z]*)$/);
