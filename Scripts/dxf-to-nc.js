@@ -371,6 +371,11 @@ function findContour(parsedData) {
     return { point: lowestPoint, shape: lowestShape };
   };
 
+  // Helper function to calculate angle between two points
+  const calculateAngle = (from, to) => {
+    return Math.atan2(to.y - from.y, to.x - from.x);
+  };
+
   // Helper function to get the other point of a shape given one point
   const getOtherPoint = (shape, knownPoint) => {
     const points = getShapePoints(shape);
@@ -389,6 +394,45 @@ function findContour(parsedData) {
         }
       }
     }
+    return null;
+  };
+
+  // Helper function to get the next point in a counter clockwise direction
+  const getNextPoint = (shape, knownPoint, previousPoint) => {
+    const points = getShapePoints(shape);
+    
+    if (points.length === 2) {
+      // For lines and arcs, just return the other point
+      return getOtherPoint(shape, knownPoint);
+    } else if (points.length === 4) {
+      // For rectangles, choose direction based on cross product to maintain consistency
+      const knownIndex = points.findIndex(p => pointsEqual(p, knownPoint));
+      if (knownIndex === -1) return null;
+      
+      const nextCW = points[(knownIndex + 1) % points.length];
+      const nextCCW = points[(knownIndex + 3) % points.length];
+      
+      if (!previousPoint) {
+        // If no previous point, choose based on angle to maintain counterclockwise direction
+        const angleCW = calculateAngle(knownPoint, nextCW);
+        const angleCCW = calculateAngle(knownPoint, nextCCW);
+        
+        return nextCCW;
+      }
+      
+      // Use cross product to determine which direction maintains consistent orientation
+      const prevVector = { x: knownPoint.x - previousPoint.x, y: knownPoint.y - previousPoint.y };
+      const cwVector = { x: nextCW.x - knownPoint.x, y: nextCW.y - knownPoint.y };
+      const ccwVector = { x: nextCCW.x - knownPoint.x, y: nextCCW.y - knownPoint.y };
+      
+      // Cross product to determine turn direction
+      const crossCW = prevVector.x * cwVector.y - prevVector.y * cwVector.x;
+      const crossCCW = prevVector.x * ccwVector.y - prevVector.y * ccwVector.x;
+      
+      // Choose the direction that maintains counterclockwise orientation (positive cross product)
+      return crossCCW > crossCW ? nextCCW : nextCW;
+    }
+    
     return null;
   };
 
@@ -425,7 +469,8 @@ function findContour(parsedData) {
   // Track the contour
   const contourShapes_found = [startShape];
   let currentShape = startShape;
-  let currentPoint = getOtherPoint(startShape, startPoint);
+  let previousPoint = startPoint;
+  let currentPoint = getNextPoint(startShape, startPoint, null);
   
   if (!currentPoint) {
     return false;
@@ -461,12 +506,16 @@ function findContour(parsedData) {
     
     // Add to contour and move to next point
     contourShapes_found.push(nextShape);
-    currentShape = nextShape;
-    currentPoint = getOtherPoint(nextShape, currentPoint);
+    const nextPoint = getNextPoint(nextShape, currentPoint, previousPoint);
     
-    if (!currentPoint) {
+    if (!nextPoint) {
       return false;
     }
+    
+    // Update for next iteration
+    previousPoint = currentPoint;
+    currentShape = nextShape;
+    currentPoint = nextPoint;
   }
 
   // If contour found, tag the shapes
@@ -474,7 +523,7 @@ function findContour(parsedData) {
     // Create a deep copy of the parsed data
     const result = JSON.parse(JSON.stringify(parsedData));
 
-    contourIndex = 0; // Reset contour index for tagging
+    let contourIndex = 0; // Reset contour index for tagging
     
     // Tag contour shapes
     contourShapes_found.forEach(shape => {
