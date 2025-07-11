@@ -842,9 +842,28 @@ function getPartDimensions(shapes) {
   };
 }
 
+let dxfBatchImport = false;
+let dxfInputs = {
+    'dxfOrderInput': '',
+    'dxfDrawingInput': '',
+    'dxfPhaseInput': '',
+    'dxfGradeInput': '',
+    'dxfQuantityInput': '',
+    'dxfThicknessInput': ''
+};
+
+// Function to get input value, considering batch import mode
 function getInputValue(inputId) {
-    const input = document.getElementById(inputId);
-    return input.value.trim();
+  let input = '';
+  const modalStatus = M.Modal.getInstance(document.getElementById('dxfToNCModal')).isOpen;
+  // If batch import is enabled, use the stored value
+  // Otherwise, get the value from the input field
+  if (modalStatus) {
+    input = document.getElementById(inputId).value.trim();
+    dxfInputs[inputId] = input;
+  }
+  if (dxfBatchImport) input = dxfInputs[inputId];
+    return input;
 }
 
 // Input validation
