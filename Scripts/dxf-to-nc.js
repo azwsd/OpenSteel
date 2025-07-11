@@ -1077,12 +1077,12 @@ function convertDxfToNc(dxfFileData, fileName) {
 
     // Add hole data
     if (parsedData.circles.length > 0) {
-        ncContent += '\n' + dxfToNcHoleCreator(parsedData);
+        ncContent += '\n' + dxfToNcHoleCreator(contourData);
     }
 
     // Add text data
     if (parsedData.texts.length > 0) {
-        ncContent += '\n' + dxfToNcTextCreator(parsedData);
+        ncContent += '\n' + dxfToNcTextCreator(contourData);
     }
 
     ncContent += '\nEN';
