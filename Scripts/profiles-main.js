@@ -337,25 +337,24 @@ function ncParseHeaderData(fileData){
     {
         //removes the leading spaces
         line = line.trimStart();
+        //removes ST line
+        if (line.slice(0, 2).toUpperCase() == 'ST') continue;
         //reads only the first 24 lines
         if (lineCounter == 24) break;
-        //removes ST line and comment line
-        if(isFirstIteration || line.slice(0, 2) == '**') {
-            isFirstIteration = false;
-            continue;
-        };
+        //removes comment lines
+        if(line.slice(0, 2) == '**') continue;
         //removes comments from any line
         line = line.split('**')[0];
         //Check if there are blocs in the header
         if (blocs.includes(line.slice(0, 2)) && line.slice(2, 1) == ' ')
-            {
-                M.toast({html: 'File header contains an error!', classes: 'rounded toast-warning', displayLength: 2000});
-                break;
-            }
-            //Empty text info handler
-            if (lineCounter > 19 && line.length == 0) line = 'N/A';
-            //Writes part properties to properties div
-            properties[lineCounter].querySelector('p').innerHTML = line;
+        {
+            M.toast({html: 'File header contains an error!', classes: 'rounded toast-warning', displayLength: 2000});
+            break;
+        }
+        //Empty text info handler
+        if (lineCounter > 19 && line.length == 0) line = 'N/A';
+        //Writes part properties to properties div
+        properties[lineCounter].querySelector('p').innerHTML = line;
         //Removes \r from the end of string
         line = line.replace(/\r$/, '');
         headerData.push(line);
