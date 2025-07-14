@@ -26,13 +26,12 @@ function ncLoadHeaderData(fileData){
     {
         //removes the leading spaces
         line = line.trimStart();
-        //reads only the first 20 lines
-        if (lineCounter == 20) break;
-        //removes ST line and comment line
-        if(isFirstIteration || line.slice(0, 2) == '**') {
-            isFirstIteration = false;
-            continue;
-        };
+        //removes ST line
+        if (line.slice(0, 2).toUpperCase() == 'ST') continue;
+        //reads only the first 24 lines
+        if (lineCounter == 24) break;
+        //removes comment lines
+        if(line.slice(0, 2) == '**') continue;
         //removes comments from any line
         line = line.split('**')[0];
         //Check if there are blocs in the header
