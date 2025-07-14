@@ -312,7 +312,11 @@ async function handleDrop(e) {
 
 //Parses the header of DSTV file
 //Global variables for important header data
+let order = '';
+let drawing = '';
+let phase = '';
 let label = '';
+let steelQuality = '';
 let profile = '';
 let length = '';
 let quantity = '';
@@ -324,11 +328,10 @@ function ncParseHeaderData(fileData){
     //clears header data array
     headerData.length = 0;
     let lineCounter = 0;
-    let isFirstIteration = true;
     for (line of splitFileData)
     {
-        //removes the leading spaces
-        line = line.trimStart();
+        //Removes \r from the end of string, replaces spaces with dashes, and removes leading and trailing spaces
+        line = line.trim().replace(/\s+/g, '-').replace(/\r$/, '');
         //removes ST line
         if (line.slice(0, 2).toUpperCase() == 'ST') continue;
         //reads only the first 24 lines
@@ -351,8 +354,20 @@ function ncParseHeaderData(fileData){
         line = line.replace(/\r$/, '');
 
         switch (lineCounter) {
+            case 0:
+                order = line;
+                break;
+            case 1:
+                drawing = line;
+                break;
+            case 2:
+                phase = line;
+                break;
             case 3:
                 label = line;
+                break;
+            case 4:
+                steelQuality = line;
                 break;
             case 5:
                 quantity = line;
@@ -883,6 +898,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('min-offcut').value = minOffcut;
 });
 
+const cuttingNests = [];
 function optimizeCuttingNests() {
     if (stockItems.length === 0 || pieceItems.length === 0) {
         M.toast({html: 'Please add stock and piece items first!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -943,8 +959,6 @@ function optimizeCuttingNests() {
             });
         }
     });
-
-    const cuttingNests = [];
 
     for (const profile in profileGroups) {
         if (!stockGroups[profile]) {
@@ -2037,4 +2051,83 @@ function downloadPiecesCSV() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+}
+
+function exportFncNest() {
+    // If no nesting is present return with error
+    if (cuttingNests.length == 0) {
+        M.toast({html: 'No Nesting to Export!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+
+    if (checkForManualInput() == true) {
+        M.toast({html: 'Some Files are from Manual Input!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+
+    if (!FNCDrillType) {
+        M.toast({html: 'Please select a drill type!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+
+    const selectElement = document.getElementById('FNCDrillTypeSelect');
+    FNCDrillType = selectElement.value; // Get FNC drill type export value
+    localStorage.setItem('FNCDrillType', FNCDrillType); // Save the selected drill type to local storage
+
+    // Get unqiue labels from nests
+    const labels = getUniqueNestLabels()
+
+    // Create pieces blocks for all nested parts
+    let piecesBlocks = '';
+    for (const label of labels) piecesBlocks += createFNC(pieceItemsFromFiles[label][1]) + '\n';
+
+    let nestsBlocks = createNestBlocks();
+
+    console.log(piecesBlocks + nestsBlocks)
+
+    return; 
+}
+
+let pieceItemsFromFiles = {};
+function checkForManualInput() {
+    // Create a dictionary from DSTV file paris with peice label as key and file name as value
+    pieceItemsFromFiles = {};
+    for (const [fileName, fileData] of filePairs) {
+        ncParseHeaderData(fileData);
+        pieceItemsFromFiles[label] = [fileName, fileData, order, drawing, phase, label, steelQuality, profileCode, profile];
+    }
+    // Check if a peice item is not in file pairs
+    for (const pieceItem of pieceItems) if (typeof pieceItemsFromFiles[pieceItem.label] === "undefined") return true;
+    // Return false if all peice items are in file pairs (no user manual input)
+    return false;
+}
+
+function getUniqueNestLabels() {
+    const uniqueLabels = new Set();
+    
+    // Go through every nest in cuttingNest array
+    cuttingNests.forEach(nest => {
+        // Go through each piece in pieceAssignments for this nest
+        nest.pieceAssignments.forEach(piece => {
+            // Add the label to the Set
+            uniqueLabels.add(piece.label);
+        });
+    });
+    
+    // Convert Set back to array and return
+    return Array.from(uniqueLabels);
+}
+
+function createNestBlocks() {
+    let result = '';
+    let nestCounter = 1;
+    for (const nest of cuttingNests) {
+        let nestData = `[[BAR]]\n[HEAD]\nN:${nestCounter} `;
+        nest.pieceAssignments.forEach((piece, index) => {
+            if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${nest.stockLength} SP${nest.gripStart} SL${nest.sawWidth} SC${nest.gripEnd}\n`;
+            nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
+        });
+        result += nestData + '\n';
+    }
+    return result;
 }
