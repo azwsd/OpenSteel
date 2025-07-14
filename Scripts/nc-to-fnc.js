@@ -3,12 +3,12 @@
 let order = '';
 let drawing = '';
 let phase = '';
-let label = '';
+let pieceLabel = '';
 let steelQuality = '';
-let quantity = '';
-let profile = '';
-let profileCode = '';
-let length = '';
+let pieceQuantity = '';
+let pieceProfile = '';
+let pieceProfileCode = '';
+let pieceLength = '';
 let height = '';
 let flangeWidth = '';
 let flangeThickness = '';
@@ -54,22 +54,22 @@ function ncLoadHeaderData(fileData){
                 phase = line;
                 break; 
             case 3:
-            label = line;
+            pieceLabel = line;
                 break;
             case 4:
                 steelQuality = line;
                 break;
             case 5:
-                quantity = line;
+                pieceQuantity = line;
                 break;
             case 6:
-                profile = line;
+                pieceProfile = line;
                 break;
             case 7:
-                profileCode = line;
+                pieceProfileCode = line;
                 break;
             case 8:
-                length = line;
+                pieceLength = line;
                 break;
             case 9:
                 height = line;
@@ -176,7 +176,7 @@ function createHoleBlock(fileData) {
                 xCoord = xCoord.replace(/[a-zA-Z]+$/, '');
                 
                 // Get FNC face based on face
-                const FNCFace = profileCode == 'L' ? angleFaceMapping[face] : faceMapping[face];
+                const FNCFace = pieceProfileCode == 'L' ? angleFaceMapping[face] : faceMapping[face];
 
                 // Format the hole string
                 const holeString = `[HOL]   ${drillTypeMapping[FNCDrillType]}   ${FNCFace}${diameter} X${xCoord} Y${yCoord}`;
@@ -246,8 +246,8 @@ function createMarkBlock(fileData) {
 }
 
 function createPRFBlock() {
-    let weightText = profileCode == 'B' ? '' : `WL${weightPerMeter}`;
-    switch (profileCode) {
+    let weightText = pieceProfileCode == 'B' ? '' : `WL${weightPerMeter}`;
+    switch (pieceProfileCode) {
         case 'RU':
         case 'RO':
         case 'B':
@@ -256,7 +256,7 @@ function createPRFBlock() {
             weightText = `WL${weightPerMeter}`;
             break;
     }
-    return `[[PRF]]\n[PRF] CP:${profileCodeMapping[profileCode]} P:${profile} SA${height} TA${webThickness} SB${flangeWidth} TB${flangeThickness} ${weightText}`;
+    return `[[PRF]]\n[PRF] CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile} SA${height} TA${webThickness} SB${flangeWidth} TB${flangeThickness} ${weightText}`;
 }
 
 function createMaterialBlock() {
@@ -264,14 +264,14 @@ function createMaterialBlock() {
 }
 
 function createPCSBlock() {
-    switch (profileCode) {
+    switch (pieceProfileCode) {
         case 'B':
-            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\nLP${length} SA${height} TA${webThickness}\nQI${quantity}`;
+            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${pieceLabel}\nM:${steelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${webThickness}\nQI${pieceQuantity}`;
         case 'RO':
         case 'RU':
-            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\nLP${length} SA${height} TA${profileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${quantity}`;
+            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${pieceLabel}\nM:${steelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${pieceProfileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
         default:
-            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${label}\nM:${steelQuality} CP:${profileCodeMapping[profileCode]} P:${profile}\nLP${length} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${quantity}`;
+            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${pieceLabel}\nM:${steelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
     }
 }
 
