@@ -297,7 +297,7 @@ body.drag-over::before {
   display: block;
 }
 
-#FNCModal .input-field{
+.modalMinHeight {
   min-height: 15rem;
 }
 
