@@ -1263,7 +1263,7 @@ function renderCuttingNests(nests) {
     };
   
     const buildStatsRow = (label, value, unit = '') =>
-      `<div class="stat col s3"><span class="stat-label">${label}:</span> <span class="stat-value">${value}${unit}</span></div>`;
+      `<div class="stat col s3"><span class="stat-label">${label}:</span> <span class="stat-value">${value.toFixed(2)}${unit}</span></div>`;
   
     const buildNestHeader = (pattern, idx) => {
       const header = createElem('div', 'nest-header');
@@ -1484,10 +1484,10 @@ function renderCuttingNests(nests) {
           <li class="collection-item">
             <div class="row">
               <div class="col l4 s12 m12">Nest #${i + 1} - Profile: ${pat.profile}</div>
-              <div class="col l2 s6 m3">Stock: ${pat.stockLength} mm</div>
+              <div class="col l2 s6 m3">Stock: ${pat.stockLength.toFixed(2)} mm</div>
               <div class="col l2 s6 m3">Pieces: ${pat.pieceAssignments.length}</div>
-              <div class="col l2 s6 m3">Offcut: ${pat.offcut} mm</div>
-              <div class="col l2 s6 m3">Waste: ${pat.waste} mm</div>
+              <div class="col l2 s6 m3">Offcut: ${pat.offcut.toFixed(2)} mm</div>
+              <div class="col l2 s6 m3">Waste: ${pat.waste.toFixed(2)} mm</div>
             </div>
           </li>
         `).join('')}
