@@ -1,10 +1,10 @@
 //Parses the header of DSTV file
 //Global variables for important header data
-let order = '';
-let drawing = '';
-let phase = '';
+let pieceOrder = '';
+let pieceDrawing = '';
+let piecePhase = '';
 let pieceLabel = '';
-let steelQuality = '';
+let pieceSteelQuality = '';
 let pieceQuantity = '';
 let pieceProfile = '';
 let pieceProfileCode = '';
@@ -45,19 +45,19 @@ function ncLoadHeaderData(fileData){
 
         switch (lineCounter) {
             case 0:
-                order = line;
+                pieceOrder = line;
                 break;
             case 1:
-                drawing = line;
+                pieceDrawing = line;
                 break;    
             case 2:
-                phase = line;
+                piecePhase = line;
                 break; 
             case 3:
             pieceLabel = line;
                 break;
             case 4:
-                steelQuality = line;
+                pieceSteelQuality = line;
                 break;
             case 5:
                 pieceQuantity = line;
@@ -260,18 +260,18 @@ function createPRFBlock() {
 }
 
 function createMaterialBlock() {
-    return `[[MAT]]\n[MAT] M:${steelQuality}`;
+    return `[[MAT]]\n[MAT] M:${pieceSteelQuality}`;
 }
 
 function createPCSBlock() {
     switch (pieceProfileCode) {
         case 'B':
-            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${pieceLabel}\nM:${steelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${webThickness}\nQI${pieceQuantity}`;
+            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${webThickness}\nQI${pieceQuantity}`;
         case 'RO':
         case 'RU':
-            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${pieceLabel}\nM:${steelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${pieceProfileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
+            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${pieceProfileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
         default:
-            return `[[PCS]]\n[HEAD] C:${order} D:${drawing} N:${phase} POS:${pieceLabel}\nM:${steelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
+            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
     }
 }
 
