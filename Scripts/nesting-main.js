@@ -2083,9 +2083,14 @@ function exportFncNest() {
 
     let nestsBlocks = createNestBlocks();
 
-    console.log(piecesBlocks + nestsBlocks)
-
-    return; 
+    // Create download link with nesting data
+    let link = document.createElement('a');
+    let blob = new Blob([piecesBlocks + nestsBlocks], { type: 'text/plain' });
+    link.href = URL.createObjectURL(blob);
+    link.download = 'nests.fnc'; //Name of the ZIP file
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 let pieceItemsFromFiles = {};
@@ -2127,6 +2132,7 @@ function createNestBlocks() {
             if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${nest.stockLength} SP${nest.gripStart} SL${nest.sawWidth} SC${nest.gripEnd}\n`;
             nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
         });
+        nestCounter++;
         result += nestData + '\n';
     }
     return result;
