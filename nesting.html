@@ -27,7 +27,7 @@
                 <div id="logo">OpenSteel</div>
                 <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
                 <ul class="right hide-on-med-and-down">
-                    <li><a href="#!"  class="waves-effect float-left" onclick="exportFncNest()">Profiles library</a></li>
+                    <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton">Export FNC</a></li>
                     <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
                 </ul>
             </div>
@@ -62,6 +62,26 @@
           </div>
         </div>
     </div>  
+    <!--FNC export modal-->
+    <div id="ExportFNCNestModal" class="modal">
+        <div class="modal-content">
+            <h4>Nesting Export Options</h4>
+                <div class="modalMinHeight">
+                    <div class="input-field">
+                        <select id="FNCDrillTypeSelect">
+                        <option value="Punch" selected>Punch</option>
+                        <option value="Drill">Drill</option>
+                        <option value="Tap">Tap</option>
+                        </select>
+                        <label>Drill Type Select</label>
+                    </div>
+                </div>
+            <div class="modal-footer">
+                <a href='#' class="btn waves-effect modal-trigger" onclick="exportFncNest()">Export FNC Nest</a>
+                <a href="#!" class="modal-close waves-effect waves-red btn red">Close</a>
+            </div>
+        </div>
+    </div>
     <!--Mobile navbar-->
     <ul class="sidenav" id="mobile">
         <li><p class="filesPlaceHolder">Please insert a file/folder</p></li>
