@@ -2074,6 +2074,12 @@ function exportFncNest() {
     FNCDrillType = selectElement.value; // Get FNC drill type export value
     localStorage.setItem('FNCDrillType', FNCDrillType); // Save the selected drill type to local storage
 
+    let nestCounter = Number(document.getElementById('firstNestNumberInput').value);
+    if(nestCounter === NaN) {
+        M.toast({html: 'Please Enter Correct First Nest Number!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+
     // Get unqiue labels from nests
     const labels = getUniqueNestLabels()
 
@@ -2081,7 +2087,7 @@ function exportFncNest() {
     let piecesBlocks = '';
     for (const label of labels) piecesBlocks += createFNC(pieceItemsFromFiles[label][1]) + '\n';
 
-    let nestsBlocks = createNestBlocks();
+    let nestsBlocks = createNestBlocks(nestCounter);
 
     // Create download link with nesting data
     let link = document.createElement('a');
@@ -2123,9 +2129,8 @@ function getUniqueNestLabels() {
     return Array.from(uniqueLabels);
 }
 
-function createNestBlocks() {
+function createNestBlocks(nestCounter) {
     let result = '';
-    let nestCounter = 1;
     for (const nest of cuttingNests) {
         let nestData = `[[BAR]]\n[HEAD]\nN:${nestCounter} `;
         nest.pieceAssignments.forEach((piece, index) => {
@@ -2135,5 +2140,14 @@ function createNestBlocks() {
         nestCounter++;
         result += nestData + '\n';
     }
+    // set first nest number value in local storage after current nest counter
+    localStorage.setItem('firstNestNumberInput', nestCounter);
     return result;
 }
+
+// Set first nest number value from local storage when fnc nest export modal is open
+document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('exportFNCButton').addEventListener('click', function(){
+        document.getElementById('firstNestNumberInput').value = localStorage.getItem('firstNestNumberInput') || 1;
+    });
+});
