@@ -231,7 +231,7 @@ function createMarkBlock(fileData) {
                 xCoord = xCoord.replace(/[a-zA-Z]+$/, '');
                 
                 // Get FNC face based on face
-                const FNCFace = faceMapping[face];
+                const FNCFace = pieceProfileCode == 'L' ? angleFaceMapping[face] : faceMapping[face];
 
                 // Format the mark string
                 const markString = `[MARK] ${FNCFace} X${xCoord} Y${yCoord} ANG${angle} N:${text}`;
