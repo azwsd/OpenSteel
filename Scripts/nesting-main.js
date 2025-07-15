@@ -898,7 +898,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('min-offcut').value = minOffcut;
 });
 
-const cuttingNests = [];
+let cuttingNests = [];
 function optimizeCuttingNests() {
     if (stockItems.length === 0 || pieceItems.length === 0) {
         M.toast({html: 'Please add stock and piece items first!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -918,6 +918,9 @@ function optimizeCuttingNests() {
     localStorage.setItem("preferShorterStocks", preferShorterStocks);
     localStorage.setItem("maxUniqueLabels", maxUniqueLabels);
     localStorage.setItem("minOffcut", minOffcut);
+
+    // Clear previous nests
+    cuttingNests = []
 
     // Group pieces by profile
     const profileGroups = {};
