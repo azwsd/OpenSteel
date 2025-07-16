@@ -584,6 +584,7 @@ function calcWeight() {
     const length = parseFloat(document.getElementById('Length').value);
     const quantity = parseFloat(document.getElementById('Quantity').value);
     const weight = (weightValue * length * quantity / 1000).toFixed(2);
+    if (isNaN(weight)) return;
     document.getElementById('weightResult').value = weight; //Show result
 }
 
