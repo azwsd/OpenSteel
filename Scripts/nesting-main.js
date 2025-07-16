@@ -2082,6 +2082,8 @@ function exportFncNest() {
         M.toast({html: 'Please Enter Correct First Nest Number!', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
+    // If negative number is given by user reset it to 1
+    if(nestCounter < 1) nestCounter = 1;
 
     // Get unqiue labels from nests
     const labels = getUniqueNestLabels()
@@ -2137,7 +2139,7 @@ function createNestBlocks(nestCounter) {
     for (const nest of cuttingNests) {
         let nestData = `[[BAR]]\n[HEAD]\nN:${nestCounter} `;
         nest.pieceAssignments.forEach((piece, index) => {
-            if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${nest.stockLength} SP${nest.gripStart} SL${nest.sawWidth} SC${nest.gripEnd}\n`;
+            if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${nest.stockLength} BI1 SP${nest.gripStart} SL${nest.sawWidth} SC${nest.gripEnd}\n`;
             nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
         });
         nestCounter++;
