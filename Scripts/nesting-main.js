@@ -2136,10 +2136,11 @@ function getUniqueNestLabels() {
 
 function createNestBlocks(nestCounter) {
     let result = '';
-    for (const nest of cuttingNests) {
+    const uniqueNests = getUniqueNests(cuttingNests);
+    for (const uniqueNest of uniqueNests) {
         let nestData = `[[BAR]]\n[HEAD]\nN:${nestCounter} `;
-        nest.pieceAssignments.forEach((piece, index) => {
-            if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${nest.stockLength} BI1 SP${nest.gripStart} SL${nest.sawWidth} SC${nest.gripEnd}\n`;
+        uniqueNest.nest.pieceAssignments.forEach((piece, index) => {
+            if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${uniqueNest.nest.stockLength} BI${uniqueNest.count} SP${uniqueNest.nest.gripStart} SL${uniqueNest.nest.sawWidth} SC${uniqueNest.nest.gripEnd}\n`;
             nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
         });
         nestCounter++;
@@ -2156,3 +2157,51 @@ document.addEventListener('DOMContentLoaded', function(){
         document.getElementById('firstNestNumberInput').value = localStorage.getItem('firstNestNumberInput') || 1;
     });
 });
+
+// Function to return unique nests and their count
+function getUniqueNests(nests) {
+    const nestMap = new Map();
+
+    // Helper function to create unique key for nest
+    function createNestKey(nest) {
+        const sortedPieces = nest.pieceAssignments.map(item => ({
+            label: item.piece.originalPiece.label,
+            length: item.piece.originalPiece.length,
+            profile: item.piece.originalPiece.profile,
+            parentID: item.piece.originalPiece.id
+
+        })).sort((a, b) => String(a.label).localeCompare(String(b.label)));
+
+        return JSON.stringify({
+            profile: nest.profile,
+            length: nest.length,
+            pieceAssignments: sortedPieces
+        });
+    }
+
+    // Group nests by unique key
+    nests.forEach((nest, index) => {
+        const key = createNestKey(nest);
+
+        if (nestMap.has(key)) {
+            nestMap.get(key).count++;
+            nestMap.get(key).indices.push(index);
+        }
+        else {
+            nestMap.set(key, {
+                nest: nest,
+                count: 1,
+                indices: [index]
+            });
+        }
+    });
+
+    // Convert map to array
+    const uniqueNests = Array.from(nestMap.values()).map(item => ({
+        nest: item.nest,
+        count: item.count,
+        indices: item.indices
+    }));
+
+    return uniqueNests;
+}
