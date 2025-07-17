@@ -2086,11 +2086,11 @@ function exportFncNest() {
     if(nestCounter < 1) nestCounter = 1;
 
     // Get unqiue labels from nests
-    const labels = getUniqueNestLabels()
+    const labels = getUniqueNestLabels();
 
     // Create pieces blocks for all nested parts
     let piecesBlocks = '';
-    for (const label of labels) piecesBlocks += createFNC(pieceItemsFromFiles[label][1]) + '\n';
+    Object.entries(labels).forEach(([label, count]) => piecesBlocks += createFNC(pieceItemsFromFiles[label][1], count) + '\n');
 
     let nestsBlocks = createNestBlocks(nestCounter);
 
@@ -2119,19 +2119,18 @@ function checkForManualInput() {
 }
 
 function getUniqueNestLabels() {
-    const uniqueLabels = new Set();
+    const labelCounts = new Map();
     
     // Go through every nest in cuttingNest array
     cuttingNests.forEach(nest => {
         // Go through each piece in pieceAssignments for this nest
         nest.pieceAssignments.forEach(piece => {
-            // Add the label to the Set
-            uniqueLabels.add(piece.label);
+            // Count occurrences of each label
+            labelCounts.set(piece.label, (labelCounts.get(piece.label) || 0) + 1);
         });
     });
     
-    // Convert Set back to array and return
-    return Array.from(uniqueLabels);
+    return Object.fromEntries(labelCounts);
 }
 
 function createNestBlocks(nestCounter) {
