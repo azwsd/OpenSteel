@@ -263,7 +263,10 @@ function createMaterialBlock() {
     return `[[MAT]]\n[MAT] M:${pieceSteelQuality}`;
 }
 
-function createPCSBlock() {
+function createPCSBlock(requiredQuantity) {
+    // If required qunaitity is available use it insted of quantity in header data
+    pieceQuantity = requiredQuantity == 0 ? pieceQuantity : requiredQuantity;
+
     switch (pieceProfileCode) {
         case 'B':
             return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${webThickness}\nQI${pieceQuantity}`;
@@ -275,14 +278,14 @@ function createPCSBlock() {
     }
 }
 
-function createFNC(fileData) {
+function createFNC(fileData, requiredQuantity) {
     ncLoadHeaderData(fileData);
-    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock()}\n${createHoleBlock(fileData)}\n${createMarkBlock(fileData)}`;
+    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock(requiredQuantity)}\n${createHoleBlock(fileData)}\n${createMarkBlock(fileData)}`;
 }
 
 let FNCDrillType = localStorage.getItem('FNCDrillType') || 'Punch'; // Default to 'Punch' if not set
 
-function ncToFnc() {
+function ncToFnc(requiredQuantity = 0) {
     // Check if a file is selected
     if (!selectedFile) {
         M.toast({html: 'No file selected!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -299,7 +302,7 @@ function ncToFnc() {
     localStorage.setItem('FNCDrillType', FNCDrillType); // Save the selected drill type to local storage
 
     // Create FNC content
-    const fncContent = createFNC(fileData);
+    const fncContent = createFNC(fileData, requiredQuantity);
 
     // Create a Blob with the output string
     const blob = new Blob([fncContent], { type: 'text/plain' });
