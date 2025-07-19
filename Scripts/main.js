@@ -240,7 +240,9 @@ document.addEventListener('keydown', function (e) {
     if ( M.Modal.getInstance(document.getElementById('DXFModal')).isOpen ||
         M.Modal.getInstance(document.getElementById('createModal')).isOpen ||
         M.Modal.getInstance(document.getElementById('addHoleModal')).isOpen ||
-        M.Modal.getInstance(document.getElementById('dxfToNCModal')).isOpen) return; //Ignore key events if modals are open
+        M.Modal.getInstance(document.getElementById('dxfToNCModal')).isOpen ||
+        M.Modal.getInstance(document.getElementById('FNCModal')).isOpen) return; //Ignore key events if modals are open
+        
     if (e.ctrlKey && e.key.toLowerCase() === 's') { //Detect Ctrl + S
         e.preventDefault(); //Prevent default browser save behavior
         downloadActiveViews();
