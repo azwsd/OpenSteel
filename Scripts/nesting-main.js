@@ -2180,7 +2180,10 @@ function createNestBlocks(nestCounter) {
     for (const uniqueNest of uniqueNests) {
         let nestData = `[[BAR]]\n[HEAD]\nN:${nestCounter} `;
         uniqueNest.nest.pieceAssignments.forEach((piece, index) => {
-            if (index === 0) nestData += `M:${pieceItemsFromFiles[piece.label][6]} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${uniqueNest.nest.stockLength} BI${uniqueNest.count} SP${uniqueNest.nest.gripStart} SL${uniqueNest.nest.sawWidth} SC${uniqueNest.nest.gripEnd}\n`;
+            // If constraint material is set, use it instead of pieceSteelQuality
+            const material = constraintMaterial == '' ? pieceItemsFromFiles[piece.label][6] : constraintMaterial;
+            
+            if (index === 0) nestData += `M:${material} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${uniqueNest.nest.stockLength} BI${uniqueNest.count} SP${uniqueNest.nest.gripStart} SL${uniqueNest.nest.sawWidth} SC${uniqueNest.nest.gripEnd}\n`;
             nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
         });
         nestCounter++;

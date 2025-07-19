@@ -27,7 +27,7 @@
                 <div id="logo">OpenSteel</div>
                 <a href="#" data-target="mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
                 <ul class="right hide-on-med-and-down">
-                    <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton">Export FNC Nesting</a></li>
+                    <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton" onclick="loadFNCSettings()">Export FNC Nesting</a></li>
                     <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
                 </ul>
             </div>
@@ -75,6 +75,24 @@
                         </select>
                         <label>Drill Type Select</label>
                     </div>
+                    <div>
+                        <span class="deep-purple-text lighten-3">Remove Mitre:</span>
+                        <label>
+                            <input type="checkbox" id="removeFNCMitre" checked>
+                            <span for="removeFNCMitre"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <span class="deep-purple-text lighten-3">Remove Holes:</span>
+                        <label>
+                            <input type="checkbox" id="removeFNCHoles" checked>
+                            <span for="removeFNCHoles"></span>
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <span class="helper-text">Constraint Material:</span>
+                        <input id="constraintMaterialInput" type="text" class="compact-input" placeholder="Optional constraint material" title="Optional constraint material, e.g., 'S235', 'S355', etc.">
+                    </div>
                 </div>
             <div class="modal-footer">
                 <a href='#' class="btn waves-effect modal-trigger" onclick="exportFncNest()">Export FNC Nest</a>
@@ -89,7 +107,7 @@
         <ul class="sideNavBottom">
             <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
             <li><a href="#!"  class="waves-effect float-left" onclick="loadProfilesPage()">Profiles library</a></li>
-            <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton">Export FNC Nesting</a></li>
+            <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton" onclick="loadFNCSettings()">Export FNC Nesting</a></li>
             <li><a href="#about-me" data-target="aboutMeModal" class="sidenav-close modal-trigger float-left">About me</a></li>
         </ul>
     </ul>

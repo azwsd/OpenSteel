@@ -260,32 +260,94 @@ function createPRFBlock() {
 }
 
 function createMaterialBlock() {
-    return `[[MAT]]\n[MAT] M:${pieceSteelQuality}`;
+    // If constraint material is set, use it instead of pieceSteelQuality
+    const material = constraintMaterial == '' ? pieceSteelQuality : constraintMaterial;
+    return `[[MAT]]\n[MAT] M:${material}`;
 }
 
 function createPCSBlock(requiredQuantity) {
-    // If required qunaitity is available use it insted of quantity in header data
+    // If required quantity is available use it instead of quantity in header data
     pieceQuantity = requiredQuantity == 0 ? pieceQuantity : requiredQuantity;
+
+    // If constraint material is set, use it instead of pieceSteelQuality
+    const material = constraintMaterial == '' ? pieceSteelQuality : constraintMaterial;
+
+    if (removeFNCMitre == 'true') {
+        // If removeFNCMitre is true, set all mitre data to 0
+        webStartCut = '0.00';
+        webEndCut = '0.00';
+        flangeStartCut = '0.00';
+        flangeEndCut = '0.00';
+    }
 
     switch (pieceProfileCode) {
         case 'B':
-            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${webThickness}\nQI${pieceQuantity}`;
+            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${material} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${webThickness}\nQI${pieceQuantity}`;
         case 'RO':
         case 'RU':
-            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${pieceProfileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
+            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${material} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} SA${height} TA${pieceProfileCode == 'RO' ? height : height/2} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
         default:
-            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${pieceSteelQuality} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
+            return `[[PCS]]\n[HEAD] C:${pieceOrder} D:${pieceDrawing} N:${piecePhase} POS:${pieceLabel}\nM:${material} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${pieceLength} RAI${webStartCut} RAF${webEndCut} RBI${flangeStartCut} RBF${flangeEndCut}\nQI${pieceQuantity}`;
     }
 }
 
 function createFNC(fileData, requiredQuantity) {
     ncLoadHeaderData(fileData);
-    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock(requiredQuantity)}\n${createHoleBlock(fileData)}\n${createMarkBlock(fileData)}`;
+
+    let holeData = '';
+    // If removeFNCHoles is false, create hole block
+    if (removeFNCHoles == 'false') {
+        holeData = '\n' + createHoleBlock(fileData)
+    }
+
+    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock(requiredQuantity)}${holeData}\n${createMarkBlock(fileData)}`;
 }
 
 let FNCDrillType = localStorage.getItem('FNCDrillType') || 'Punch'; // Default to 'Punch' if not set
+let removeFNCMitre = localStorage.getItem('removeFNCMitre') || 'false'; // Default to 'false' if not set
+let removeFNCHoles = localStorage.getItem('removeFNCHoles') || 'false'; // Default to 'false' if not set
+let constraintMaterial = localStorage.getItem('constraintMaterial') || ''; // Default to empty string if not set
+
+function loadFNCSettings() {
+    // Load FNC drill type from local storage
+    const selectElement = document.getElementById('FNCDrillTypeSelect');
+    selectElement.value = FNCDrillType; // Set FNC drill type export value
+    M.FormSelect.init(selectElement); // Re-initialize to show the change
+
+    // Load remove mitre and holes settings
+    const removeMitreCheckbox = document.getElementById('removeFNCMitre');
+    removeMitreCheckbox.checked = removeFNCMitre === 'true';
+    
+    const removeHolesCheckbox = document.getElementById('removeFNCHoles');
+    removeHolesCheckbox.checked = removeFNCHoles === 'true';
+
+    // Load constraint material
+    const constraintMaterialInput = document.getElementById('constraintMaterialInput');
+    constraintMaterialInput.value = constraintMaterial;
+    M.updateTextFields(); // Update text field to show the loaded value
+}
+
+function saveFNCSettings() {
+    // Save FNC drill type to local storage
+    const selectElement = document.getElementById('FNCDrillTypeSelect');
+    FNCDrillType = selectElement.value; // Get FNC drill type export value
+    localStorage.setItem('FNCDrillType', FNCDrillType);
+    // Save remove mitre and holes settings
+    const removeMitreCheckbox = document.getElementById('removeFNCMitre');
+    removeFNCMitre = removeMitreCheckbox.checked ? 'true' : 'false';
+    localStorage.setItem('removeFNCMitre', removeFNCMitre);
+    const removeHolesCheckbox = document.getElementById('removeFNCHoles');
+    removeFNCHoles = removeHolesCheckbox.checked ? 'true' : 'false';
+    localStorage.setItem('removeFNCHoles', removeFNCHoles);
+    // Save constraint material
+    const constraintMaterialInput = document.getElementById('constraintMaterialInput');
+    constraintMaterial = constraintMaterialInput.value.trim().replace(/\s+/g, '-');
+    localStorage.setItem('constraintMaterial', constraintMaterial);
+}
 
 function ncToFnc(requiredQuantity = 0) {
+    saveFNCSettings(); // Save settings before exporting
+
     // Check if a file is selected
     if (!selectedFile) {
         M.toast({html: 'No file selected!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -320,6 +382,8 @@ function ncToFnc(requiredQuantity = 0) {
 }
 
 function BatchNcToFnc() {
+    saveFNCSettings(); // Save settings before exporting
+
     // Check if no files are loaded
     if (filePairs.size === 0) {
         M.toast({html: 'No files to export!', classes: 'rounded toast-error', displayLength: 2000});
@@ -364,12 +428,3 @@ function BatchNcToFnc() {
 
     M.Modal.getInstance(document.getElementById('FNCModal')).close(); // Hide FNC export modal
 }
-
-document.addEventListener('DOMContentLoaded', function(){
-   const exportFNCButton = document.getElementById('exportFNCButton');
-   exportFNCButton.addEventListener('click', function() {
-        const selectElement = document.getElementById('FNCDrillTypeSelect');
-        selectElement.value = FNCDrillType; // Set FNC drill type export value
-        M.FormSelect.init(selectElement); // Re-initialize to show the change
-   });
-});
