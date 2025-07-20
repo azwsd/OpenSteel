@@ -746,7 +746,7 @@ function stringToColor(str) {
   // Extract R, G, B from different byte lanes
   const r = (hash >>> 16) & 0xff;
   const g = (hash >>>  8) & 0xff;
-  const b =  hash         & 0xff;
+  const b = hash & 0xff;
 
   // Convert to hex and pad
   const hex = x => x.toString(16).padStart(2, '0');
