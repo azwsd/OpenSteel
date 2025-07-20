@@ -730,23 +730,27 @@ function resetPieceForm() {
     addPieceBtn.addEventListener('click', addPiece);
 }
 
-// Color generation function from string
 function stringToColor(str) {
     // FNV-1a 32-bit initialization
     let hash = 0x811c9dc5;
 
     // FNV-1a hash loop
     for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
+        hash ^= str.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193);
     }
     // Ensure unsigned 32-bit
     hash >>>= 0;
 
     // Extract R, G, B from different byte lanes
-    const r = (hash >>> 16) & 0xff;
-    const g = (hash >>> 8) & 0xff;
-    const b = hash & 0xff;
+    let r = (hash >>> 16) & 0xff;
+    let g = (hash >>> 8) & 0xff;
+    let b = hash & 0xff;
+
+    // Scale down to 60-80% of original brightness for softer colors
+    r = Math.floor(r * 0.7);
+    g = Math.floor(g * 0.7);
+    b = Math.floor(b * 0.7);
 
     // Convert to hex and pad
     const hex = x => x.toString(16).padStart(2, '0');
