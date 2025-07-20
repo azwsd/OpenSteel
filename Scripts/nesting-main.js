@@ -477,7 +477,7 @@ function setInputValue(inputId, value) {
 
 // Nesting functions
 function addStock() {
-    const profile = document.getElementById('stock-profile').value;
+    const profile = document.getElementById('stock-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
     const length = parseFloat(document.getElementById('stock-length').value);
     const amount = parseInt(document.getElementById('stock-amount').value);
 
@@ -497,7 +497,7 @@ function addStock() {
 }
 
 function addPiece() {
-    const profile = document.getElementById('piece-profile').value.replace(/[^a-zA-Z0-9_-]/g, '-'); // Sanitize profile input
+    const profile = document.getElementById('piece-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
     const length = parseFloat(document.getElementById('piece-length').value);
     const amount = parseInt(document.getElementById('piece-amount').value);
     const label = document.getElementById('piece-label').value == '' ? length : document.getElementById('piece-label').value;
@@ -561,7 +561,7 @@ function editStock(index) {
 }
 
 function updateStock() {
-    const profile = document.getElementById('stock-profile').value;
+    const profile = document.getElementById('stock-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
     const length = parseFloat(document.getElementById('stock-length').value);
     const amount = parseInt(document.getElementById('stock-amount').value);
     const editIndex = parseInt(document.getElementById('add-stock').dataset.editIndex);
@@ -667,7 +667,7 @@ function editPiece(index) {
 }
 
 function updatePiece() {
-    const profile = document.getElementById('piece-profile').value;
+    const profile = document.getElementById('piece-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
     const length = parseFloat(document.getElementById('piece-length').value);
     const amount = parseInt(document.getElementById('piece-amount').value);
     const label = document.getElementById('piece-label').value || length.toString();
@@ -2221,7 +2221,7 @@ function loadStockData(fileData) {
         const line = lines[i].trim();
         const columns = line.split(',').map(item => item.trim());
         if (columns.length < 3) continue; // Skip invalid lines
-        const profile = columns[0].trim();
+        const profile = columns[0].trim().replace(/(\d)\*(\d)/g, '$1X$2');
         const length = parseFloat(columns[1].trim());
         const amount = parseFloat(columns[2].trim());
         if (isNaN(length) || isNaN(amount)) continue; // Skip invalid lines
@@ -2234,7 +2234,7 @@ function loadStockData(fileData) {
 function loadPiecesData(fileData) {
     const lines = fileData.trim().split('\n');
     for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
+        const line = lines[i].trim().replace(/(\d)\*(\d)/g, '$1X$2');
         const columns = line.split(',').map(item => item.trim());
         if (columns.length < 3) continue; // Skip invalid lines
         const profile = columns[0].trim();
