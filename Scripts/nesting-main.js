@@ -730,72 +730,28 @@ function resetPieceForm() {
     addPieceBtn.addEventListener('click', addPiece);
 }
 
-function stringToColor(str, satMin = 0.4, satMax = 0.9, lightMin = 0.4, lightMax = 0.8) {
-    // Add a non-numeric prefix to numeric strings
-    if (/^\d+$/.test(str)) {
-        str = "txt_" + str;
-    }
-    
-    // Primary hash for hue
-    let hashHue = 0;
-    // Secondary hash for saturation - different multiplier
-    let hashSat = 0;
-    // Tertiary hash for lightness - different bit shift
-    let hashLight = 0;
+// Color generation function from string
+function stringToColor(str) {
+  // FNV-1a 32-bit initialization
+  let hash = 0x811c9dc5;
 
-    // Use different prime numbers for each hash component
-    for (let i = 0; i < str.length; i++) {
-        const charCode = str.charCodeAt(i);
-        hashHue = ((hashHue << 5) - hashHue + charCode) * 17;
-        hashSat = ((hashSat << 4) - hashSat + charCode) * 23;
-        hashLight = ((hashLight << 6) - hashLight + charCode) * 13;
-    }
+  // FNV-1a hash loop
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  // Ensure unsigned 32-bit
+  hash >>>= 0;
 
-    // Normalize hue to 0-360
-    const hue = Math.abs(hashHue % 360);
+  // Extract R, G, B from different byte lanes
+  const r = (hash >>> 16) & 0xff;
+  const g = (hash >>>  8) & 0xff;
+  const b =  hash         & 0xff;
 
-    // Normalize saturation between satMin and satMax
-    const satRange = satMax - satMin;
-    const saturation = satMin + (Math.abs(hashSat) % 1000) / 1000 * satRange;
+  // Convert to hex and pad
+  const hex = x => x.toString(16).padStart(2, '0');
 
-    // Normalize lightness between lightMin and lightMax
-    const lightRange = lightMax - lightMin;
-    const lightness = lightMin + (Math.abs(hashLight) % 1000) / 1000 * lightRange;
-
-    // Convert HSL to RGB
-    const h = hue / 360;
-    const s = saturation;
-    const l = lightness;
-
-    let r, g, b;
-
-    if (s === 0) {
-      r = g = b = l; // achromatic
-    } else {
-      const hue2rgb = (p, q, t) => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-        return p;
-      };
-
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
-    }
-
-    // Convert to hex
-    const toHex = x => {
-      const hex = Math.round(x * 255).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
 function renderStockTable() {
