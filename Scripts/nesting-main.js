@@ -849,6 +849,7 @@ document.addEventListener('DOMContentLoaded', function(){
     let preferShorterStocks = localStorage.getItem("preferShorterStocks") || false;
     let maxUniqueLabels = localStorage.getItem("maxUniqueLabels") || 999;
     let minOffcut = localStorage.getItem("minOffcut") || 1000;
+    let useUnlimitedStock = localStorage.getItem("useUnlimitedStock") || false;
 
     document.getElementById('grip-start').value = gripStart;
     document.getElementById('grip-end').value = gripEnd;
@@ -856,12 +857,16 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('shorter-length-preference').checked = preferShorterStocks == 'true';
     document.getElementById('max-unique-labels').value = maxUniqueLabels;
     document.getElementById('min-offcut').value = minOffcut;
+    document.getElementById('unlimited-stock-preference').checked = useUnlimitedStock == 'true';
 });
 
 let cuttingNests = [];
 let nestCounter;
 function optimizeCuttingNests() {
-    if (stockItems.length === 0 || pieceItems.length === 0) {
+    // Unlimited stock setting
+    const useUnlimitedStock = document.getElementById('unlimited-stock-preference').checked;
+
+    if ((stockItems.length === 0 || pieceItems.length === 0) && !useUnlimitedStock) {
         M.toast({html: 'Please add stock and piece items first!', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
@@ -881,6 +886,7 @@ function optimizeCuttingNests() {
     localStorage.setItem("maxUniqueLabels", maxUniqueLabels);
     localStorage.setItem("minOffcut", minOffcut);
     localStorage.setItem("first-nest-number", nestCounter);
+    localStorage.setItem("useUnlimitedStock", useUnlimitedStock);
 
     if(isNaN(nestCounter)) {
         M.toast({html: 'Please Enter Correct First Nest Number!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -913,25 +919,54 @@ function optimizeCuttingNests() {
 
     // Group stock by profile
     const stockGroups = {};
-    stockItems.forEach(stock => {
-        if (!stockGroups[stock.profile]) {
-            stockGroups[stock.profile] = [];
+    
+    if (useUnlimitedStock) {
+        // Create unlimited stock for each profile that has pieces
+        for (const profile in profileGroups) {
+            stockGroups[profile] = [];
+            // Start with a reasonable number of stock pieces, will generate more as needed
+            for (let i = 0; i < 100; i++) {
+                stockGroups[profile].push({
+                    id: `unlimited-stock-${profile}-${i}`,
+                    length: 12000,
+                    originalStock: {
+                        profile: profile,
+                        length: 12000,
+                        amount: 'unlimited'
+                    },
+                    usableLength: 12000 - gripStart - gripEnd,
+                    remainingLength: 12000 - gripStart - gripEnd,
+                    pieceAssignments: [],
+                    offcut: 0,
+                    waste: 0,
+                    used: false,
+                    hasLastPieceWithoutSaw: false,
+                    isUnlimitedStock: true
+                });
+            }
         }
-        for (let i = 0; i < stock.amount; i++) {
-            stockGroups[stock.profile].push({
-                id: `stock-${stock.profile}-${i}`,
-                length: stock.length,
-                originalStock: stock,
-                usableLength: stock.length - gripStart - gripEnd,
-                remainingLength: stock.length - gripStart - gripEnd,
-                pieceAssignments: [],
-                offcut: 0,
-                waste: 0,
-                used: false,
-                hasLastPieceWithoutSaw: false // New flag to track if last piece was placed without saw width
-            });
-        }
-    });
+    } else {
+        stockItems.forEach(stock => {
+            if (!stockGroups[stock.profile]) {
+                stockGroups[stock.profile] = [];
+            }
+            for (let i = 0; i < stock.amount; i++) {
+                stockGroups[stock.profile].push({
+                    id: `stock-${stock.profile}-${i}`,
+                    length: stock.length,
+                    originalStock: stock,
+                    usableLength: stock.length - gripStart - gripEnd,
+                    remainingLength: stock.length - gripStart - gripEnd,
+                    pieceAssignments: [],
+                    offcut: 0,
+                    waste: 0,
+                    used: false,
+                    hasLastPieceWithoutSaw: false,
+                    isUnlimitedStock: false
+                });
+            }
+        });
+    }
 
     for (const profile in profileGroups) {
         if (!stockGroups[profile]) {
@@ -956,8 +991,11 @@ function optimizeCuttingNests() {
             stocks.sort((a, b) => a.length - b.length);
         }
 
-        // Improved bin packing algorithm with max unique labels constraint
-        binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels);
+        if (useUnlimitedStock) {
+            binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups);
+        } else {
+            binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels);
+        }
         
         // Process results
         processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth);
@@ -969,6 +1007,122 @@ function optimizeCuttingNests() {
     cuttingNestsDiv.classList.remove('hide');
     if (remainingPiecesDiv.innerHTML != '') {
         M.toast({html: 'Not all pieces were nested!', classes: 'rounded toast-warning', displayLength: 2000});
+    }
+}
+
+// Modified version of your binPackingOptimization that handles unlimited stock
+function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups) {
+    // Sort pieces by length (decreasing)
+    pieces.sort((a, b) => b.length - a.length);
+    
+    // Make a deep copy of pieces to work with
+    const unassignedPieces = [...pieces];
+    
+    // Function to add more stock if needed
+    function ensureStockAvailability() {
+        const unusedStocks = stocks.filter(s => !s.used);
+        // Add more stock when we're running low on unused stock
+        if (unusedStocks.length < 5) {
+            const currentCount = stocks.length;
+            for (let i = 0; i < 20; i++) {
+                const newStock = {
+                    id: `unlimited-stock-${profile}-${currentCount + i}`,
+                    length: 12000,
+                    originalStock: {
+                        profile: profile,
+                        length: 12000,
+                        amount: 'unlimited'
+                    },
+                    usableLength: 12000 - gripStart - gripEnd,
+                    remainingLength: 12000 - gripStart - gripEnd,
+                    pieceAssignments: [],
+                    offcut: 0,
+                    waste: 0,
+                    used: false,
+                    hasLastPieceWithoutSaw: false,
+                    isUnlimitedStock: true
+                };
+                stocks.push(newStock);
+            }
+            stockGroups[profile] = stocks; // Update the reference
+        }
+    }
+    
+    // Bin packing with pattern generation
+    while (unassignedPieces.length > 0) {
+        // Ensure enough stock is available
+        ensureStockAvailability();
+        
+        // Find an unused stock
+        let currentStock = stocks.find(s => !s.used);
+        if (!currentStock) {
+            // This shouldn't happen with unlimited stock, but just in case
+            ensureStockAvailability();
+            currentStock = stocks.find(s => !s.used);
+        }
+        
+        if (!currentStock) {
+            M.toast({html: `Error: Could not create unlimited stock!`, classes: 'rounded toast-error', displayLength: 2000});
+            break;
+        }
+        
+        // Mark this stock as used
+        currentStock.used = true;
+        
+        // Generate best pattern for this stock with unique label constraint
+        const stockUsableLength = currentStock.usableLength;
+        const bestPattern = findBestPatternForStock(unassignedPieces, stockUsableLength, sawWidth, maxUniqueLabels);
+        
+        if (bestPattern.pieces.length === 0) {
+            // No pieces fit in this stock - this shouldn't happen with 12000mm stock unless pieces are too long
+            currentStock.used = false;
+            M.toast({html: `Some pieces are too long for 12000mm stock!`, classes: 'rounded toast-warning', displayLength: 2000});
+            break;
+        }
+        
+        // Assign pieces according to pattern
+        let currentPos = gripStart;
+        bestPattern.pieces.forEach((piece, index) => {
+            // Find index in unassignedPieces array
+            const pieceIndex = unassignedPieces.findIndex(p => 
+                p.id === piece.id && !p.assigned
+            );
+            
+            if (pieceIndex !== -1) {
+                // Mark piece as assigned
+                unassignedPieces[pieceIndex].assigned = true;
+                
+                // Add to stock's piece assignments
+                currentStock.pieceAssignments.push({
+                    piece: unassignedPieces[pieceIndex],
+                    position: currentPos,
+                    length: unassignedPieces[pieceIndex].length,
+                    label: unassignedPieces[pieceIndex].label,
+                    color: unassignedPieces[pieceIndex].color,
+                    withoutSawWidth: piece.withoutSawWidth || false // Track if placed without saw width
+                });
+                
+                // Update position for next piece
+                currentPos += unassignedPieces[pieceIndex].length;
+                
+                // Add saw width only if this piece was placed with saw width
+                if (index < bestPattern.pieces.length - 1 && !piece.withoutSawWidth) {
+                    currentPos += sawWidth;
+                }
+                
+                // Update flag if this is the last piece and it was placed without saw width
+                if (index === bestPattern.pieces.length - 1 && piece.withoutSawWidth) {
+                    currentStock.hasLastPieceWithoutSaw = true;
+                }
+                
+                // Remove from unassigned pieces
+                unassignedPieces.splice(pieceIndex, 1);
+            }
+        });
+        
+        // Update remaining length
+        currentStock.remainingLength = currentStock.usableLength - 
+            (currentPos - gripStart);
     }
 }
 
