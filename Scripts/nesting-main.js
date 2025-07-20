@@ -732,26 +732,26 @@ function resetPieceForm() {
 
 // Color generation function from string
 function stringToColor(str) {
-  // FNV-1a 32-bit initialization
-  let hash = 0x811c9dc5;
+    // FNV-1a 32-bit initialization
+    let hash = 0x811c9dc5;
 
-  // FNV-1a hash loop
-  for (let i = 0; i < str.length; i++) {
+    // FNV-1a hash loop
+    for (let i = 0; i < str.length; i++) {
     hash ^= str.charCodeAt(i);
     hash = Math.imul(hash, 0x01000193);
-  }
-  // Ensure unsigned 32-bit
-  hash >>>= 0;
+    }
+    // Ensure unsigned 32-bit
+    hash >>>= 0;
 
-  // Extract R, G, B from different byte lanes
-  const r = (hash >>> 16) & 0xff;
-  const g = (hash >>>  8) & 0xff;
-  const b = hash & 0xff;
+    // Extract R, G, B from different byte lanes
+    const r = (hash >>> 16) & 0xff;
+    const g = (hash >>> 8) & 0xff;
+    const b = hash & 0xff;
 
-  // Convert to hex and pad
-  const hex = x => x.toString(16).padStart(2, '0');
+    // Convert to hex and pad
+    const hex = x => x.toString(16).padStart(2, '0');
 
-  return `#${hex(r)}${hex(g)}${hex(b)}`;
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
 function renderStockTable() {
