@@ -980,9 +980,6 @@ function optimizeCuttingNests() {
 
     renderCuttingNests(cuttingNests);
     cuttingNestsDiv.classList.remove('hide');
-    if (remainingPiecesDiv.innerHTML != '') {
-        M.toast({html: 'Not all pieces were nested!', classes: 'rounded toast-warning', displayLength: 2000});
-    }
 }
 
 // Modified version of your binPackingOptimization that handles unlimited stock
@@ -1113,7 +1110,7 @@ function binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, ma
         // Find an unused stock
         let currentStock = stocks.find(s => !s.used);
         if (!currentStock) {
-            M.toast({html: `Not enough stock to fit all pieces!`, classes: 'rounded toast-warning', displayLength: 2000});
+            M.toast({html: `Not all pieces were nested!`, classes: 'rounded toast-warning', displayLength: 2000});
             break;
         }
         
@@ -1386,7 +1383,7 @@ function renderCuttingNests(nests) {
         const title = createElem('h5', 'card-title');
         title.textContent = `Profile: ${pattern.profile} - Nest #${nestNumber} ${count > 1 ? `(Qty: ${count})` : ''}`;
         
-        const stats = createElem('div', 'row nest-stats');
+        const stats = createElem('div', 'row nest-stats card-panel');
         stats.innerHTML = `
             ${buildStatsRow('Stock', pattern.stockLength, ' mm')}
             ${buildStatsRow('Offcut', Math.round(pattern.offcut), ' mm')}
@@ -1530,9 +1527,6 @@ function renderCuttingNests(nests) {
         tabsUl.appendChild(profileTabLi);
     });
     
-    tabsContainer.appendChild(tabsUl);
-    tabsContainer.appendChild(tabContentContainer);
-    
     // Calculate overall statistics using unique nests
     let totalStockUsed = 0;
     let totalPieceLength = 0;
@@ -1560,6 +1554,29 @@ function renderCuttingNests(nests) {
     
     const materialEfficiency = totalStockLength > 0 ? ((totalPieceLength / totalStockLength) * 100).toFixed(2) : 0;
     
+    // Group remaining pieces by profile
+    const remainingByProfile = {};
+    remaining.forEach(piece => {
+        if (!remainingByProfile[piece.profile]) {
+            remainingByProfile[piece.profile] = [];
+        }
+        remainingByProfile[piece.profile].push(piece);
+    });
+    
+    // Add Remaining Pieces tab
+    if (remaining.length > 0) {
+        const remainingTabId = 'remaining-pieces-tab';
+        const remainingTabLi = createElem('li', 'tab');
+        const remainingTabLink = createElem('a', 'deep-purple-text');
+        remainingTabLink.href = `#${remainingTabId}`;
+        remainingTabLink.textContent = 'Remaining Pieces';
+        remainingTabLi.appendChild(remainingTabLink);
+        tabsUl.appendChild(remainingTabLi);
+    }
+    
+    tabsContainer.appendChild(tabsUl);
+    tabsContainer.appendChild(tabContentContainer);
+    
     // Create General Results tab content
     const generalTabContent = createElem('div', 'tab-content');
     generalTabContent.id = generalTabId;
@@ -1571,7 +1588,7 @@ function renderCuttingNests(nests) {
     generalCardContent.appendChild(generalTitle);
     
     // General statistics
-    const generalStats = createElem('div', 'card-panel grey lighten-4');
+    const generalStats = createElem('div', 'card-panel blue-grey lighten-5');
     generalStats.innerHTML = `
         <div class="row">
             <div class="col s12 m3">
@@ -1727,6 +1744,110 @@ function renderCuttingNests(nests) {
         profileTabContent.appendChild(profileCard);
         tabContentContainer.appendChild(profileTabContent);
     });
+    
+    // Create Remaining Pieces tab content
+    if (remaining.length > 0) {
+        const remainingTabContent = createElem('div', 'tab-content');
+        remainingTabContent.id = 'remaining-pieces-tab';
+        
+        const remainingCard = createElem('div', 'card');
+        const remainingCardContent = createElem('div', 'card-content');
+        const remainingTitle = createElem('span', 'card-title');
+        remainingTitle.textContent = 'Remaining Pieces';
+        remainingCardContent.appendChild(remainingTitle);
+        
+        // Overall remaining pieces summary
+        const totalRemainingPieces = remaining.reduce((sum, piece) => sum + piece.amount, 0);
+        const totalRemainingLength = remaining.reduce((sum, piece) => sum + (piece.length * piece.amount), 0);
+        
+        const remainingSummary = createElem('div', 'card-panel blue-grey lighten-5');
+        remainingSummary.innerHTML = `
+            <div class="row">
+                <div class="col s12 m4">
+                    <p>Total Remaining Pieces: <strong>${totalRemainingPieces}</strong></p>
+                </div>
+                <div class="col s12 m4">
+                    <p>Total Remaining Length: <strong>${Math.round(totalRemainingLength)}</strong>mm</p>
+                </div>
+                <div class="col s12 m4">
+                    <p>Profiles with Remaining Pieces: <strong>${Object.keys(remainingByProfile).length}</strong></p>
+                </div>
+            </div>
+        `;
+        remainingCardContent.appendChild(remainingSummary);
+        
+        // Group remaining pieces by profile
+        Object.entries(remainingByProfile).forEach(([profile, profilePieces]) => {
+            const profileRemainingCard = createElem('div', 'card');
+            const profileRemainingContent = createElem('div', 'card-content');
+            
+            const profileRemainingTitle = createElem('h6', '');
+            profileRemainingTitle.textContent = `Profile: ${profile} - Remaining Pieces`;
+            profileRemainingContent.appendChild(profileRemainingTitle);
+            
+            // Profile remaining statistics
+            const profileTotalPieces = profilePieces.reduce((sum, piece) => sum + piece.amount, 0);
+            const profileTotalLength = profilePieces.reduce((sum, piece) => sum + (piece.length * piece.amount), 0);
+            
+            const profileRemainingStats = createElem('div', 'card-panel');
+            profileRemainingStats.innerHTML = `
+                <div class="row">
+                    <div class="col s12 m6">
+                        <p>Pieces: <strong>${profileTotalPieces}</strong></p>
+                    </div>
+                    <div class="col s12 m6">
+                        <p>Total Length: <strong>${Math.round(profileTotalLength)}</strong>mm</p>
+                    </div>
+                </div>
+            `;
+            profileRemainingContent.appendChild(profileRemainingStats);
+            
+            // List of remaining pieces
+            const remainingPiecesList = createElem('div', 'remaining-pieces-list');
+            const remainingPiecesTitle = createElem('h6', '');
+            remainingPiecesTitle.textContent = 'Piece Details';
+            remainingPiecesList.appendChild(remainingPiecesTitle);
+            
+            const remainingTable = createElem('table', 'striped');
+            const tableHeader = createElem('thead', '');
+            tableHeader.innerHTML = `
+                <tr>
+                    <th>Label</th>
+                    <th>Length (mm)</th>
+                    <th>Quantity</th>
+                    <th>Total Length (mm)</th>
+                </tr>
+            `;
+            remainingTable.appendChild(tableHeader);
+            
+            const tableBody = createElem('tbody', '');
+            profilePieces.forEach(piece => {
+                const row = createElem('tr', '');
+                row.innerHTML = `
+                    <td>
+                        <div class="chip" style="background-color:${piece.color}">
+                            <span class="white-text">${piece.label}</span>
+                        </div>
+                    </td>
+                    <td>${piece.length}</td>
+                    <td>${piece.amount}</td>
+                    <td>${piece.length * piece.amount}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            remainingTable.appendChild(tableBody);
+            
+            remainingPiecesList.appendChild(remainingTable);
+            profileRemainingContent.appendChild(remainingPiecesList);
+            
+            profileRemainingCard.appendChild(profileRemainingContent);
+            remainingCardContent.appendChild(profileRemainingCard);
+        });
+        
+        remainingCard.appendChild(remainingCardContent);
+        remainingTabContent.appendChild(remainingCard);
+        tabContentContainer.appendChild(remainingTabContent);
+    }
     
     // Update first nest number for next nest
     document.getElementById('first-nest-number').value = nestCounter;
