@@ -2162,36 +2162,6 @@ function generatePDF(uniqueNests, allUsed, remaining) {
     
     yPosition = doc.lastAutoTable.finalY + 15;
     
-    // Add remaining pieces table if any
-    if (remaining.length) {
-        // Check if we need a new page
-        if (yPosition > pageHeight - 60) {
-        doc.addPage();
-        yPosition = margin + 10;
-        }
-        
-        doc.setFontSize(16);
-        doc.text('Remaining Pieces', margin, yPosition);
-        yPosition += 10;
-        
-        const remainingHeaders = ['Profile', 'Label', 'Length', 'Qty'];
-        const remainingData = remaining.map(r => [
-        r.profile,
-        String(r.label),
-        `${r.length} mm`,
-        String(r.amount)
-        ]);
-        
-        // Create remaining pieces table
-        doc.autoTable({
-        head: [remainingHeaders],
-        body: remainingData,
-        startY: yPosition,
-        margin: { left: margin, right: margin },
-        tableWidth: contentWidth
-        });
-    }
-    
     // Save the PDF
     doc.save('nesting_report.pdf');
 }
