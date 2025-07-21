@@ -1336,7 +1336,6 @@ function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth)
 function renderCuttingNests(nests) {
     cuttingNestsDiv.innerHTML = '';
     const fragment = document.createDocumentFragment();
-    const allUsed = {};
     let remaining = pieceItems.map(i => ({ ...i }));
     
     // Get unique nests with their counts
@@ -1371,8 +1370,6 @@ function renderCuttingNests(nests) {
     const recordUsage = (summary, { label, length, color, profile, parentID }) => {
         if (!summary[label]) summary[label] = { count: 0, length, color, profile };
         summary[label].count++;
-        if (!allUsed[parentID]) allUsed[parentID] = { label, length, color, profile, amount: 0 };
-        allUsed[parentID].amount++;
     };
   
     const buildStatsRow = (label, value, unit = '') =>
@@ -1857,7 +1854,7 @@ function renderCuttingNests(nests) {
     const exportButtonContainer = createElem('div', 'export-button-container center-align');
     const exportButton = createElem('a', 'waves-effect waves-light btn-large deep-purple');
     exportButton.innerHTML = '<i class="material-icons left">file_download</i>Export to PDF';
-    exportButton.onclick = () => generatePDF(uniqueNests, allUsed, remaining);
+    exportButton.onclick = () => generatePDF(uniqueNests);
 
     // Create a custom checkbox container that won't be affected by Materialize
     const checkboxContainer = createElem('div', 'custom-checkbox-container');
@@ -1894,7 +1891,7 @@ function renderCuttingNests(nests) {
 }
 
 // Function to generate PDF from the nesting data
-function generatePDF(uniqueNests, allUsed, remaining) {
+function generatePDF(uniqueNests) {
     // Get the jsPDF constructor from the window.jspdf object
     const { jsPDF } = window.jspdf;
     
@@ -2143,18 +2140,46 @@ function generatePDF(uniqueNests, allUsed, remaining) {
     doc.text('Used Pieces Summary', margin, yPosition);
     yPosition += 10;
     
-    const allUsedHeaders = ['Profile', 'Label', 'Length', 'Qty'];
-    const allUsedData = Object.values(allUsed).map(d => [
+    // Extract pieces usage summary from uniqueNests array
+    const piecesUsage = {};
+
+    // Iterate through each unique nest
+    uniqueNests.forEach(nestItem => {
+        const { nest, count } = nestItem;
+        const { profile, pieceAssignments } = nest;
+        
+        // Process each piece assignment in the nest
+        pieceAssignments.forEach(piece => {
+            const key = `${profile}-${piece.label}-${piece.length}`;
+            
+            if (piecesUsage[key]) {
+                // Add to existing entry
+                piecesUsage[key].amount += count;
+            } else {
+                // Create new entry
+                piecesUsage[key] = {
+                    profile: profile,
+                    label: piece.label,
+                    length: piece.length,
+                    amount: count
+                };
+            }
+        });
+    });
+
+    // Convert to the format expected by your table
+    const piecesUsageHeaders = ['Profile', 'Label', 'Length', 'Qty'];
+    const piecesUsageData = Object.values(piecesUsage).map(d => [
         d.profile,
         String(d.label),
         `${d.length} mm`,
         String(d.amount)
     ]);
-    
+
     // Create all used pieces table
     doc.autoTable({
-        head: [allUsedHeaders],
-        body: allUsedData,
+        head: [piecesUsageHeaders],
+        body: piecesUsageData,
         startY: yPosition,
         margin: { left: margin, right: margin },
         tableWidth: contentWidth
