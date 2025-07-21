@@ -1378,7 +1378,7 @@ function renderCuttingNests(nests) {
     const buildNestHeader = (pattern, nestNumber, count = 1) => {
         const header = createElem('div', 'nest-header');
         const title = createElem('h5', 'card-title');
-        title.textContent = `Profile: ${pattern.profile} - Nest #${nestNumber} ${count > 1 ? `(Qty: ${count})` : ''}`;
+        title.textContent = `Nest #${nestNumber} ${count > 1 ? `(Qty: ${count})` : '(Qty: 1)'}`;
         
         const stats = createElem('div', 'row nest-stats card-panel');
         stats.innerHTML = `
@@ -1660,7 +1660,7 @@ function renderCuttingNests(nests) {
         const profileCard = createElem('div', 'card');
         const profileCardContent = createElem('div', 'card-content');
         const profileTitle = createElem('span', 'card-title');
-        profileTitle.textContent = `${profile} - Cutting Plan`;
+        profileTitle.textContent = `Profile: ${profile} - Cutting Nests`;
         profileCardContent.appendChild(profileTitle);
         
         // Profile statistics
@@ -1992,7 +1992,7 @@ function generatePDF(uniqueNests) {
         
         // Add nest title with quantity
         doc.setFontSize(14);
-        doc.text(`Nest #${nestCounter + uniqueNest.originalIndex} - Profile: ${pat.profile}${count > 1 ? ` (Qty: ${count})` : ''}`, margin, yPosition);
+        doc.text(`Nest #${nestCounter + uniqueNest.originalIndex} - Profile: ${pat.profile}${count > 1 ? ` (Qty: ${count})` : ' (Qty: 1)'}`, margin, yPosition);
         yPosition += 8;
         
         // Add nest stats
