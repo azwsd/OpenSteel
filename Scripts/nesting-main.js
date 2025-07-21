@@ -458,7 +458,6 @@ const addPieceBtn = document.getElementById('add-piece');
 const optimizeBtn = document.getElementById('optimize-btn');
 const stockTable = document.getElementById('stock-table').getElementsByTagName('tbody')[0];
 const pieceTable = document.getElementById('piece-table').getElementsByTagName('tbody')[0];
-const resultsDiv = document.getElementById('results');
 const cuttingNestsDiv = document.getElementById('cutting-nests');
 const remainingPiecesDiv = document.getElementById('remaining-pieces');
 
@@ -820,62 +819,6 @@ function removePiece(index) {
     renderPieceTable();
 }
 
-// Helper function to calculate and display results
-function calculateAndDisplayResults(cuttingNests) {
-    // Group by profile and calculate statistics
-    const profileStats = {};
-    let totalStockUsed = cuttingNests.length;
-    let totalPieceLength = 0;
-    let totalStockLength = 0;
-    let totalOffcut = 0;
-    let totalWaste = 0;
-
-    cuttingNests.forEach(nest => {
-        const profile = nest.profile;
-        if (!profileStats[profile]) {
-            profileStats[profile] = {
-                stocks: 0,
-                pieceLength: 0,
-                stockLength: 0,
-                offcut: 0,
-                waste: 0,
-                pieces: 0
-            };
-        }
-        
-        profileStats[profile].stocks += 1;
-        profileStats[profile].stockLength += nest.stockLength;
-        profileStats[profile].offcut += nest.offcut;
-        profileStats[profile].waste += nest.waste;
-        profileStats[profile].pieces += nest.pieceAssignments.length;
-        
-        nest.pieceAssignments.forEach(p => {
-            const pieceLength = p.piece.length;
-            profileStats[profile].pieceLength += pieceLength;
-            totalPieceLength += pieceLength;
-        });
-        
-        totalStockLength += nest.stockLength;
-        totalOffcut += nest.offcut;
-        totalWaste += nest.waste;
-    });
-
-    const materialEfficiency = totalStockLength > 0 ? ((totalPieceLength / totalStockLength) * 100).toFixed(2) : 0;
-
-    // Update general results if elements exist
-    const totalStockEl = document.getElementById('total-stock');
-    const materialEfficiencyEl = document.getElementById('material-efficiency');
-    const totalOffcutEl = document.getElementById('total-offcut');
-    const totalWasteEl = document.getElementById('total-waste');
-    
-    if (totalStockEl) totalStockEl.textContent = totalStockUsed;
-    if (materialEfficiencyEl) materialEfficiencyEl.textContent = `${materialEfficiency}%`;
-    if (totalOffcutEl) totalOffcutEl.textContent = Math.round(totalOffcut);
-    if (totalWasteEl) totalWasteEl.textContent = Math.round(totalWaste);
-
-    return { profileStats, totalStats: { totalStockUsed, materialEfficiency, totalOffcut, totalWaste } };
-}
-
 document.addEventListener('DOMContentLoaded', function(){
     let gripStart = localStorage.getItem("gripStart") || 20;
     let gripEnd = localStorage.getItem("gripEnd") || 20;
@@ -1035,9 +978,7 @@ function optimizeCuttingNests() {
         processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth);
     }
 
-    calculateAndDisplayResults(cuttingNests);
     renderCuttingNests(cuttingNests);
-    resultsDiv.classList.remove('hide');
     cuttingNestsDiv.classList.remove('hide');
     if (remainingPiecesDiv.innerHTML != '') {
         M.toast({html: 'Not all pieces were nested!', classes: 'rounded toast-warning', displayLength: 2000});
