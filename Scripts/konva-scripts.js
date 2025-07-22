@@ -8,6 +8,7 @@ let viewClciked = false;
 let measurementPoints = [];
 let tempLine = null;
 let storedMeasurements = [];
+const tweens = {};
 
 function handleResize(view) {
     if (document.getElementById(view).classList.contains('hide')) return; //Skip resizing if the view is hidden
@@ -44,41 +45,45 @@ function autoFitAllViews(padding = 0) {
     });
 }
 
-//Function to auto-fit a single view
-function autoFitSingleView(view, padding) {
+function autoFitSingleView(view, padding = 0) {
     const stage = stages[view];
     if (!stage) return;
-    
-    //Get bounds of content of current view
+
+    // Cancel existing tween if running
+    if (tweens[view]) {
+        tweens[view].destroy();
+    }
+
     const bounds = getVisibleContentBounds(stage);
-    
+
     if (!bounds) {
         //No content found in this view, reset to default view
         resetView(view);
         return;
     }
-    
+
     const stageWidth = stage.width();
     const stageHeight = stage.height();
-    
-    //Calculate scale to fit this view's content with padding
+
     const scaleX = (stageWidth - padding * 2) / bounds.width;
     const scaleY = (stageHeight - padding * 2) / bounds.height;
-    const scale = Math.min(scaleX, scaleY, 3); // Allow scaling up to 3x, but limit it
-    
-    //Calculate position to center this view's content
+    const scale = Math.min(scaleX, scaleY, 3);
+
     const centerX = (stageWidth / 2) - ((bounds.minX + bounds.width / 2) * scale);
     const centerY = (stageHeight / 2) - ((bounds.minY + bounds.height / 2) * scale);
-    
-    //Apply transformation with smooth animation
-    stage.to({
+
+    // Create new tween and store it for this view's animation
+    tweens[view] = new Konva.Tween({
+        node: stage,
         x: centerX,
         y: centerY,
         scaleX: scale,
         scaleY: scale,
-        duration: 0.3,
+        duration: 0.2,
         easing: Konva.Easings.EaseInOut
     });
+
+    tweens[view].play();
 }
 
 //Function to get bounds of visible content
