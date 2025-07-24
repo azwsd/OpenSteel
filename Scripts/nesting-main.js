@@ -2470,7 +2470,7 @@ function getUniqueNests(nests) {
 
         return JSON.stringify({
             profile: nest.profile,
-            length: nest.length,
+            length: nest.stockLength,
             pieceAssignments: sortedPieces
         });
     }
