@@ -2214,6 +2214,8 @@ const loadStockButton = document.getElementById('load-stock');
 const loadPiecesButton = document.getElementById('load-pieces');
 const saveStockButton = document.getElementById('save-stock');
 const savePiecesButton = document.getElementById('save-pieces');
+const clearStockButton = document.getElementById('clear-stock');
+const clearPiecesButton = document.getElementById('clear-pieces');
 
 //clicks a hidden insert element when the list item is clicked
 loadStockButton.addEventListener('click', function() {
@@ -2227,6 +2229,12 @@ saveStockButton.addEventListener('click', function() {
 });
 savePiecesButton.addEventListener('click', function() {
     downloadPiecesCSV();
+});
+clearStockButton.addEventListener('click', function() {
+    clearStock();
+});
+clearPiecesButton.addEventListener('click', function() {
+    clearPieces();
 });
 
 let idCounter = 0; //ID Counter for unique ID's
@@ -2304,6 +2312,26 @@ function loadPiecesData(fileData) {
     }
     renderPieceTable();
     M.toast({html: 'Pieces loaded successfully!', classes: 'rounded toast-success', displayLength: 2000});
+}
+
+function clearStock() {
+    if (stockItems.length === 0) {
+        M.toast({html: 'No stock items to clear', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+    stockItems = [];
+    renderStockTable();
+    M.toast({html: 'Stock cleared successfully!', classes: 'rounded toast-success', displayLength: 2000});
+}
+
+function clearPieces() {
+    if (pieceItems.length === 0) {
+        M.toast({html: 'No piece items to clear', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+    pieceItems = [];
+    renderPieceTable();
+    M.toast({html: 'Pieces cleared successfully!', classes: 'rounded toast-success', displayLength: 2000});
 }
 
 //Download stock items as CSV
