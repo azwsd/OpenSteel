@@ -1,97 +1,91 @@
-# OpenSteel Non-Commercial Software License Agreement
 
-**Version 1.0 - July 26, 2025**  
-**Copyright © 2025 Ahmed Mohamed Ragab**  
-**Contact:** [azwsdazwsd@gmail.com](mailto:azwsdazwsd@gmail.com)
+OpenSteel Non-Commercial Software License Agreement
+Version 1.0 — July 26, 2025
+Copyright © 2025 Ahmed Mohamed Ragab
 
----
-
-## 1. Definitions
-
-**"Software"** refers to the program known as “OpenSteel”, including all source code, compiled code, documentation, assets, and associated materials.  
-**"Author"** refers to Ahmed Mohamed Ragab.  
-**"Non-Commercial Use"** means use that is **not primarily intended for or directed toward commercial advantage or monetary compensation**.  
-**"Commercial Use"** includes, without limitation:
-
-- Use of the Software in a for-profit product, project, or service.  
-- Use of the Software within an organization for commercial purposes, including internal operations.  
-- Redistribution of the Software or derivative works for financial gain.
+Contact:
+Ahmed Mohamed Ragab
+Email: azwsdazwsd@gmail.com
+LinkedIn: https://www.linkedin.com/in/ahmedmora
 
 ---
 
-## 2. Grant of Rights
+1. Definitions
 
-Subject to the terms of this License, the Author grants any person or entity (the "User") a worldwide, royalty-free, non-exclusive, non-transferable license to:
+“Software” refers to the program known as “OpenSteel”, including all source code, compiled code, documentation, assets, and associated materials.
 
-- Use the Software for **non-commercial purposes only**;
-- Modify, fork, and adapt the Software;
-- Distribute non-commercial derivatives of the Software;
-- Submit modifications or contributions to the Author (e.g., via GitHub pull requests).
+“Author” refers to Ahmed Mohamed Ragab.
 
----
+“Non-Commercial Use” means use that is not primarily intended for or directed toward commercial advantage or monetary compensation.
 
-## 3. Commercial Use
-
-**Commercial use is strictly prohibited without a prior written license agreement** signed by the Author.
-
-Anyone wishing to use the Software for commercial purposes **must contact the Author** at **[azwsdazwsd@gmail.com](mailto:azwsdazwsd@gmail.com)** to obtain a commercial license.
-
-**Unauthorized commercial use constitutes a material breach of this License** and may result in legal action, including but not limited to, claims for damages and injunctive relief.
+“Commercial Use” includes, but is not limited to:
+- Use of the Software in any for-profit product, project, or service;
+- Use within an organization for internal commercial operations;
+- Redistribution for financial gain, including through resale or paid access.
 
 ---
 
-## 4. Conditions and Restrictions
+2. Grant of Rights
 
-- The Software **must retain this license file** in all copies or substantial portions.
-- Any modified or derivative version must also be marked clearly as a derivative and **must not be used commercially** unless separately licensed.
-- The User **must not sublicense, rent, sell, or otherwise transfer** the Software for profit or commercial gain.
-
----
-
-## 5. Intellectual Property and Ownership
-
-The Software and all intellectual property rights remain the **exclusive property of the Author**, including but not limited to:
-
-- Copyright  
-- Trademark (if any)  
-- Patents (if any)
-
-No rights are granted other than those explicitly stated in this License.
+Subject to the terms and conditions of this License, the Author grants to any individual or entity (the “User”) a worldwide, royalty-free, non-exclusive, and non-transferable license to:
+- Use the Software strictly for non-commercial purposes;
+- Modify, fork, and adapt the Software for non-commercial purposes;
+- Share non-commercial derivative works;
+- Contribute improvements or modifications to the Author (e.g., via GitHub).
 
 ---
 
-## 6. No Warranty
+3. Commercial Use
 
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.  
-IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Commercial use of the Software is strictly prohibited without a separate, written license agreement signed by the Author.
 
----
+Any party intending to use the Software commercially must request a commercial license by contacting the Author at the email above.
 
-## 7. Termination
-
-This License is effective until terminated. It will terminate automatically without notice if the User fails to comply with any term herein. Upon termination, all rights granted under this License will cease, and the User must destroy all copies of the Software.
+Unauthorized commercial use is a violation of this License and may result in legal action, including but not limited to damages and injunctive relief.
 
 ---
 
-## 8. Governing Law
+4. Conditions and Restrictions
 
-This License shall be governed by and construed in accordance with the laws of the **Arab Republic of Egypt**, without regard to its conflict of laws principles.
-
-Any disputes arising under this License shall be subject to the **exclusive jurisdiction of the courts of Cairo, Egypt**, and the parties consent to personal jurisdiction therein.
-
----
-
-## 9. Entire Agreement
-
-This License constitutes the entire agreement between the User and the Author concerning the Software and supersedes any prior or contemporaneous understandings, communications, or agreements, written or oral, regarding the Software.
+- This License file must be retained in all copies or substantial portions of the Software.
+- Derivative works must be clearly marked and may not be used commercially unless separately licensed.
+- The Software must not be sublicensed, sold, rented, or otherwise distributed for profit.
 
 ---
 
-## 10. Contact
+5. Intellectual Property
 
-For commercial licensing, support, or inquiries, contact:  
-**Ahmed Mohamed Ragab**  
-📧 [azwsdazwsd@gmail.com](mailto:azwsdazwsd@gmail.com)or  
-> [linkedin.com/in/ahmedmora](https://www.linkedin.com/in/ahmedmora)
+All intellectual property rights in the Software remain the exclusive property of the Author, including:
+- Copyright
+- Trademark (if applicable)
+- Patents (if applicable)
+
+No rights are granted beyond those expressly outlined in this License.
 
 ---
+
+6. No Warranty
+
+The Software is provided “as is,” without any express or implied warranties, including, but not limited to, warranties of merchantability, fitness for a particular purpose, and non-infringement.
+
+In no event shall the Author be liable for any damages or liabilities arising from the use of the Software.
+
+---
+
+7. Termination
+
+This License is effective until terminated. It will terminate automatically without notice if the User breaches any term. Upon termination, all rights under this License cease and all copies of the Software must be destroyed.
+
+---
+
+8. Governing Law
+
+This License shall be governed by the laws of the Arab Republic of Egypt, without regard to conflict-of-law provisions.
+
+All disputes shall be subject to the exclusive jurisdiction of the courts located in Cairo, Egypt.
+
+---
+
+9. Entire Agreement
+
+This document represents the entire agreement between the User and the Author regarding the Software and supersedes all prior agreements or communications.
