@@ -46,7 +46,7 @@ OpenSteel is built using the following technologies:
 
 ## License
 
-OpenSteel is licensed under a custom non-commercial licensedeveloped by Ahmed Mohamed Ragab.
+OpenSteel is licensed under a custom non-commercial license developed by Ahmed Mohamed Ragab.
 
 - ✅ Free to use for **non-commercial** purposes
 - 🔧 Modifications and pull requests are welcome
