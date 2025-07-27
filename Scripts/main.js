@@ -7,98 +7,108 @@ fileInput.addEventListener("change", async (event) => {
     fileInput.value = "";
 });
 
-//File processing logic
+// File processing logic
 async function handleFiles(files) {
     // Reset DXF batch import flag
     dxfBatchImport = false;
     // Reset file counter
     fileCounter = 0;
-    // Get the number of files imported
-    let fileCount = files.length;
-    // Convert file list into a file array
-    let filesArray = [...files];
-    if (!filesArray.length) return;
+    // Convert file list into an array
+    const filesArray = [...files];
+    const fileCount = filesArray.length;
+    if (!fileCount) return;
+
     for (const file of filesArray) {
-        const fileName = file.name;
-        if (!verifyFile(fileName)) continue;
-        const fileData = await file.text();
-        // Handle DXF files
-        if (getFileExtension(fileName) === 'dxf') {
-            const element = document.getElementById('dxfToNCModal');
-            const modal = M.Modal.getInstance(element);
-            const processBtn = document.getElementById('dxfToNCButton');
-            const batchProcessBtn = document.getElementById('batchDxfToNCButton');
-            const closeBtn = document.getElementById('dxfToNCCloseButton');
+    const fileName = file.name;
+    if (!verifyFile(fileName)) continue;
+    const fileData = await file.text();
 
-            if (dxfBatchImport) {
-                // Convert inputs to NC format
-                const result = convertDxfToNc(fileData, fileName, dxfInputs);
-                if (result === null) {
-                    continue; // No valid contour found, continue to next file
-                }
+    // Only DXF files need modal interaction
+    if (getFileExtension(fileName).toLowerCase() === 'dxf') {
+        const modalElem = document.getElementById('dxfToNCModal');
+        const modal = M.Modal.getInstance(modalElem);
+        const processBtn = document.getElementById('dxfToNCButton');
+        const batchProcessBtn = document.getElementById('batchDxfToNCButton');
+        const closeBtn = document.getElementById('dxfToNCCloseButton');
 
-                // Add the file to the view
-                addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
-                continue; // Skip to the next file
+        // Fast‑path for batch mode already on
+        if (dxfBatchImport) {
+            let result = null;
+            try {
+                result = convertDxfToNc(fileData, fileName);
+            } 
+            catch (err) {
+                console.error("Conversion error:", err);
+                 M.toast({ html: 'Conversion Failed!', classes: 'rounded toast-error', displayLength: 3000});
             }
-            
-            modal.open(); // Open settings modal
-            
-            // Wait for action from the user
-            let fileProcessed = false;
-            await new Promise((resolve) => {
-                const onProcessClick = () => {
-                    // Validate inputs first
-                    if (!validateDxfInputs()) {
-                        return; // Stay in the modal - don't resolve
-                    }
-                    
-                    // Convert the file
-                    const result = convertDxfToNc(fileData, fileName);
-                    if (result === null) {
-                        fileProcessed = true;
-                        resolve(); // No valid contour found, resolve immediately
-                        return;
-                    }
-
-                    addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
-                    fileProcessed = true;
-
-                    // Clean up listeners
-                    processBtn.removeEventListener('click', onProcessClick);
-                    batchProcessBtn.removeEventListener('click', onBatchProcessClick);
-                    closeBtn.removeEventListener('click', onCloseClick);
-                    modal.close(); // Close the modal
-                    resolve();
-                };
-
-                const onBatchProcessClick = () => {
-                    // Set the batch import flag to true
-                    dxfBatchImport = true;
-
-                    // Process the current file
-                    onProcessClick();
-                }
-                
-                const onCloseClick = () => {
-                    // Clean up listeners
-                    batchProcessBtn.removeEventListener('click', onBatchProcessClick);
-                    processBtn.removeEventListener('click', onProcessClick);
-                    closeBtn.removeEventListener('click', onCloseClick);
-                    modal.close(); // Close the modal
-                    resolve();
-                };
-                
-                batchProcessBtn.addEventListener('click', onBatchProcessClick);
-                processBtn.addEventListener('click', onProcessClick);
-                closeBtn.addEventListener('click', onCloseClick);
-            });
-            
-            // Continue to next file
+            if (result) {
+                addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
+            }
             continue;
         }
-        // Add the file to the view if it's not a DXF file
-        else addFile(fileName, fileData, fileCount);
+
+        // Open modal and wait for user decision
+        modal.open();
+        await new Promise(resolve => {
+            // Cleanup helper — removes listeners and closes modal
+            const cleanup = () => {
+                [processBtn, batchProcessBtn, closeBtn].forEach(btn => {
+                btn.removeEventListener('click', btn._handler);
+                });
+                modal.close();
+        };
+
+        // Main dxf to nc convert handler
+        processBtn._handler = async (evt) => {
+            evt.preventDefault();
+            try {
+                if (!validateDxfInputs()) {
+                    // leave modal open - don’t resolve yet
+                    return;
+                }
+                let result = null;
+                try {
+                    result = convertDxfToNc(fileData, fileName);
+                } catch (err) {
+                    console.error("Conversion error:", err);
+                    M.toast({ html: 'Conversion Failed!', classes: 'rounded toast-error', displayLength: 3000});
+                }
+                if (result) {
+                    addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
+                }
+            } 
+            finally {
+                cleanup();
+                resolve();
+            }
+        };
+
+        // Batch mode click flips flag then delegates to process
+        batchProcessBtn._handler = (evt) => {
+            evt.preventDefault();
+            dxfBatchImport = true;
+            processBtn._handler(evt);
+        };
+
+        // Close without processing
+        closeBtn._handler = (evt) => {
+            evt.preventDefault();
+            cleanup();
+            resolve();
+        };
+
+        // Hook up listeners
+        processBtn.addEventListener('click', processBtn._handler);
+        batchProcessBtn.addEventListener('click', batchProcessBtn._handler);
+        closeBtn.addEventListener('click', closeBtn._handler);
+        });
+
+        // Move on to next file
+        continue;
+    }
+
+    // Nc file just add to view
+    addFile(fileName, fileData, fileCount);
     }
 }
 
