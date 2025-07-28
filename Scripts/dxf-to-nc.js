@@ -15,17 +15,6 @@ function parseDxf(dxfString) {
   // Helper to convert degrees to radians
   const degToRad = (degrees) => degrees * (Math.PI / 180);
 
-  // Helper to determine arc direction
-  const getArcDirection = (startAngle, endAngle) => {
-    // Normalize angles to [0, 360)
-    const start = (startAngle % 360 + 360) % 360;
-    const end = (endAngle % 360 + 360) % 360;
-    // Calculate angular difference
-    let delta = end - start;
-    if (delta < 0) delta += 360;
-    return delta <= 180 ? 1 : -1;
-  };
-
   // Helper to check if two points are approximately equal
   const pointsEqual = (p1, p2, tolerance = 0.0001) => {
     return Math.abs(p1.x - p2.x) < tolerance && Math.abs(p1.y - p2.y) < tolerance;
@@ -110,15 +99,12 @@ function parseDxf(dxfString) {
             x: currentEntity.center.x + currentEntity.radius * Math.cos(endAngleRad),
             y: currentEntity.center.y + currentEntity.radius * Math.sin(endAngleRad)
           };
-          // Determine direction
-          const direction = getArcDirection(currentEntity.startAngle, currentEntity.endAngle);
           result.arcs.push({
             type: 'ARC',
             center: { x: currentEntity.center.x, y: currentEntity.center.y },
             radius: currentEntity.radius,
             startPoint: startPoint,
-            endPoint: endPoint,
-            direction: direction
+            endPoint: endPoint
           });
         }
         break;
@@ -493,6 +479,18 @@ function findContour(parsedData) {
     });
   };
 
+  // Helper function to set arc direction based on entry point
+  const setArcDirection = (arc, entryPoint) => {
+    if (arc.type !== 'ARC') return;
+    
+    // Check if entry point equals the start point of the arc
+    if (pointsEqual(entryPoint, arc.startPoint)) {
+      arc.direction = 1; // Forward direction (start to end)
+    } else if (pointsEqual(entryPoint, arc.endPoint)) {
+      arc.direction = -1; // Reverse direction (end to start)
+    }
+  };
+
   // Helper function to find the largest circle
   const findLargestCircle = (circles) => {
     if (circles.length === 0) return null;
@@ -634,6 +632,11 @@ function findContour(parsedData) {
         return result;
       }
       return false;
+    }
+    
+    // Set arc direction if the next shape is an arc
+    if (nextShape.type === 'ARC') {
+      setArcDirection(nextShape, currentPoint);
     }
     
     // Check if closed contour condition is met
