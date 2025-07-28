@@ -431,20 +431,24 @@ document.addEventListener('DOMContentLoaded', function(){
 let removeHoles = localStorage.getItem("removeHoles") || 1;
 let removeCuts = localStorage.getItem("removeCuts") || 1;
 let removeMitre = localStorage.getItem("removeMitre") || 1;
+let removeText = localStorage.getItem("removeText") || 1;
 
 function getDSTVSettings () {
     document.getElementById('removeHoles').checked = removeHoles;
     document.getElementById('removeCuts').checked = removeCuts;
     document.getElementById('removeMitre').checked = removeMitre;
+    document.getElementById('removeText').checked = removeText;
 }
 
 function setDSTVSettings () {
     removeHoles = document.getElementById('removeHoles').checked;
     removeCuts = document.getElementById('removeCuts').checked;
     removeMitre = document.getElementById('removeMitre').checked;
+    removeText = document.getElementById('removeText').checked;
     localStorage.setItem("removeHoles", removeHoles);
     localStorage.setItem("removeCuts", removeCuts);
     localStorage.setItem("removeMitre", removeMitre);
+    localStorage.setItem("removeText", removeText);
 }
 
 document.getElementById('exportNCButton').addEventListener('click', getDSTVSettings()); //Loads stored DSTV settings into view
@@ -459,6 +463,10 @@ function removeNCBlocks (data, blockCodes) {
         if (['BO', 'SI', 'AK', 'IK', 'PU', 'KO', 'SC', 'TO', 'UE', 'PR', 'KA', 'EN'].includes(line.trim().toUpperCase().slice(0, 2))) {
             currentBlock = line.trim().toLocaleUpperCase().slice(0, 2);
             prevLine = line;
+            if (currentBlock === 'EN') {
+                updatedData += line;
+                break; //End of file, no need to continue
+            }
             blockOpening = true;
             continue;
         }
@@ -498,10 +506,14 @@ document.getElementById('exportNCButton').addEventListener('click', function(){
     }
     let link = document.createElement('a');
     let data = filePairs.get(selectedFile);
-    //Removes DSTV blocks depending on user settings
-    if (removeCuts && removeHoles) data = removeNCBlocks(data, ['BO', 'IK', 'AK']);
-    else if (removeCuts) data = removeNCBlocks(data, ['IK', 'AK']);
-    else if (removeHoles) data = removeNCBlocks(data, ['BO']);
+    // Remove DSTV blocks depending on user settings
+    const blocksToRemove = [];
+    if (removeCuts) blocksToRemove.push('IK', 'AK');
+    if (removeHoles) blocksToRemove.push('BO');
+    if (removeText) blocksToRemove.push('SI');
+    if (blocksToRemove.length > 0) {
+        data = removeNCBlocks(data, blocksToRemove);
+    }
     //Removes mitre depending on user settings
     if (removeMitre) data = removeNCMitre(data);
     let blob = new Blob([data], { type: 'text/plain' });
@@ -524,10 +536,14 @@ document.getElementById('batchExportNCButton').addEventListener('click', functio
     }
     let zip = new JSZip(); //Create a new ZIP archive
     for (let [file, data] of filePairs.entries()) {
-        //Removes DSTV blocks depending on user settings
-        if (removeCuts && removeHoles) data = removeNCBlocks(data, ['BO', 'IK', 'AK']);
-        else if (removeCuts) data = removeNCBlocks(data, ['IK', 'AK']);
-        else if (removeHoles) data = removeNCBlocks(data, ['BO']);
+        // Remove DSTV blocks depending on user settings
+        const blocksToRemove = [];
+        if (removeCuts) blocksToRemove.push('IK', 'AK');
+        if (removeHoles) blocksToRemove.push('BO');
+        if (removeText) blocksToRemove.push('SI');
+        if (blocksToRemove.length > 0) {
+            data = removeNCBlocks(data, blocksToRemove);
+        }
         //Removes mitre depending on user settings
         if (removeMitre) data = removeNCMitre(data);
         let blob = new Blob([data], { type: 'text/plain' });
