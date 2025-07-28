@@ -138,28 +138,95 @@ body.drag-over::before {
 }
 
 /* Styling for measurement data dropdown menu*/
+#historyDropdown {
+    padding: 8px;
+}
 .measurement-container {
-    border: 1px solid black;
-    border-radius: 5px;
-    margin-bottom: 5px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
     display: flex;
-    justify-content: space-between; /* Push items to the edges */
-    align-items: center; /* Align items vertically */
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
+    background: white;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.measurement-container:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.measurement-container.active {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    border-left-width: 4px;
 }
 .measurement-data {
-    padding: 2px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
 }
 .measurement-data p {
-    margin: 2px auto;
+    margin: 3px auto;
+    font-size: 14px;
+    line-height: 1.4;
+}
+.measurement-data p:first-child {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+.measurement-data p:not(:first-child) {
+    color: #64748b;
+}
+.measurement-data strong {
+    color: #374151;
+    font-weight: 600;
+    min-width: 20px;
+    display: inline-block;
 }
 .measurement-container a {
-    margin-right: 5px;
+    margin-right: 8px;
+    transition: transform 0.2s ease;
+}
+.measurement-container a:hover {
+    transform: scale(1.05);
 }
 .row {
-  margin-bottom: 0;
+    margin-bottom: 0;
+}
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.measurement-container.new-item {
+    animation: slideIn 0.3s ease-out;
+}
+@media (max-width: 480px) {
+    .measurement-container {
+        margin-bottom: 6px;
+    }
+    
+    .measurement-data {
+        padding: 10px;
+    }
+    
+    .measurement-data p {
+        font-size: 13px;
+    }
+    
+    .measurement-container a {
+        margin-right: 6px;
+    }
 }
 
 /*file and properties sections style*/
