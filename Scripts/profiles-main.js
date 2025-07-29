@@ -571,21 +571,21 @@ document.getElementById('Length')?.addEventListener('input', calcWeight);
 document.getElementById('Quantity')?.addEventListener('input', calcWeight);
 let weightValue = 0;
 let debounceTimer;
-// Debounced version of calcWeight with 500ms delay
+// Debounced version of calcWeight with 100ms delay
 function debouncedCalcWeight() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(calcWeight, 100);
 }
 function calcWeight() {
-    if (weightValue == 0) {
-        M.toast({html: 'Please choose a profile!', classes: 'rounded toast-error', displayLength: 2000})
-        return;
-    }
+    result = document.getElementById('weightResult');
     const length = parseFloat(document.getElementById('Length').value);
     const quantity = parseFloat(document.getElementById('Quantity').value);
     const weight = (weightValue * length * quantity / 1000).toFixed(2);
-    if (isNaN(weight)) return;
-    document.getElementById('weightResult').value = weight; //Show result
+    if (isNaN(weight)) {
+        result.value = 'result'; // Show default result
+        return;
+    }
+    result.value = weight; //Show result
 }
 
 document.addEventListener('keydown', function (e) {
