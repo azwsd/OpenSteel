@@ -1039,8 +1039,8 @@ function contourDataToNc(parsedData) {
         result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} ${item.shape.direction * item.shape.radius.toFixed(2)}\n`;
         result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       } else {
-        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)}\n`;
-        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
+        result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} 0.00\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} 0.00\n`;
       }
     } else {
       // Subsequent shapes - only add the end point
@@ -1048,7 +1048,7 @@ function contourDataToNc(parsedData) {
         result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} ${item.shape.direction * item.shape.radius.toFixed(2)}\n`;
         result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
       } else {
-        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} 0.00\n`;
       }
     }
   });
