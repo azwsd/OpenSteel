@@ -1037,7 +1037,7 @@ function contourDataToNc(parsedData) {
       // First shape - add both points
       if (item.shape.type === 'ARC') {
         result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} ${item.shape.direction * item.shape.radius.toFixed(2)}\n`;
-        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} 0.00\n`;
       } else {
         result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} 0.00\n`;
         result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} 0.00\n`;
@@ -1046,7 +1046,7 @@ function contourDataToNc(parsedData) {
       // Subsequent shapes - only add the end point
       if (item.shape.type === 'ARC') {
         result += `v ${item.startPoint.x.toFixed(2)} ${item.startPoint.y.toFixed(2)} ${item.shape.direction * item.shape.radius.toFixed(2)}\n`;
-        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)}\n`;
+        result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} 0.00\n`;
       } else {
         result += `v ${item.endPoint.x.toFixed(2)} ${item.endPoint.y.toFixed(2)} 0.00\n`;
       }
