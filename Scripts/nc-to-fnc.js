@@ -291,7 +291,7 @@ function createPCSBlock(requiredQuantity) {
     }
 }
 
-function createFNC(fileData, requiredQuantity) {
+function createFNC(fileData, requiredQuantity, createHeader) {
     ncLoadHeaderData(fileData);
 
     let holeData = '';
@@ -300,7 +300,13 @@ function createFNC(fileData, requiredQuantity) {
         holeData = '\n' + createHoleBlock(fileData)
     }
 
-    return `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n${createPCSBlock(requiredQuantity)}${holeData}\n${createMarkBlock(fileData)}`;
+    headerContent = '';
+    // If createHeader is true, create header content
+    if (createHeader) {
+        headerContent = `${createPRFBlock()}\n\n${createMaterialBlock()}\n\n`;
+    }
+    
+    return `${headerContent}${createPCSBlock(requiredQuantity)}${holeData}\n${createMarkBlock(fileData)}`;
 }
 
 let FNCDrillType = localStorage.getItem('FNCDrillType') || 'Punch'; // Default to 'Punch' if not set
@@ -345,7 +351,7 @@ function saveFNCSettings() {
     localStorage.setItem('constraintMaterial', constraintMaterial);
 }
 
-function ncToFnc(requiredQuantity = 0) {
+function ncToFnc(requiredQuantity = 0, createHeader = true) {
     saveFNCSettings(); // Save settings before exporting
 
     // Check if a file is selected
@@ -364,7 +370,7 @@ function ncToFnc(requiredQuantity = 0) {
     localStorage.setItem('FNCDrillType', FNCDrillType); // Save the selected drill type to local storage
 
     // Create FNC content
-    const fncContent = createFNC(fileData, requiredQuantity);
+    const fncContent = createFNC(fileData, requiredQuantity, createHeader);
 
     // Create a Blob with the output string
     const blob = new Blob([fncContent], { type: 'text/plain' });
