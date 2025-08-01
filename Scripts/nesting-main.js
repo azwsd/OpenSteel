@@ -2450,7 +2450,9 @@ function exportFncNest() {
 
     // Create pieces blocks for all nested parts
     let piecesBlocks = '';
-    Object.entries(labels).forEach(([label, count]) => piecesBlocks += createFNC(pieceItemsFromFiles[label][1], count) + '\n');
+    Object.entries(labels).forEach(([label, data]) => {
+        piecesBlocks += createFNC(pieceItemsFromFiles[label][1], data.count, data.isUniqueProfile) + '\n';
+    });
 
     let nestsBlocks = createNestBlocks(nestCounter);
 
@@ -2479,14 +2481,29 @@ function checkForManualInput() {
 }
 
 function getUniqueNestLabels() {
-    const labelCounts = new Map();
+    const labelCounts = new Map(); // Map to track unique labels and their counts
+    const seenProfiles = new Set(); // Set to track unique profiles
     
     // Go through every nest in cuttingNest array
     cuttingNests.forEach(nest => {
         // Go through each piece in pieceAssignments for this nest
         nest.pieceAssignments.forEach(piece => {
-            // Count occurrences of each label
-            labelCounts.set(piece.label, (labelCounts.get(piece.label) || 0) + 1);
+            const key = piece.label;
+            const profile = piece.piece.originalPiece.profile;
+            const isUniqueProfile = !seenProfiles.has(profile);
+            
+            if (!labelCounts.has(key)) {
+                labelCounts.set(key, {
+                    label: piece.label,
+                    count: 0,
+                    profile: profile,
+                    isUniqueProfile: isUniqueProfile
+                });
+            }
+            labelCounts.get(key).count++;
+            
+            // Mark this profile as seen
+            seenProfiles.add(profile);
         });
     });
     
