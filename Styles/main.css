@@ -456,6 +456,25 @@ body.drag-over::before {
   color: #311b92;
   font-weight: 600;
 }
+.fileTracker {
+  text-align: center;
+  margin: 0;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  width: 100%;
+  min-width: 0; /* Allow shrinking below content width */
+  box-sizing: border-box;
+}
+.fileTracker:hover {
+  border-color: #bdbdbd;
+  background: #f5f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
 /*Center Materialize Toast for medium and large screens only*/
 @media (min-width: 601px) { 
