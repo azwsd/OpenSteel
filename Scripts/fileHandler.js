@@ -65,7 +65,8 @@ function selectFile(file){
     addHoleData(); //Adds hole data to hole info tap
     document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
     document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
-    updateSessionData()
+    updateSessionData();
+    updateFileTracker();
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
     let instance = M.Sidenav.getInstance(sideNav)

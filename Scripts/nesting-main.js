@@ -72,6 +72,7 @@ function selectFile(file){
         setInputValue('piece-amount', quantity);
         setInputValue('piece-label', label);
     }
+    updateFileTracker();
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
     let instance = M.Sidenav.getInstance(sideNav)
@@ -2581,4 +2582,37 @@ function getUniqueNests(nests) {
     }));
 
     return uniqueNests;
+}
+
+const filesDiv = document.getElementById('files');
+document.addEventListener('DOMContentLoaded', () => {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                updateFileTracker();
+            }
+        });
+    });
+
+    if (filesDiv) {
+        observer.observe(filesDiv, {
+            childList: true, // Watch for additions/removals of child nodes
+            subtree: false // Only watch direct children
+        });
+    }
+});
+
+function updateFileTracker() {
+    // Get position of selected file
+    const selectedFileElement = filesDiv.querySelector('.selected-file');
+    const childElements = Array.from(filesDiv.querySelectorAll('.viewFiles'));
+    const selectedFileIndex = childElements.indexOf(selectedFileElement);
+
+    const filesCount = childElements.length; // Amount of files loaded
+
+    // Update file tracker text
+    const fileTrackers = document.querySelectorAll('.fileTracker');
+    fileTrackers.forEach(tracker => {
+        tracker.textContent = `File ${selectedFileIndex + 1}/${filesCount}`;
+    });
 }
