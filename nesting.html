@@ -103,7 +103,14 @@
     <!--Mobile navbar-->
     <ul class="sidenav" id="mobile">
         <li><p class="fileTracker">File 0/0</p></li>
-        <li><p class="filesPlaceHolder">Please insert a file/folder</p></li>
+        <li><p class="filesPlaceHolder">
+            Insert files with 
+            <span class="sidenav-close deep-purple-text lighten-3" 
+                style="cursor: pointer;"
+                onclick="M.TapTarget.getInstance(document.getElementById('fileInputTapTarget')).open();">
+                insert button
+            </span>, or using drag and drop.
+        </p></li>
         <li id="sideNavClearAll"><a href="#!" data-target="clearAllModal" class="waves-effect modal-trigger float-left">Clear all</a></li>
         <ul class="sideNavBottom">
             <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
@@ -117,7 +124,14 @@
         <div class="row">
             <div class="col l2 hide-on-med-and-down deep-purple lighten-2" id="files">
                 <p class="fileTracker">File 0/0</p>
-                <p class="filesPlaceHolder">Please insert a file/folder</p>
+                <p class="filesPlaceHolder">
+                    Insert files with 
+                    <span class="white-text lighten-3" 
+                        style="cursor: pointer;"
+                        onclick="M.TapTarget.getInstance(document.getElementById('fileInputTapTarget')).open()">
+                        insert button
+                    </span>, or using drag and drop.
+                </p>
             </div>
             <div class="col l8 m12 s12" id="nestingDiv">
                 <div class="card-panel">
@@ -362,10 +376,13 @@
     </main>
 
     <div class="fixed-action-btn">
-        <a class="btn-floating btn-large deep-purple darken-4">
+        <a class="btn-floating btn-large deep-purple darken-4" id="fileInputBtn">
             <i class="large material-icons tooltipped" data-position="left" data-tooltip="Insert" onclick="insert_file(this)"><input type="file" hidden id="fileInput" placeholder="File input" directory multiple>insert_drive_file</i>
         </a>
     </div>
+
+    <!-- Tap Target Structure -->
+    <div class="tap-target deep-purple darken-4" data-target="fileInputBtn" id="fileInputTapTarget"></div>
 
     <!--Includes js file for materialize-->
     <script src="Scripts/nc-to-fnc.js"></script>
