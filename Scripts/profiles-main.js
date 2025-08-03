@@ -39,12 +39,12 @@ function filesPlaceHolder(){
     let mapSize = filePairs.size;
     if (mapSize == 0){
         document.querySelectorAll('.filesPlaceHolder').forEach(el => {
-            el.style.visibility = 'visible';
+            el.classList.remove('hide');
         });
     }
     else{
         document.querySelectorAll('.filesPlaceHolder').forEach(el => {
-            el.style.visibility = 'hidden';
+            el.classList.add('hide');
         });
     }
 }
