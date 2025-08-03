@@ -599,7 +599,15 @@ document.addEventListener('keydown', function (e) {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
         // Select next file if available
-        if (selectedIndex !== -1 && selectedIndex - 1 > -1) fileElements[selectedIndex - 1].click();
+        if (selectedIndex !== -1 && selectedIndex - 1 > -1) { 
+            fileElements[selectedIndex - 1].click();
+            // Scroll the selected element into view
+            fileElements[selectedIndex - 1].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'nearest'
+        });
+        }
     }
     else if(e.key === 'ArrowDown') { //Detect arrow down
         e.preventDefault(); //Prevent default browser save behavior
@@ -610,7 +618,15 @@ document.addEventListener('keydown', function (e) {
             if (el.classList.contains('selected-file')) selectedIndex = index;
         });
         // Select next file if available
-        if (selectedIndex !== -1 && selectedIndex + 1 < fileElements.length) fileElements[selectedIndex + 1].click();
+        if (selectedIndex !== -1 && selectedIndex + 1 < fileElements.length) { 
+            fileElements[selectedIndex + 1].click();
+            // Scroll the selected element into view
+            fileElements[selectedIndex + 1].scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        }
     }
 });
 
