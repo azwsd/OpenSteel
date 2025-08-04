@@ -846,6 +846,7 @@ document.addEventListener('DOMContentLoaded', function(){
     let maxUniqueLabels = localStorage.getItem("maxUniqueLabels") || 999;
     let minOffcut = localStorage.getItem("minOffcut") || 1000;
     let useUnlimitedStock = localStorage.getItem("useUnlimitedStock") || false;
+    let groupUniqueNests = localStorage.getItem("groupUniqueNests") || false;
 
     document.getElementById('grip-start').value = gripStart;
     document.getElementById('grip-end').value = gripEnd;
@@ -854,6 +855,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('max-unique-labels').value = maxUniqueLabels;
     document.getElementById('min-offcut').value = minOffcut;
     document.getElementById('unlimited-stock-preference').checked = useUnlimitedStock == 'true';
+    document.getElementById('group-unique-nests').checked = groupUniqueNests == 'true';
 });
 
 let cuttingNests = [];
@@ -874,6 +876,7 @@ function optimizeCuttingNests() {
     const maxUniqueLabels = parseInt(document.getElementById('max-unique-labels').value);
     const minOffcut = parseInt(document.getElementById('min-offcut').value);
     nestCounter = Number(document.getElementById('first-nest-number').value);
+    const groupUniqueNests = document.getElementById('group-unique-nests').checked;
 
     localStorage.setItem("gripStart", gripStart);
     localStorage.setItem("gripEnd", gripEnd);
@@ -883,6 +886,7 @@ function optimizeCuttingNests() {
     localStorage.setItem("minOffcut", minOffcut);
     localStorage.setItem("first-nest-number", nestCounter);
     localStorage.setItem("useUnlimitedStock", useUnlimitedStock);
+    localStorage.setItem("groupUniqueNests", groupUniqueNests);
 
     if(isNaN(nestCounter)) {
         M.toast({html: 'Please Enter Correct First Nest Number!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -2556,6 +2560,8 @@ document.addEventListener('DOMContentLoaded', function(){
 function getUniqueNests(nests) {
     const nestMap = new Map();
 
+    const groupUniqueNests = document.getElementById('group-unique-nests').checked; // Get the checkbox value
+
     // Helper function to create unique key for nest
     function createNestKey(nest) {
         const sortedPieces = nest.pieceAssignments.map(item => ({
@@ -2569,7 +2575,8 @@ function getUniqueNests(nests) {
         return JSON.stringify({
             profile: nest.profile,
             length: nest.stockLength,
-            pieceAssignments: sortedPieces
+            pieceAssignments: sortedPieces,
+            groupUniqueNests: groupUniqueNests == true ? "" : Math.random()
         });
     }
 
