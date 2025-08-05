@@ -864,8 +864,12 @@ function optimizeCuttingNests() {
     // Unlimited stock setting
     const useUnlimitedStock = document.getElementById('unlimited-stock-preference').checked;
 
-    if ((stockItems.length === 0 || pieceItems.length === 0) && !useUnlimitedStock) {
-        M.toast({html: 'Please add stock and piece items first!', classes: 'rounded toast-warning', displayLength: 2000});
+    if (stockItems.length === 0 && !useUnlimitedStock) {
+        M.toast({html: 'Please add stock items first!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+    if (pieceItems.length === 0) {
+        M.toast({html: 'Please add piece items first!', classes: 'rounded toast-warning', displayLength: 2000});
         return;
     }
 
