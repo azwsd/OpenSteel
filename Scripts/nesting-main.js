@@ -1196,8 +1196,7 @@ function binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, ma
         });
         
         // Update remaining length
-        currentStock.remainingLength = currentStock.usableLength - 
-            (currentPos - gripStart);
+        currentStock.remainingLength = currentStock.usableLength - (currentPos - gripStart);
     }
 }
 
