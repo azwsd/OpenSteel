@@ -847,6 +847,7 @@ document.addEventListener('DOMContentLoaded', function(){
     let minOffcut = localStorage.getItem("minOffcut") || 1000;
     let useUnlimitedStock = localStorage.getItem("useUnlimitedStock") || false;
     let groupUniqueNests = localStorage.getItem("groupUniqueNests") || false;
+    let unlimitedStockLength = localStorage.getItem("unlimitedStockLength") || 12000;
 
     document.getElementById('grip-start').value = gripStart;
     document.getElementById('grip-end').value = gripEnd;
@@ -856,6 +857,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('min-offcut').value = minOffcut;
     document.getElementById('unlimited-stock-preference').checked = useUnlimitedStock == 'true';
     document.getElementById('group-unique-nests').checked = groupUniqueNests == 'true';
+    document.getElementById('unlimited-stock-length').value = unlimitedStockLength;
 });
 
 let cuttingNests = [];
@@ -881,6 +883,7 @@ function optimizeCuttingNests() {
     const minOffcut = parseInt(document.getElementById('min-offcut').value);
     nestCounter = Number(document.getElementById('first-nest-number').value);
     const groupUniqueNests = document.getElementById('group-unique-nests').checked;
+    const unlimitedStockLength = parseFloat(document.getElementById('unlimited-stock-length').value);
 
     localStorage.setItem("gripStart", gripStart);
     localStorage.setItem("gripEnd", gripEnd);
@@ -891,6 +894,7 @@ function optimizeCuttingNests() {
     localStorage.setItem("first-nest-number", nestCounter);
     localStorage.setItem("useUnlimitedStock", useUnlimitedStock);
     localStorage.setItem("groupUniqueNests", groupUniqueNests);
+    localStorage.setItem("unlimitedStockLength", unlimitedStockLength);
 
     if(isNaN(nestCounter)) {
         M.toast({html: 'Please Enter Correct First Nest Number!', classes: 'rounded toast-warning', displayLength: 2000});
@@ -932,14 +936,14 @@ function optimizeCuttingNests() {
             for (let i = 0; i < 100; i++) {
                 stockGroups[profile].push({
                     id: `unlimited-stock-${profile}-${i}`,
-                    length: 12000,
+                    length: unlimitedStockLength,
                     originalStock: {
                         profile: profile,
-                        length: 12000,
+                        length: unlimitedStockLength,
                         amount: 'unlimited'
                     },
-                    usableLength: 12000 - gripStart - gripEnd,
-                    remainingLength: 12000 - gripStart - gripEnd,
+                    usableLength: unlimitedStockLength - gripStart - gripEnd,
+                    remainingLength: unlimitedStockLength - gripStart - gripEnd,
                     pieceAssignments: [],
                     offcut: 0,
                     waste: 0,
@@ -996,7 +1000,7 @@ function optimizeCuttingNests() {
         }
 
         if (useUnlimitedStock) {
-            binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups);
+            binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups, unlimitedStockLength);
         } else {
             binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels);
         }
@@ -1011,7 +1015,7 @@ function optimizeCuttingNests() {
 }
 
 // Modified version of your binPackingOptimization that handles unlimited stock
-function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups) {
+function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups, unlimitedStockLength) {
     // Sort pieces by length (decreasing)
     pieces.sort((a, b) => b.length - a.length);
     
@@ -1027,14 +1031,14 @@ function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gri
             for (let i = 0; i < 20; i++) {
                 const newStock = {
                     id: `unlimited-stock-${profile}-${currentCount + i}`,
-                    length: 12000,
+                    length: unlimitedStockLength,
                     originalStock: {
                         profile: profile,
-                        length: 12000,
+                        length: unlimitedStockLength,
                         amount: 'unlimited'
                     },
-                    usableLength: 12000 - gripStart - gripEnd,
-                    remainingLength: 12000 - gripStart - gripEnd,
+                    usableLength: unlimitedStockLength - gripStart - gripEnd,
+                    remainingLength: unlimitedStockLength - gripStart - gripEnd,
                     pieceAssignments: [],
                     offcut: 0,
                     waste: 0,
