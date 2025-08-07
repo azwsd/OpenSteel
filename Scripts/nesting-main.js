@@ -1078,9 +1078,9 @@ function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gri
         const bestPattern = findBestPatternForStock(unassignedPieces, stockUsableLength, sawWidth, maxUniqueLabels);
         
         if (bestPattern.pieces.length === 0) {
-            // No pieces fit in this stock - this shouldn't happen with 12000mm stock unless pieces are too long
+            // No pieces fit in this stock
             currentStock.used = false;
-            M.toast({html: `Some pieces are too long for 12000mm stock!`, classes: 'rounded toast-warning', displayLength: 2000});
+            M.toast({html: `Some pieces are too long for ${unlimitedStockLength}mm stock!`, classes: 'rounded toast-warning', displayLength: 2000});
             break;
         }
         
