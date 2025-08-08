@@ -878,3 +878,41 @@ table th, table td {
     padding: 12px;
   }
 }
+
+/* Custom checkbox styling */
+.custom-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #673ab7; /* Materialize deep-purple */
+  user-select: none;
+}
+.custom-checkbox-container {
+  display: inline-block;
+  margin: 10px 0;
+  font-family: inherit;
+  height: 54px;
+  line-height: 54px;
+  font-size: 15px;
+  padding: 0 28px;
+  border-radius: 2px;
+}
+.custom-checkbox-container input[type="checkbox"] {
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+  vertical-align: middle;
+  margin-right: 5px;
+  appearance: checkbox;
+  -webkit-appearance: checkbox;
+  width: auto;
+  height: auto;
+}
+.custom-checkbox-container label {
+  cursor: pointer;
+  user-select: none;
+  color: white;
+  font-size: 15px;
+}
