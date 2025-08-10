@@ -688,12 +688,7 @@ body::-webkit-scrollbar-thumb:hover,
     box-shadow: 0 3px 12px rgba(49, 27, 146, 0.1);
     background: linear-gradient(90deg, #e8eaf6, #f3e5f5);
 }
-#profileData p:first-child {
-    background: linear-gradient(90deg, #311b92, #512da8);
-    color: white;
-    font-weight: 600;
-    border-left: 4px solid #fff;
-}
+
 /* Profile Image Panel */
 #profileImage {
     display: flex;
