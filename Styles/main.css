@@ -740,7 +740,6 @@ body::-webkit-scrollbar-thumb:hover,
     transition: all 0.3s ease;
     background: #fafafa;
     min-width: 0;
-    max-width: 80%;
 }
 #weightCalc input:focus {
     border-color: #311b92;
@@ -810,14 +809,6 @@ body::-webkit-scrollbar-thumb:hover,
     }
     #profileImage img {
         max-height: 250px;
-    }
-    #weightCalc .input-group {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.3rem;
-    }
-    #weightCalc input {
-        width: 100%;
     }
     .dropdown-trigger {
         font-size: 0.8rem !important;
