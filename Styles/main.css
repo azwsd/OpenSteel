@@ -32,6 +32,37 @@ body.drag-over::before {
     font-size: 2rem;
     font-weight: bold;
 }
+
+/* Custom scrollbar */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px; /* For horizontal scrollbars */
+}
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+    background: #311b92;
+    border-radius: 3px;
+    border: 1px solid #f1f1f1; /* Adds subtle border */
+}
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+    background: #512da8;
+}
+/* Corner styling when both scrollbars are present */
+*::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+}
+
 .materialboxed.active & .materialbox-overlay {
     z-index: 9999 !important; /* Ensure the overlay is above other elements */
     position: fixed !important;
