@@ -582,14 +582,14 @@ body::-webkit-scrollbar-thumb:hover,
     display: flex;
     justify-content: center;
     align-items: center;
-    height: calc(100vh - 94px);
+    min-height: calc(100vh - 94px);
     padding: 2rem;
     box-sizing: border-box;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     border-radius: 15px;
     margin: 1rem 0;
     box-shadow: 0 8px 32px rgba(49, 27, 146, 0.1);
-    overflow-y: scroll;
+    overflow-y: auto; /* Allows scrolling if content overflows */
 }
 #profileContentDiv {
     display: grid;
@@ -683,7 +683,6 @@ body::-webkit-scrollbar-thumb:hover,
     box-shadow: 0 3px 12px rgba(49, 27, 146, 0.1);
     background: linear-gradient(90deg, #e8eaf6, #f3e5f5);
 }
-
 /* Profile Image Panel */
 #profileImage {
     display: flex;
@@ -790,8 +789,7 @@ body::-webkit-scrollbar-thumb:hover,
     text-align: center;
     font-size: 0.9rem;
 }
-/* Responsive adjustments for button text */
-@media (max-width: 1200px) {
+@media (max-width: 993px) {
     #profileContentDiv {
         grid-template-columns: 1fr;
         gap: 1.5rem;
@@ -799,8 +797,15 @@ body::-webkit-scrollbar-thumb:hover,
     .dropdown-trigger p {
         font-size: 0.8rem;
     }
+    #profileDiv {
+       padding-top: 0.1vh;
+    }
 }
 @media (max-width: 768px) {
+    #profileDiv {
+        padding: 1rem; /* Reduced padding for smaller screens */
+        min-height: calc(100vh - 80px); /* Adjusted for mobile header */
+    }
     #ProfileSelection,
     #profileData,
     #profileImage,
@@ -825,6 +830,11 @@ body::-webkit-scrollbar-thumb:hover,
     }
 }
 @media (max-width: 480px) {
+    #profileDiv {
+        padding: 0.5rem; /* Reduced padding for very small screens */
+        margin: 0.5rem 0; /* Reduced margin */
+        min-height: calc(100vh - 70px); /* Adjusted for mobile */
+    }
     #profileContentDiv {
         gap: 1rem;
     }   
@@ -847,6 +857,20 @@ body::-webkit-scrollbar-thumb:hover,
     #profileSizeDropdownBtn .material-icons {
         font-size: 0.9rem;
         min-width: 20px;
+    }
+}
+@media (max-height: 600px) {
+    #profileDiv {
+        min-height: auto; /* Remove min-height constraint on very short screens */
+        padding: 1rem;
+    }
+    
+    #profileImage img {
+        max-height: 150px;
+    }
+    
+    #profileData {
+        max-height: 150px;
     }
 }
 
