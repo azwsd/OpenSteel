@@ -582,7 +582,7 @@ body::-webkit-scrollbar-thumb:hover,
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    height: calc(100vh - 93px);
+    height: calc(100vh - 94px);
     padding: 2rem;
     box-sizing: border-box;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
