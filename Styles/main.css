@@ -618,7 +618,8 @@ body::-webkit-scrollbar-thumb:hover,
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 /* Dropdown buttons styling */
-.dropdown-trigger {
+#profileDropdownBtn,
+#profileSizeDropdownBtn {
     margin: 0.5rem 0 !important;
     width: 100% !important;
     display: flex !important;
@@ -635,12 +636,14 @@ body::-webkit-scrollbar-thumb:hover,
     box-sizing: border-box !important;
     position: relative;
 }
-.dropdown-trigger:hover {
+#profileDropdownBtn:hover,
+#profileSizeDropdownBtn:hover {
     background: linear-gradient(45deg, #512da8, #673ab7) !important;
     transform: translateY(-1px);
     box-shadow: 0 5px 20px rgba(49, 27, 146, 0.4) !important;
 }
-.dropdown-trigger p {
+#profileDropdownBtn p,
+#profileSizeDropdownBtn p {
     margin: 0 !important;
     font-size: 0.9rem;
     text-transform: capitalize;
@@ -842,7 +845,8 @@ body::-webkit-scrollbar-thumb:hover,
         font-size: 0.75rem;
         padding-right: 0.5rem;
     }
-    .dropdown-trigger .material-icons {
+    #profileDropdownBtn .material-icons,
+    #profileSizeDropdownBtn .material-icons {
         font-size: 1rem;
     }
 }
@@ -865,7 +869,8 @@ body::-webkit-scrollbar-thumb:hover,
         font-size: 0.7rem;
         padding-right: 0.4rem;
     }
-    .dropdown-trigger .material-icons {
+    #profileDropdownBtn .material-icons,
+    #profileSizeDropdownBtn .material-icons {
         font-size: 0.9rem;
         min-width: 20px;
     }
