@@ -581,7 +581,7 @@ body::-webkit-scrollbar-thumb:hover,
 #profileDiv {
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     height: calc(100vh - 94px);
     padding: 2rem;
     box-sizing: border-box;
