@@ -1,4 +1,3 @@
-
 async function findProfile() {
     const quantity = Number(headerData[5]);
     const profileName = headerData[6].toUpperCase().replace(/ /g,''); 
@@ -9,7 +8,7 @@ async function findProfile() {
     const flangeThickness = headerData[11];
     const webThickness = headerData[12];
     const radius = headerData[13];
-    //Handle missing profile data in database
+    
     let profileFound = false;
     let fetchPromises = [];
 
@@ -19,212 +18,191 @@ async function findProfile() {
         return;
     }
 
-    //Convert DSTV profile type to standard type
+    // Convert DSTV profile type to standard type
     if (profileType == 'I' || profileType == 'U' || profileType == 'C') {
         csvPath = profileType == 'I' ? 'data/I.csv' : 'data/U.csv';
         fetchPromises.push(fetch(csvPath)
         .then(response => response.text())
-        .then(text => {
+        .then(async text => {
             const csv = parseCSV(text);
-            const promises = csv.map(async obj => {
+            for (const obj of csv) {
                 if (
-                    (obj.name.toUpperCase().replace(/ /g,'') == profileName) ||
+                    (obj.name && obj.name.toUpperCase().replace(/ /g,'') == profileName) ||
                     (obj.alt != undefined && obj.alt != '' && obj.alt.toUpperCase().replace(/ /g,'') == profileName) ||
                     (parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
                     && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.tw).toFixed(2) == parseFloat(webThickness).toFixed(2) 
                     && parseFloat(obj.tf).toFixed(2) == parseFloat(flangeThickness).toFixed(2) 
                     && parseFloat(obj.r).toFixed(2) == parseFloat(radius).toFixed(2))) {
+                    
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[Number(obj.localIndex)].click();
+                    
+                    // Auto-select the matching profile in autocomplete
+                    const displayText = getProfileID(obj);
+                    loadProfile(displayText, obj);
+                    break;
                 }
-            });
-            return Promise.all(promises);
+            }
         }));
     }
+    
     if (profileType == 'L') {
         fetchPromises.push(fetch('data/L.csv')
         .then(response => response.text())
-        .then(text => {
+        .then(async text => {
             const csv = parseCSV(text);
-            const promises = csv.map(async obj => {
+            for (const obj of csv) {
                 if (
                     parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
                     && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
+                    
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[Number(obj.localIndex)].click();
+                    
+                    const displayText = getProfileID(obj);
+                    loadProfile(displayText, obj);
+                    break;
                 }
-            });
-            return Promise.all(promises);
+            }
         }));
     }
     else if (profileType == 'M' && height == flangeWidth) {
-        profileType = 'SHS';
         fetchPromises.push(fetch('data/SHS.csv')
         .then(response => response.text())
-        .then(text => {
+        .then(async text => {
             const csv = parseCSV(text);
-            const promises = csv.map(async (obj, index) => {
+            for (const obj of csv) {
                 if (
                     parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
+                    
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
+                    
+                    const displayText = getProfileID(obj);
+                    loadProfile(displayText, obj);
+                    break;
                 }
-            });
-            return Promise.all(promises);
+            }
         }));
     }
     else if (profileType == 'M' && height != flangeWidth) {
-        profileType = 'RHS';
         fetchPromises.push(fetch('data/RHS.csv')
         .then(response => response.text())
-        .then(text => {
+        .then(async text => {
             const csv = parseCSV(text);
-            const promises = csv.map(async (obj, index) => {
+            for (const obj of csv) {
                 if (
                     parseFloat(obj.h).toFixed(2) == parseFloat(height).toFixed(2) 
                     && parseFloat(obj.b).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
+                    
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
+                    
+                    const displayText = getProfileID(obj);
+                    loadProfile(displayText, obj);
+                    break;
                 }
-            });
-            return Promise.all(promises);
+            }
         }));
     }
     else if (profileType == 'RO') {
-        profileType = 'CHS';
         fetchPromises.push(fetch('data/CHS.csv')
         .then(response => response.text())
-        .then(text => {
+        .then(async text => {
             const csv = parseCSV(text);
-            const promises = csv.map(async (obj, index) => {
+            for (const obj of csv) {
                 if (
                     parseFloat(obj.od).toFixed(2) == parseFloat(flangeWidth).toFixed(2) 
                     && parseFloat(obj.thk).toFixed(2) == parseFloat(flangeThickness).toFixed(2)) {
+                    
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
+                    
+                    const displayText = getProfileID(obj);
+                    loadProfile(displayText, obj);
+                    break;
                 }
-            });
-            return Promise.all(promises);
+            }
         }));
     }
     else if (profileType == 'RU') {
-        profileType = 'Round';
         fetchPromises.push(fetch('data/round.csv')
         .then(response => response.text())
-        .then(text => {
+        .then(async text => {
             const csv = parseCSV(text);
-            const promises = csv.map(async (obj, index) => {
+            for (const obj of csv) {
                 if (parseFloat(obj.od).toFixed(2) == parseFloat(flangeWidth).toFixed(2)) {
                     profileFound = true;
                     await loadSubProfiles(obj.profileCode);
-                    await new Promise(resolve => {
-                        const observer = new MutationObserver((mutations, obs) => {
-                            if (document.getElementById('profileSizeDropdown').children.length > 0) {
-                                obs.disconnect();
-                                resolve();
-                            }
-                        });
-                        observer.observe(document.getElementById('profileSizeDropdown'), {childList: true});
-                    });
-                    document.querySelectorAll('#profileSizeDropdown a')[index].click();
+                    
+                    const displayText = getProfileID(obj);
+                    loadProfile(displayText, obj);
+                    break;
                 }
-            });
-            return Promise.all(promises);
+            }
         }));
     }
+    
     // Wait for all fetch operations to complete
     await Promise.all(fetchPromises);
     if (!profileFound) {
         handleMissingProfile();
     }
     else {
-        document.getElementById('Length').value = length; //Set length value to length of DSTV part
-        document.getElementById('Quantity').value = quantity; //Set quantity value to quantity of DSTV part
+        document.getElementById('Length').value = length;
+        document.getElementById('Quantity').value = quantity;
     }
 }
-
 
 let csvData = [];
 let csvPath = '';
 let loadedProfile = '';
 let loadedProfileCode = '';
+let selectedProfileType = '';
+let selectedProfileSize = '';
+let profileTypeAutocompleteInstance = null;
+let profileSizeAutocompleteInstance = null;
+let profileDropdownInstance = null;
+let profileSizeDropdownInstance = null;
 function loadSubProfiles(btn) {
     return new Promise(resolve => {
-        if (typeof btn === "object") {
-            var profile = btn.innerHTML;
-            var instance = M.Dropdown.getInstance(document.getElementById('profileDropdownBtn'));
-            instance.close();
+        // Handle both string and object inputs
+        const profile = typeof btn === "object" ? btn.innerHTML : btn;
+        
+        // Update both autocomplete and any UI displays
+        const profileTypeElem = document.getElementById('profileTypeAutocomplete');
+        profileTypeElem.value = profile;
+        selectedProfileType = profile;
+        
+        // Update label to active state
+        const profileTypeLabel = profileTypeElem.nextElementSibling;
+        if (profileTypeLabel) {
+            profileTypeLabel.classList.add('active');
         }
-        else var profile = btn;
-
-        document.querySelector('#profileDropdownBtn p').innerHTML = profile; //Change profile button to show selected profile
+        
+        // Clear previous size selection
+        const profileSizeElem = document.getElementById('profileSizeAutocomplete');
+        profileSizeElem.value = '';
+        selectedProfileSize = '';
+        clearViewProfileData();
+        
+        // Reset if loading a different profile type
+        if (loadedProfileCode !== profile) {
+            loadedProfileCode = profile;
+            clearViewProfileData();
+        }
         
         const img = document.querySelector('#profileImage img');
-        //If a new profile type is selected it removes profile data content and resets profile button content
-        if (loadedProfileCode != profile) {
-            loadedProfileCode = profile;
-            document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
-            document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
-        }
+        
+        // Determine profile type and CSV path (your existing logic)
         if (['IPE', 'HE', 'M', 'W', 'UB', 'H-JS', 'H-KS', 'IPN', 'S', 'J', 'IB', 'HD', 'UC', 'HP', 'UBP'].includes(profile)) {
-            //If a new profile type is selected it removes profile data content
             if (loadedProfile != 'I') {
                 loadedProfile = 'I';
-                document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
+                clearViewProfileData();
             }
             csvPath = 'data/I.csv';
             img.src = 'Images/Profiles/I.png';
@@ -275,26 +253,79 @@ function loadSubProfiles(btn) {
             img.src = 'Images/Profiles/SHS.png';
         }
         else {
-            M.toast({html: 'Profile not supported!', classes: 'rounded toast-error', displayLength: 2000})
+            M.toast({html: 'Profile not supported!', classes: 'rounded toast-error', displayLength: 2000});
             img.src = 'Images/Profiles/no-profile.png';
-            document.getElementById('profileSizeDropdown').innerHTML = '<a class="deep-purple-text lighten-3">Please select a profile!</a>';
-            document.getElementById('profileData').innerHTML = 'please select a profile and a size!';
+            profileSizeElem.disabled = true;
+            
+            // Clear both autocomplete and dropdown
+            if (profileSizeAutocompleteInstance) {
+                profileSizeAutocompleteInstance.destroy();
+            }
+            const profileSizeDropdown = document.getElementById('profileSizeDropdown');
+            profileSizeDropdown.innerHTML = '<li><a class="deep-purple-text">Please select a profile!</a></li>';
+            
+            clearViewProfileData();
+            resolve();
             return;
         }
+        
+        // Fetch CSV data
         fetch(csvPath)
             .then(response => response.text())
             .then(text => {
                 csvData = parseCSV(text).filter(row => row.profileCode == profile);
-    
+                
+                // Enable size autocomplete
+                profileSizeElem.disabled = false;
+                
+                // Create autocomplete data for sizes
+                const sizeData = {};
+                csvData.forEach((obj, index) => {
+                    const displayText = getProfileID(obj);
+                    sizeData[displayText] = null;
+                    obj.localIndex = index; // Store the index for later use
+                });
+                
+                // Update autocomplete
+                if (profileSizeAutocompleteInstance) {
+                    profileSizeAutocompleteInstance.destroy();
+                }
+                
+                profileSizeAutocompleteInstance = M.Autocomplete.init(profileSizeElem, {
+                    data: sizeData,
+                    limit: 10,
+                    onAutocomplete: function(val) {
+                        selectedProfileSize = val;
+                        const profileData = findProfileByDisplayText(val);
+                        if (profileData) {
+                            displayProfile(profileData);
+                        }
+                    }
+                });
+                
+                // Update dropdown
                 const profileSizeDropdown = document.getElementById('profileSizeDropdown');
-                profileSizeDropdown.innerHTML = ""; //Clear profile size dropdown
+                profileSizeDropdown.innerHTML = ""; // Clear dropdown
+                
                 csvData.forEach((obj, index) => {
                     const item = document.createElement('li');
                     const profileID = getProfileID(obj);
-                    item.innerHTML = `<a class="deep-purple-text lighten-3" data-index="${index}" onclick="loadProfile(this)">${profileID}</a>`;
+                    item.innerHTML = `<a class="deep-purple-text lighten-3" onclick="selectProfileSizeFromDropdown('${profileID}', ${index})">${profileID}</a>`;
                     profileSizeDropdown.appendChild(item);
                 });
+                
+                // Update label to active state
+                const sizeLabel = profileSizeElem.nextElementSibling;
+                if (sizeLabel) {
+                    sizeLabel.classList.add('active');
+                }
+                
+                resolve();
+            })
+            .catch(error => {
+                console.error('Error loading CSV:', error);
+                M.toast({html: 'Error loading profile data!', classes: 'rounded toast-error', displayLength: 2000});
+                resolve();
             });
-        resolve();
-    })
+    });
 }

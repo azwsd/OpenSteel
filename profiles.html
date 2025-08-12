@@ -104,23 +104,41 @@
                                 Profile Selection
                             </h6>
                             
-                            <!-- Profile Type Dropdown -->
-                            <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" 
-                            id="profileDropdownBtn" data-target="profileDropdown">
-                                <p id="profileMain">Select Profile Type</p> 
-                                <i class="material-icons right">arrow_drop_down</i>
-                            </a>
-                            <ul id='profileDropdown' class='dropdown-content dropDownLimitHeight'></ul>
-                            
-                            <!-- Profile Size Dropdown -->
-                            <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" 
-                            id="profileSizeDropdownBtn" data-target="profileSizeDropdown">
-                                <p id="profileSize">Select Size</p> 
-                                <i class="material-icons right">arrow_drop_down</i>
-                            </a>
-                            <ul id='profileSizeDropdown' class='dropdown-content dropDownLimitHeight'>
-                                <li><a class="deep-purple-text">Please select a profile type first!</a></li>
-                            </ul>
+                            <!-- Profile Type with Autocomplete + Dropdown -->
+                            <div class="profile-input-container" style="margin-bottom: 1rem;">
+                                <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+                                    <div class="input-field" style="flex: 1; margin-bottom: 0;">
+                                        <i class="material-icons prefix">search</i>
+                                        <input type="text" id="profileTypeAutocomplete" class="autocomplete">
+                                        <label for="profileTypeAutocomplete">Search or Select Profile Type</label>
+                                    </div>
+                                    <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" 
+                                    id="profileDropdownBtn" data-target="profileDropdown" 
+                                    style="margin-bottom: 0.5rem;">
+                                        <i class="material-icons">arrow_drop_down</i>
+                                    </a>
+                                </div>
+                                <ul id='profileDropdown' class='dropdown-content dropDownLimitHeight'></ul>
+                            </div>
+
+                            <!-- Profile Size with Autocomplete + Dropdown -->
+                            <div class="profile-input-container" style="margin-bottom: 1rem;">
+                                <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+                                    <div class="input-field" style="flex: 1; margin-bottom: 0;">
+                                        <i class="material-icons prefix">straighten</i>
+                                        <input type="text" id="profileSizeAutocomplete" class="autocomplete" disabled>
+                                        <label for="profileSizeAutocomplete">Search or Select Size</label>
+                                    </div>
+                                    <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" 
+                                    id="profileSizeDropdownBtn" data-target="profileSizeDropdown" 
+                                    style="margin-bottom: 0.5rem;">
+                                        <i class="material-icons">arrow_drop_down</i>
+                                    </a>
+                                </div>
+                                <ul id='profileSizeDropdown' class='dropdown-content dropDownLimitHeight'>
+                                    <li><a class="deep-purple-text">Please select a profile type first!</a></li>
+                                </ul>
+                            </div>
                         </div>
                         
                         <!-- Profile Data Display -->

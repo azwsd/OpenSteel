@@ -381,19 +381,16 @@ function loadNestingPage(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-    //Fill profile codes into view
-    for (profile of profileCodes) {
-        const profileDropdown = document.getElementById('profileDropdown');
-        const item = document.createElement('li');
-        item.innerHTML = `<a class="deep-purple-text lighten-3" onclick="loadSubProfiles(this)">${profile}</a>`;
-        profileDropdown.appendChild(item);
-    }
+    // Initialize profile type autocomplete and dropdown
+    initProfileTypeControls();
+    
+    // Load saved files if they exist
     if (filePairs != {}) {
-        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true); //Load saved files in session
+        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true);
     }
     if (selectedFile != '') {
         selectedFile = sessionStorage.getItem('selectedFile');
-        selectFile(selectedFile); //Select saved selectedFile in session
+        selectFile(selectedFile);
     }
 });
 
@@ -424,14 +421,23 @@ function getProfileID(obj) {
     }
 }
 
-function loadProfile(btn) {
-    const index = btn.getAttribute("data-index");
-    var instance = M.Dropdown.getInstance(document.getElementById('profileSizeDropdownBtn'));
-    instance.close();
-    if (index !== null) {
-        const selectedProfile = csvData[index];
-        document.querySelector('#profileSizeDropdownBtn p').innerHTML = btn.innerHTML;
-        displayProfile(selectedProfile); //Display full profile data in view
+function loadProfile(displayText, profileData = null) {
+    if (!profileData) {
+        profileData = findProfileByDisplayText(displayText);
+    }
+    
+    if (profileData) {
+        const profileSizeElem = document.getElementById('profileSizeAutocomplete');
+        profileSizeElem.value = displayText;
+        selectedProfileSize = displayText;
+        
+        // Update label to active state
+        const sizeLabel = profileSizeElem.nextElementSibling;
+        if (sizeLabel) {
+            sizeLabel.classList.add('active');
+        }
+        
+        displayProfile(profileData);
     }
 }
 
@@ -660,5 +666,158 @@ function updateFileTracker() {
     const fileTrackers = document.querySelectorAll('.fileTracker');
     fileTrackers.forEach(tracker => {
         tracker.textContent = `File ${selectedFileIndex + 1}/${filesCount}`;
+    });
+}
+
+function initProfileTypeControls() {
+    // Wait for DOM to be fully ready
+    setTimeout(() => {
+        // Initialize autocomplete
+        const profileTypeData = {};
+        profileCodes.forEach(code => {
+            profileTypeData[code] = null;
+        });
+        
+        const profileTypeElem = document.getElementById('profileTypeAutocomplete');
+        
+        // Ensure clean state
+        profileTypeElem.disabled = false;
+        profileTypeElem.readOnly = false;
+        profileTypeElem.value = '';
+        profileTypeElem.classList.remove('disabled');
+        
+        // Remove any existing autocomplete instance
+        if (profileTypeAutocompleteInstance) {
+            profileTypeAutocompleteInstance.destroy();
+            profileTypeAutocompleteInstance = null;
+        }
+        
+        // Initialize autocomplete with proper options
+        profileTypeAutocompleteInstance = M.Autocomplete.init(profileTypeElem, {
+            data: profileTypeData,
+            limit: 10,
+            minLength: 1, // This is important!
+            onAutocomplete: function(val) {
+                selectedProfileType = val;
+                loadSubProfiles(val);
+            }
+        });
+        
+        console.log('Autocomplete initialized:', !!profileTypeAutocompleteInstance);
+        
+        // Add manual event listeners for debugging
+        profileTypeElem.addEventListener('input', function(e) {
+            console.log('Manual input event:', e.target.value);
+        });
+        
+        profileTypeElem.addEventListener('focus', function() {
+            // Ensure label is in active state when focused
+            const label = this.nextElementSibling;
+            if (label && label.tagName === 'LABEL') {
+                label.classList.add('active');
+            }
+        });
+        
+        profileTypeElem.addEventListener('blur', function() {
+            // Keep label active if there's value
+            const label = this.nextElementSibling;
+            if (label && label.tagName === 'LABEL' && !this.value) {
+                label.classList.remove('active');
+            }
+        });
+        
+        // Initialize dropdown
+        const profileDropdown = document.getElementById('profileDropdown');
+        profileDropdown.innerHTML = ''; // Clear existing content
+        
+        profileCodes.forEach(code => {
+            const item = document.createElement('li');
+            item.innerHTML = `<a class="deep-purple-text lighten-3" onclick="selectProfileFromDropdown('${code}')">${code}</a>`;
+            profileDropdown.appendChild(item);
+        });
+        
+        // Remove existing dropdown instance
+        if (profileDropdownInstance) {
+            profileDropdownInstance.destroy();
+            profileDropdownInstance = null;
+        }
+        
+        profileDropdownInstance = M.Dropdown.init(document.getElementById('profileDropdownBtn'), {
+            constrainWidth: false,
+            coverTrigger: false,
+        });
+        
+        // Initialize size dropdown (initially disabled)
+        const profileSizeElem = document.getElementById('profileSizeAutocomplete');
+        profileSizeElem.disabled = true;
+        
+        if (profileSizeDropdownInstance) {
+            profileSizeDropdownInstance.destroy();
+            profileSizeDropdownInstance = null;
+        }
+        
+        profileSizeDropdownInstance = M.Dropdown.init(document.getElementById('profileSizeDropdownBtn'), {
+            constrainWidth: false,
+            coverTrigger: false
+        });
+        
+        // Force Materialize to update all text fields
+        M.updateTextFields();
+        
+    }, 100); // Small delay to ensure everything is ready
+}
+
+function selectProfileFromDropdown(profileCode) {
+    console.log('Dropdown selection:', profileCode);
+    
+    const profileTypeElem = document.getElementById('profileTypeAutocomplete');
+    profileTypeElem.value = profileCode;
+    selectedProfileType = profileCode;
+    
+    // Update label to active state
+    const profileTypeLabel = profileTypeElem.nextElementSibling;
+    if (profileTypeLabel && profileTypeLabel.tagName === 'LABEL') {
+        profileTypeLabel.classList.add('active');
+    }
+    
+    // Close dropdown
+    if (profileDropdownInstance) {
+        profileDropdownInstance.close();
+    }
+    
+    // Trigger change event to ensure everything updates
+    profileTypeElem.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    // Load sub profiles
+    loadSubProfiles(profileCode);
+    
+    // Force Materialize update
+    M.updateTextFields();
+}
+
+function selectProfileSizeFromDropdown(displayText, index) {
+    const profileSizeElem = document.getElementById('profileSizeAutocomplete');
+    profileSizeElem.value = displayText;
+    selectedProfileSize = displayText;
+    
+    // Update label to active state
+    const sizeLabel = profileSizeElem.nextElementSibling;
+    if (sizeLabel) {
+        sizeLabel.classList.add('active');
+    }
+    
+    // Close dropdown
+    profileSizeDropdownInstance.close();
+    
+    // Load profile data
+    const profileData = csvData[index];
+    if (profileData) {
+        displayProfile(profileData);
+    }
+}
+
+function findProfileByDisplayText(displayText) {
+    return csvData.find(profile => {
+        return getProfileID(profile) === displayText;
     });
 }

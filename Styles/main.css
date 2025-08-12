@@ -578,6 +578,21 @@ body::-webkit-scrollbar-thumb:hover,
 }
 
 /* Profiles page styling */
+.profile-input-container {
+    margin-bottom: 1.5rem;
+}
+.profile-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+.profile-input-field {
+    flex: 1; /* Takes most of the available width */
+    min-width: 0; /* Prevents flex item from overflowing */
+}
+.profile-input-field .input-field {
+    margin-bottom: 0;
+}
 #profileDiv {
     display: flex;
     justify-content: center;
@@ -615,21 +630,24 @@ body::-webkit-scrollbar-thumb:hover,
 /* Dropdown buttons styling */
 #profileDropdownBtn,
 #profileSizeDropdownBtn {
-    margin: 0.5rem 0 !important;
-    width: 100% !important;
+    margin: 0 !important;
+    margin-bottom: 0.5rem !important;
+    width: 48px !important; /* Fixed small width */
+    height: 48px !important; /* Square button */
     display: flex !important;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.8rem 1.2rem !important;
+    justify-content: center;
+    padding: 0 !important;
     border-radius: 8px !important;
     font-weight: 500;
-    letter-spacing: 0.5px;
     background: linear-gradient(45deg, #311b92, #512da8) !important;
     box-shadow: 0 3px 15px rgba(49, 27, 146, 0.3) !important;
     transition: all 0.3s ease !important;
-    min-height: 44px;
+    min-height: 48px;
+    min-width: 48px;
     box-sizing: border-box !important;
     position: relative;
+    flex-shrink: 0; /* Prevents button from shrinking */
 }
 #profileDropdownBtn:hover,
 #profileSizeDropdownBtn:hover {
@@ -637,18 +655,53 @@ body::-webkit-scrollbar-thumb:hover,
     transform: translateY(-1px);
     box-shadow: 0 5px 20px rgba(49, 27, 146, 0.4) !important;
 }
-#profileDropdownBtn p,
-#profileSizeDropdownBtn p {
-    margin: 0 !important;
-    font-size: 0.9rem;
-    text-transform: capitalize;
-    flex: 1;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+#profileDropdownBtn .material-icons,
+#profileSizeDropdownBtn .material-icons {
+    font-size: 1.5rem;
+    margin: 0;
+    color: white;
+}
+.profile-input-field .input-field input[type="text"] {
+    font-size: 1rem;
     padding-right: 0.5rem;
-    max-width: calc(100% - 30px);
+    border-bottom: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+.profile-input-field .input-field .prefix {
+    font-size: 1.2rem;
+    color: #673ab7;
+}
+.profile-input-field .input-field label {
+    color: #9e9e9e;
+    font-size: 0.9rem;
+}
+.profile-input-field .input-field label.active {
+    color: #673ab7;
+    font-size: 0.8rem;
+}
+.profile-input-field .input-field input[type="text"]:focus {
+    border-bottom: 2px solid #673ab7 !important;
+    box-shadow: 0 1px 0 0 #673ab7 !important;
+}
+.profile-input-field .input-field input[type="text"]:focus + label {
+    color: #673ab7 !important;
+}
+.profile-input-field .input-field input[type="text"]:disabled {
+    color: #9e9e9e;
+    border-bottom: 1px dotted #9e9e9e;
+    background: transparent;
+}
+.profile-input-field .input-field input[type="text"]:disabled + label {
+    color: #9e9e9e;
+}
+.autocomplete-content {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(103, 58, 183, 0.1) !important;
+}
+.autocomplete-content li > span {
+    color: #673ab7 !important;
+    font-weight: 500 !important;
 }
 /* Profile Data Panel */
 #profileData {
@@ -828,6 +881,36 @@ body::-webkit-scrollbar-thumb:hover,
     #profileSizeDropdownBtn .material-icons {
         font-size: 1rem;
     }
+    .profile-controls {
+        gap: 0.5rem;
+    }
+    #profileDropdownBtn,
+    #profileSizeDropdownBtn {
+        width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        min-width: 40px !important;
+        margin-bottom: 0.25rem !important;
+    }
+    #profileDropdownBtn .material-icons,
+    #profileSizeDropdownBtn .material-icons {
+        font-size: 1.2rem !important;
+    }
+    .profile-input-field .input-field input[type="text"] {
+        font-size: 0.9rem;
+    }
+    .profile-input-field .input-field .prefix {
+        font-size: 1rem;
+    }
+    .profile-input-field .input-field label {
+        font-size: 0.8rem;
+    }
+    .profile-input-field .input-field label.active {
+        font-size: 0.7rem;
+    }
+    .profile-input-container {
+        margin-bottom: 1rem;
+    }
 }
 @media (max-width: 480px) {
     #profileDiv {
@@ -857,6 +940,20 @@ body::-webkit-scrollbar-thumb:hover,
     #profileSizeDropdownBtn .material-icons {
         font-size: 0.9rem;
         min-width: 20px;
+    }
+    .profile-controls {
+        gap: 0.25rem;
+    }
+    #profileDropdownBtn,
+    #profileSizeDropdownBtn {
+        width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        min-width: 36px !important;
+    }
+    #profileDropdownBtn .material-icons,
+    #profileSizeDropdownBtn .material-icons {
+        font-size: 1rem !important;
     }
 }
 @media (max-height: 600px) {
