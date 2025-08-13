@@ -1893,12 +1893,13 @@ function renderCuttingNests(nests) {
     // Create a standard HTML checkbox (not using Materialize's styling)
     const checkboxInput = document.createElement('input');
     checkboxInput.type = 'checkbox';
-    checkboxInput.id = 'export-option';
+    checkboxInput.id = 'remove-nesting-color';
 
     // Create a label for the checkbox
     const checkboxLabel = document.createElement('label');
-    checkboxLabel.htmlFor = 'export-option';
+    checkboxLabel.htmlFor = 'remove-nesting-color';
     checkboxLabel.textContent = 'Remove nesting color';
+    checkboxLabel.style.color = 'black';
 
     // Assemble the checkbox and label
     checkboxContainer.appendChild(checkboxInput);
@@ -2034,7 +2035,7 @@ function generatePDF(uniqueNests) {
         // Draw nest visualization
         const barHeight = 10;
         const barY = yPosition;
-        const isBlackAndWhite = document.getElementById('export-option').checked;
+        const isBlackAndWhite = document.getElementById('remove-nesting-color').checked;
 
         // Draw stock bar
         doc.setDrawColor(200, 200, 200);
