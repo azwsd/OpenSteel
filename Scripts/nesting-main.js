@@ -875,15 +875,44 @@ function optimizeCuttingNests() {
         return;
     }
 
-    const gripStart = parseFloat(document.getElementById('grip-start').value);
-    const gripEnd = parseFloat(document.getElementById('grip-end').value);
-    const sawWidth = parseFloat(document.getElementById('saw-width').value);
+    const gripStart = (() => {
+    const val = parseFloat(document.getElementById('grip-start').value);
+        return isNaN(val) ? 0 : val;
+    })();
+
+    const gripEnd = (() => {
+        const val = parseFloat(document.getElementById('grip-end').value);
+        return isNaN(val) ? 0 : val;
+    })();
+
+    const sawWidth = (() => {
+        const val = parseFloat(document.getElementById('saw-width').value);
+        return isNaN(val) ? 0 : val;
+    })();
+
     const preferShorterStocks = document.getElementById('shorter-length-preference').checked;
-    const maxUniqueLabels = parseInt(document.getElementById('max-unique-labels').value);
-    const minOffcut = parseInt(document.getElementById('min-offcut').value);
-    nestCounter = Number(document.getElementById('first-nest-number').value);
+
+    const maxUniqueLabels = (() => {
+        const val = parseInt(document.getElementById('max-unique-labels').value);
+        return isNaN(val) ? 999 : val;
+    })();
+
+    const minOffcut = (() => {
+        const val = parseInt(document.getElementById('min-offcut').value);
+        return isNaN(val) ? 0 : val;
+    })();
+
+    nestCounter = (() => {
+        const val = Number(document.getElementById('first-nest-number').value);
+        return isNaN(val) ? 1 : val;
+    })();
+
     const groupUniqueNests = document.getElementById('group-unique-nests').checked;
-    const unlimitedStockLength = parseFloat(document.getElementById('unlimited-stock-length').value);
+
+    const unlimitedStockLength = (() => {
+        const val = parseFloat(document.getElementById('unlimited-stock-length').value);
+        return isNaN(val) ? 12000 : val;
+    })();
 
     localStorage.setItem("gripStart", gripStart);
     localStorage.setItem("gripEnd", gripEnd);
