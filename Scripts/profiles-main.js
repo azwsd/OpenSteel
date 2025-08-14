@@ -703,13 +703,6 @@ function initProfileTypeControls() {
             }
         });
         
-        console.log('Autocomplete initialized:', !!profileTypeAutocompleteInstance);
-        
-        // Add manual event listeners for debugging
-        profileTypeElem.addEventListener('input', function(e) {
-            console.log('Manual input event:', e.target.value);
-        });
-        
         profileTypeElem.addEventListener('focus', function() {
             // Ensure label is in active state when focused
             const label = this.nextElementSibling;
@@ -768,8 +761,6 @@ function initProfileTypeControls() {
 }
 
 function selectProfileFromDropdown(profileCode) {
-    console.log('Dropdown selection:', profileCode);
-    
     const profileTypeElem = document.getElementById('profileTypeAutocomplete');
     profileTypeElem.value = profileCode;
     selectedProfileType = profileCode;

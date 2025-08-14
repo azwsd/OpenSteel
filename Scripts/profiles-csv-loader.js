@@ -323,7 +323,6 @@ function loadSubProfiles(btn) {
                 resolve();
             })
             .catch(error => {
-                console.error('Error loading CSV:', error);
                 M.toast({html: 'Error loading profile data!', classes: 'rounded toast-error', displayLength: 2000});
                 resolve();
             });
