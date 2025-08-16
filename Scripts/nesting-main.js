@@ -1041,6 +1041,7 @@ function optimizeCuttingNests() {
     renderCuttingNests(cuttingNests);
     cuttingNestsDiv.classList.remove('hide');
     downloadOffcutsBtn.classList.remove('hide');
+    M.Tabs.init(document.querySelectorAll('#nesting-tabs')); // Initialize tabs
 }
 
 // Modified version of your binPackingOptimization that handles unlimited stock
