@@ -66,10 +66,12 @@ function selectFile(file){
     });
     selectedFile = file;
     ncParseHeaderData(filePairs.get(selectedFile));
-    document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
-    document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
+    document.getElementById('profileTypeAutocomplete').value = ''; //Reset profile button
+    document.getElementById('profileSizeAutocomplete').value = ''; //Reset profile size button
+    M.updateTextFields(); // Update text fields
     findProfile();
     ncViewsImage(); //Shows the views image
+    document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
     updateFileTracker();
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
@@ -158,8 +160,8 @@ function deleteFile(btn, event){
         document.getElementById('Quantity').value = ''; //Clears quantity input
         document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
-        document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
-        document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
+        document.getElementById('profileTypeAutocomplete').value = ''; //Reset profile button
+        document.getElementById('profileSizeAutocomplete').value = ''; //Reset profile size button
         document.getElementById('weightResult').value = ''; //Reset weight result
         selectedFile = '';
     }
@@ -187,8 +189,8 @@ function clearAllFiles(){
     document.getElementById('Quantity').value = ''; //Clears quantity input
     document.querySelector('#profileImage img').src = 'Images/Profiles/no-profile.png'; //Clears profile image
     document.getElementById('profileViewsImg').src = ''; //clears views img
-    document.querySelector('#profileDropdownBtn p').innerHTML = 'PROFILE'; //Reset profile button
-    document.querySelector('#profileSizeDropdownBtn p').innerHTML = 'SIZE'; //Reset profile size button
+    document.getElementById('profileTypeAutocomplete').value = ''; //Reset profile button
+    document.getElementById('profileSizeAutocomplete').value = ''; //Reset profile size button
     document.getElementById('weightResult').value = ''; //Reset weight result
     updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
@@ -436,6 +438,9 @@ function loadProfile(displayText, profileData = null) {
         if (sizeLabel) {
             sizeLabel.classList.add('active');
         }
+
+        // Update text fields
+        M.updateTextFields();
         
         displayProfile(profileData);
     }
