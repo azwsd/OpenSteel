@@ -54,7 +54,7 @@ function ncLoadHeaderData(fileData){
                 piecePhase = line;
                 break; 
             case 3:
-            pieceLabel = line;
+                pieceLabel = line;
                 break;
             case 4:
                 pieceSteelQuality = line;
@@ -63,7 +63,7 @@ function ncLoadHeaderData(fileData){
                 pieceQuantity = line;
                 break;
             case 6:
-                pieceProfile = line;
+                pieceProfile = line.replace(/(\d)\*(\d)/g, '$1X$2');
                 break;
             case 7:
                 pieceProfileCode = line;
@@ -291,8 +291,13 @@ function createPCSBlock(requiredQuantity) {
     }
 }
 
-function createFNC(fileData, requiredQuantity, createHeader) {
+function createFNC(fileData, requiredQuantity, createHeader, createGeneric, genericData) {
     ncLoadHeaderData(fileData);
+
+    if (createGeneric) {
+        // Create a generic FNC block
+        return createGenericFNCBlock(requiredQuantity, genericData);
+    }
 
     let holeData = '';
     // If removeFNCHoles is false, create hole block
@@ -307,6 +312,21 @@ function createFNC(fileData, requiredQuantity, createHeader) {
     }
     
     return `${headerContent}${createPCSBlock(requiredQuantity)}${holeData}\n${createMarkBlock(fileData)}`;
+}
+
+function createGenericFNCBlock(requiredQuantity, genericData) {
+    // If constraint material is set, use it instead of pieceSteelQuality
+    const material = constraintMaterial == '' ? pieceSteelQuality : constraintMaterial;
+
+    switch (pieceProfileCode) {
+        case 'B':
+            return `[[PCS]]\n[HEAD] C:Order D:Drawing N:Phase POS:${genericData.label}\nM:${material} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${genericData.length} SA${height} TA${webThickness}\nQI${requiredQuantity}\n`;
+        case 'RO':
+        case 'RU':
+            return `[[PCS]]\n[HEAD] C:Order D:Drawing N:Phase POS:${genericData.label}\nM:${material} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${genericData.length} SA${height} TA${pieceProfileCode == 'RO' ? height : height/2} RAI0.00 RAF0.00 RBI0.00 RBF0.00\nQI${requiredQuantity}\n`;
+        default:
+            return `[[PCS]]\n[HEAD] C:Order D:Drawing N:Phase POS:${genericData.label}\nM:${material} CP:${profileCodeMapping[pieceProfileCode]} P:${pieceProfile}\nLP${genericData.length} RAI0.00 RAF0.00 RBI0.00 RBF0.00\nQI${requiredQuantity}\n`;
+    }
 }
 
 let FNCDrillType = localStorage.getItem('FNCDrillType') || 'Punch'; // Default to 'Punch' if not set
@@ -351,7 +371,7 @@ function saveFNCSettings() {
     localStorage.setItem('constraintMaterial', constraintMaterial);
 }
 
-function ncToFnc(requiredQuantity = 0, createHeader = true) {
+function ncToFnc(requiredQuantity = 0, createHeader = true, createGeneric = false, genericData = {}) {
     saveFNCSettings(); // Save settings before exporting
 
     // Check if a file is selected
@@ -370,7 +390,7 @@ function ncToFnc(requiredQuantity = 0, createHeader = true) {
     localStorage.setItem('FNCDrillType', FNCDrillType); // Save the selected drill type to local storage
 
     // Create FNC content
-    const fncContent = createFNC(fileData, requiredQuantity, createHeader);
+    const fncContent = createFNC(fileData, requiredQuantity, createHeader, createGeneric, genericData);
 
     // Create a Blob with the output string
     const blob = new Blob([fncContent], { type: 'text/plain' });

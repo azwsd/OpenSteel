@@ -374,7 +374,7 @@ function ncParseHeaderData(fileData){
                 quantity = line;
                 break;
             case 6:
-                profile = line;
+                profile = line.replace(/(\d)\*(\d)/g, '$1X$2');
                 break;
             case 7:
                 profileCode = line;
@@ -2489,8 +2489,8 @@ function exportFncNest() {
         return;
     }
 
-    if (checkForManualInput() == true) {
-        M.toast({html: 'Some Files are from Manual Input!', classes: 'rounded toast-error', displayLength: 2000});
+    if (checkForMissingProfile() == true) {
+        M.toast({html: 'Some Piece Profiles are Missing!', classes: 'rounded toast-error', displayLength: 2000});
         return;
     }
 
@@ -2507,12 +2507,25 @@ function exportFncNest() {
     const labels = getUniqueNestLabels();
 
     // Create pieces blocks for all nested parts
+    createPieceItemsFromFiles();
     let piecesBlocks = '';
     Object.entries(labels).forEach(([label, data]) => {
+        if(pieceItemsFromFiles[label] === undefined) return; // Skip if label not found in pieceItemsFromFiles
         piecesBlocks += createFNC(pieceItemsFromFiles[label][1], data.count, data.isUniqueProfile) + '\n';
     });
 
-    let nestsBlocks = createNestBlocks(nestCounter);
+    const missingPieces = getMissingPieces();
+    if (missingPieces.length > 0) {
+        missingPieces.forEach(piece => {
+            genericData = {
+                label: piece.label,
+                length: piece.length
+            }
+            piecesBlocks += createFNC(piece.data, piece.count, false, true, genericData) + '\n';
+        });
+    }
+
+    let nestsBlocks = createNestBlocks(nestCounter, missingPieces);
 
     // Create download link with nesting data
     let link = document.createElement('a');
@@ -2524,17 +2537,65 @@ function exportFncNest() {
     document.body.removeChild(link);
 }
 
+function getMissingPieces() {
+    // Create a set of labels from filePairs for quick lookup
+    const labelsFromFiles = new Set();
+    for (const [fileName, fileData] of filePairs) {
+        ncParseHeaderData(fileData);
+        labelsFromFiles.add(label);
+    }
+    
+    // Find pieces that are in pieceItems but not in filePairs
+    const missingPieces = [];
+    for (const pieceItem of pieceItems) {
+        if (!labelsFromFiles.has(pieceItem.label)) {
+            missingPieces.push({
+                label: pieceItem.label,
+                profileCode: profilesFromFiles.get(pieceItem.profile).profileCode,
+                profile: pieceItem.profile,
+                length: pieceItem.length,
+                count: pieceItem.amount,
+                data: profilesFromFiles.get(pieceItem.profile).fileData
+            });
+        }
+    }
+    
+    return missingPieces;
+}
+
 let pieceItemsFromFiles = {};
-function checkForManualInput() {
-    // Create a dictionary from DSTV file paris with peice label as key and file name as value
+function createPieceItemsFromFiles() {
+    // Create a dictionary from DSTV file pairs with piece label as key and file data as value
     pieceItemsFromFiles = {};
     for (const [fileName, fileData] of filePairs) {
         ncParseHeaderData(fileData);
         pieceItemsFromFiles[label] = [fileName, fileData, order, drawing, phase, label, steelQuality, profileCode, profile];
     }
-    // Check if a peice item is not in file pairs
-    for (const pieceItem of pieceItems) if (typeof pieceItemsFromFiles[pieceItem.label] === "undefined") return true;
-    // Return false if all peice items are in file pairs (no user manual input)
+}
+
+let profilesFromFiles = new Map(); 
+function checkForMissingProfile() {
+    // Extract all profiles from file pairs with fileData attached
+    profilesFromFiles.clear();
+    
+    for (const [fileName, fileData] of filePairs) {
+        ncParseHeaderData(fileData);
+        
+        // Store profile as key with fileData and profileCode as value
+        profilesFromFiles.set(profile, {
+            fileData: fileData,
+            profileCode: profileCode
+        });
+    }
+    
+    // Check if any piece item's profile is not in the extracted profiles
+    for (const pieceItem of pieceItems) {
+        if (!profilesFromFiles.has(pieceItem.profile)) {
+            return true; // Profile missing
+        }
+    }
+    
+    // Return false if all piece item profiles are found in file pairs
     return false;
 }
 
@@ -2568,7 +2629,7 @@ function getUniqueNestLabels() {
     return Object.fromEntries(labelCounts);
 }
 
-function createNestBlocks(nestCounter) {
+function createNestBlocks(nestCounter, missingPieces) {
     let result = '';
     const uniqueNests = getUniqueNests(cuttingNests);
     for (const uniqueNest of uniqueNests) {
@@ -2576,9 +2637,19 @@ function createNestBlocks(nestCounter) {
         uniqueNest.nest.pieceAssignments.forEach((piece, index) => {
             // If constraint material is set, use it instead of pieceSteelQuality
             const material = constraintMaterial == '' ? pieceItemsFromFiles[piece.label][6] : constraintMaterial;
-            
-            if (index === 0) nestData += `M:${material} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${uniqueNest.nest.stockLength} BI${uniqueNest.count} SP${uniqueNest.nest.gripStart} SL${uniqueNest.nest.sawWidth} SC${uniqueNest.nest.gripEnd}\n`;
-            nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
+            // Convert the missing pieces array to a Map for lookup using label
+            const missingPiecesByLabel = new Map(
+                missingPieces.map(piece => [piece.label, piece])
+            );
+            if(pieceItemsFromFiles[piece.label] === undefined) {
+                profileData = missingPiecesByLabel.get(piece.label);
+                if (index === 0) nestData += `M:${material} CP:${profileData.profileCode} P:${profileData.profile}\nLB${uniqueNest.nest.stockLength} BI${uniqueNest.count} SP${uniqueNest.nest.gripStart} SL${uniqueNest.nest.sawWidth} SC${uniqueNest.nest.gripEnd}\n`;
+                nestData += `[PCS] C:Order D:Drawing N:Phase POS:${profileData.label} QT1\n`;
+            }
+            else {
+                if (index === 0) nestData += `M:${material} CP:${pieceItemsFromFiles[piece.label][7]} P:${pieceItemsFromFiles[piece.label][8]}\nLB${uniqueNest.nest.stockLength} BI${uniqueNest.count} SP${uniqueNest.nest.gripStart} SL${uniqueNest.nest.sawWidth} SC${uniqueNest.nest.gripEnd}\n`;
+                nestData += `[PCS] C:${pieceItemsFromFiles[piece.label][2]} D:${pieceItemsFromFiles[piece.label][3]} N:${pieceItemsFromFiles[piece.label][4]} POS:${pieceItemsFromFiles[piece.label][5]} QT1\n`;
+            }
         });
         nestCounter++;
         result += nestData + '\n';
