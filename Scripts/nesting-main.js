@@ -2484,6 +2484,8 @@ function downloadPiecesCSV() {
 }
 
 function exportFncNest() {
+    saveFNCSettings(); // Save settings before exporting
+    
     // If no nesting is present return with error
     if (cuttingNests.length == 0) {
         M.toast({html: 'No Nesting to Export!', classes: 'rounded toast-error', displayLength: 2000});
