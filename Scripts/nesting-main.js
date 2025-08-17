@@ -2550,21 +2550,29 @@ function getMissingPieces() {
     }
     
     // Find pieces that are in pieceItems but not in filePairs
-    const missingPieces = [];
+    const missingPiecesMap = new Map();
+    
     for (const pieceItem of pieceItems) {
         if (!labelsFromFiles.has(pieceItem.label)) {
-            missingPieces.push({
-                label: pieceItem.label,
-                profileCode: profilesFromFiles.get(pieceItem.profile).profileCode,
-                profile: pieceItem.profile,
-                length: pieceItem.length,
-                count: pieceItem.amount,
-                data: profilesFromFiles.get(pieceItem.profile).fileData
-            });
+            if (missingPiecesMap.has(pieceItem.label)) {
+                // If piece already exists, add to the count
+                missingPiecesMap.get(pieceItem.label).count += pieceItem.amount;
+            } else {
+                // If piece doesn't exist, add it to the map
+                missingPiecesMap.set(pieceItem.label, {
+                    label: pieceItem.label,
+                    profileCode: profilesFromFiles.get(pieceItem.profile).profileCode,
+                    profile: pieceItem.profile,
+                    length: pieceItem.length,
+                    count: pieceItem.amount,
+                    data: profilesFromFiles.get(pieceItem.profile).fileData
+                });
+            }
         }
     }
     
-    return missingPieces;
+    // Convert map values to array
+    return Array.from(missingPiecesMap.values());
 }
 
 let pieceItemsFromFiles = {};
