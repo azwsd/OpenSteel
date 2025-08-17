@@ -2506,11 +2506,12 @@ function exportFncNest() {
     FNCDrillType = selectElement.value; // Get FNC drill type export value
     localStorage.setItem('FNCDrillType', FNCDrillType); // Save the selected drill type to local storage
 
+    // Create pieces blocks for all nested parts
+    createPieceItemsFromFiles();
+
     // Get unqiue labels from nests
     const labels = getUniqueNestLabels();
 
-    // Create pieces blocks for all nested parts
-    createPieceItemsFromFiles();
     let piecesBlocks = '';
     Object.entries(labels).forEach(([label, data]) => {
         if(pieceItemsFromFiles[label] === undefined) return; // Skip if label not found in pieceItemsFromFiles
@@ -2612,7 +2613,9 @@ function getUniqueNestLabels() {
         nest.pieceAssignments.forEach(piece => {
             const key = piece.label;
             const profile = piece.piece.originalPiece.profile;
-            const isUniqueProfile = !seenProfiles.has(profile);
+            let isUniqueProfile = true;
+            if (pieceItemsFromFiles[key] !== undefined) isUniqueProfile = !seenProfiles.has(profile);
+            else isUniqueProfile = false;
             
             if (!labelCounts.has(key)) {
                 labelCounts.set(key, {
@@ -2624,8 +2627,8 @@ function getUniqueNestLabels() {
             }
             labelCounts.get(key).count++;
             
-            // Mark this profile as seen
-            seenProfiles.add(profile);
+            // Mark this profile as seen only if it's in loaded files
+            if (pieceItemsFromFiles[key] !== undefined) seenProfiles.add(profile);
         });
     });
     
