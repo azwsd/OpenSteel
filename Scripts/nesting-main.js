@@ -495,7 +495,7 @@ function setInputValue(inputId, value) {
 
 // Nesting functions
 function addStock() {
-    const profile = document.getElementById('stock-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
+    const profile = document.getElementById('stock-profile').value.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
     const length = parseFloat(document.getElementById('stock-length').value);
     const amount = parseInt(document.getElementById('stock-amount').value);
 
@@ -515,7 +515,7 @@ function addStock() {
 }
 
 function addPiece() {
-    const profile = document.getElementById('piece-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
+    const profile = document.getElementById('piece-profile').value.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
     const length = parseFloat(document.getElementById('piece-length').value);
     const amount = parseInt(document.getElementById('piece-amount').value);
     const label = document.getElementById('piece-label').value == '' ? length : document.getElementById('piece-label').value;
@@ -579,7 +579,7 @@ function editStock(index) {
 }
 
 function updateStock() {
-    const profile = document.getElementById('stock-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
+    const profile = document.getElementById('stock-profile').value.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
     const length = parseFloat(document.getElementById('stock-length').value);
     const amount = parseInt(document.getElementById('stock-amount').value);
     const editIndex = parseInt(document.getElementById('add-stock').dataset.editIndex);
@@ -685,7 +685,7 @@ function editPiece(index) {
 }
 
 function updatePiece() {
-    const profile = document.getElementById('piece-profile').value.replace(/(\d)\*(\d)/g, '$1X$2');
+    const profile = document.getElementById('piece-profile').value.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
     const length = parseFloat(document.getElementById('piece-length').value);
     const amount = parseInt(document.getElementById('piece-amount').value);
     const label = document.getElementById('piece-label').value || length.toString();
@@ -1576,7 +1576,7 @@ function renderCuttingNests(nests) {
     
     // Create tabs for each profile
     Object.keys(nestsByProfile).forEach(profile => {
-        const profileTabId = `profile-${profile.replace(/\s+/g, '-').toLowerCase()}`;
+        const profileTabId = `profile-${profile.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-').toLowerCase()}`;
         const profileTabLi = createElem('li', 'tab');
         const profileTabLink = createElem('a', 'deep-purple-text');
         profileTabLink.href = `#${profileTabId}`;
@@ -1713,7 +1713,7 @@ function renderCuttingNests(nests) {
     // Create profile-specific tabs
     let nestCounter = firstNestNumber;
     Object.entries(nestsByProfile).forEach(([profile, profileUniqueNests]) => {
-        const profileTabId = `profile-${profile.replace(/\s+/g, '-').toLowerCase()}`;
+        const profileTabId = `profile-${profile.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-').toLowerCase()}`;
         const profileTabContent = createElem('div', 'tab-content');
         profileTabContent.id = profileTabId;
         
@@ -2348,7 +2348,7 @@ function loadStockData(fileData) {
         const line = lines[i].trim();
         const columns = line.split(',').map(item => item.trim());
         if (columns.length < 3) continue; // Skip invalid lines
-        const profile = columns[0].trim().replace(/(\d)\*(\d)/g, '$1X$2');
+        const profile = columns[0].trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
         const length = parseFloat(columns[1].trim());
         const amount = parseFloat(columns[2].trim());
         if (isNaN(length) || isNaN(amount)) continue; // Skip invalid lines
@@ -2361,10 +2361,10 @@ function loadStockData(fileData) {
 function loadPiecesData(fileData) {
     const lines = fileData.trim().split('\n');
     for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim().replace(/(\d)\*(\d)/g, '$1X$2');
+        const line = lines[i].trim();
         const columns = line.split(',').map(item => item.trim());
         if (columns.length < 3) continue; // Skip invalid lines
-        const profile = columns[0].trim();
+        const profile = columns[0].trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
         const length = parseFloat(columns[1].trim());
         const amount = parseFloat(columns[2].trim());
         const label = columns[3].trim() == '' ? length : columns[3].trim(); //Set label to the value of the input if it exists, otherwise use length
