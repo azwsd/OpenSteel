@@ -971,8 +971,8 @@ function optimizeCuttingNests() {
                         length: unlimitedStockLength,
                         amount: 'unlimited'
                     },
-                    usableLength: unlimitedStockLength - gripStart - gripEnd - sawWidth,
-                    remainingLength: unlimitedStockLength - gripStart - gripEnd - sawWidth,
+                    usableLength: unlimitedStockLength - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
+                    remainingLength: unlimitedStockLength - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
                     pieceAssignments: [],
                     offcut: 0,
                     waste: 0,
@@ -992,8 +992,8 @@ function optimizeCuttingNests() {
                     id: `stock-${stock.profile}-${i}`,
                     length: stock.length,
                     originalStock: stock,
-                    usableLength: stock.length - gripStart - gripEnd - sawWidth,
-                    remainingLength: stock.length - gripStart - gripEnd - sawWidth,
+                    usableLength: stock.length - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
+                    remainingLength: stock.length - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
                     pieceAssignments: [],
                     offcut: 0,
                     waste: 0,
@@ -1067,8 +1067,8 @@ function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gri
                         length: unlimitedStockLength,
                         amount: 'unlimited'
                     },
-                    usableLength: unlimitedStockLength - gripStart - gripEnd - sawWidth,
-                    remainingLength: unlimitedStockLength - gripStart - gripEnd - sawWidth,
+                    usableLength: unlimitedStockLength - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
+                    remainingLength: unlimitedStockLength - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
                     pieceAssignments: [],
                     offcut: 0,
                     waste: 0,
@@ -1359,7 +1359,7 @@ function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth)
         if (stock.used && stock.pieceAssignments.length > 0) {
             // Calculate total used length
             let usedLength = 0;
-            let sawCuts = 1;
+            let sawCuts = gripStart === 0 ? 0 : 1;
             
             stock.pieceAssignments.forEach((assignment, index) => {
                 usedLength += assignment.length;
@@ -1515,7 +1515,7 @@ function renderCuttingNests(nests) {
             const pieceWidth = assign.piece.length / total * 100;
             
             // Add saw cut
-            if (i == 0 && pattern.sawWidth > 0) {
+            if (i == 0 && pattern.sawWidth > 0 && pattern.gripStart != 0) {
                 if (pattern.pieceAssignments[i].withoutSawWidth) return;
                 const sawCut = createElem('div', 'saw-cut-segment');
                 sawCut.style.left = `${(cursor / total * 100)}%`;
