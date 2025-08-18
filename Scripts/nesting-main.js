@@ -2650,7 +2650,8 @@ function createNestBlocks(nestCounter, missingPieces) {
         let nestData = `[[BAR]]\n[HEAD]\nN:${nestCounter} `;
         uniqueNest.nest.pieceAssignments.forEach((piece, index) => {
             // If constraint material is set, use it instead of pieceSteelQuality
-            const material = constraintMaterial == '' ? pieceItemsFromFiles[piece.label][6] : constraintMaterial;
+            let material = constraintMaterial == '' ? pieceItemsFromFiles[piece.label][6] : constraintMaterial;
+            if (constraintMaterial == undefined) constraintMaterial = 'S235JR'; // Default to S235JR if not set
             // Convert the missing pieces array to a Map for lookup using label
             const missingPiecesByLabel = new Map(
                 missingPieces.map(piece => [piece.label, piece])
