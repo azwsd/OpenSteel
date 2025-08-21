@@ -591,3 +591,287 @@ function updateFileTracker() {
         tracker.textContent = `File ${selectedFileIndex + 1}/${filesCount}`;
     });
 }
+
+// DSTV Modal Profile Selection Variables
+let dstvCsvData = [];
+let dstvCsvPath = '';
+let dstvSelectedSectionType = '';
+let dstvSelectedProfileSize = '';
+let dstvSectionDetailsAutocompleteInstance = null;
+let dstvSectionDetailsDropdownInstance = null;
+
+// Initialize DSTV Modal when it opens
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize section type select change handler
+    const sectionTypeSelect = document.getElementById('sectionTypeSelect');
+    if (sectionTypeSelect) {
+        M.FormSelect.init(sectionTypeSelect);
+        
+        sectionTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            dstvSelectedSectionType = selectedType;
+            resetDstvProfileData()
+            loadDstvSectionDetails(selectedType);
+        });
+        
+        // Initialize dropdown instance
+        dstvSectionDetailsDropdownInstance = M.Dropdown.init(
+            document.getElementById('sectionDetailsDropdownBtn'), 
+            {
+                constrainWidth: false,
+                coverTrigger: false
+            }
+        );
+        
+        // Load initial profiles for 'I' type (default selection)
+        loadDstvSectionDetails('I');
+    }
+});
+
+function loadDstvSectionDetails(sectionType) {
+    return new Promise(resolve => {
+        const sectionDetailsElem = document.getElementById('sectionDetailsAutocomplete');
+        
+        // Clear previous selection
+        sectionDetailsElem.value = '';
+        dstvSelectedProfileSize = '';
+        
+        // Map section types to profile types and CSV paths
+        let profileType = '';
+        switch (sectionType) {
+            case 'I':
+                profileType = 'IPE'; // Default to IPE for I sections
+                dstvCsvPath = 'data/I.csv';
+                break;
+            case 'U':
+                profileType = 'UPE'; // Default to UPE for U sections  
+                dstvCsvPath = 'data/U.csv';
+                break;
+            case 'L':
+                profileType = 'EA'; // Default to EA for L sections
+                dstvCsvPath = 'data/L.csv';
+                break;
+            case 'M':
+                profileType = 'SHS'; // Default to SHS for M sections
+                dstvCsvPath = 'data/SHS.csv';
+                break;
+            case 'RO':
+                profileType = 'CHS'; // CHS for RO (pipe) sections
+                dstvCsvPath = 'data/CHS.csv';
+                break;
+            case 'RU':
+                profileType = 'Round'; // Round for RU (rod) sections
+                dstvCsvPath = 'data/round.csv';
+                break;
+            case 'B':
+                profileType = 'Flat'; // Flat for B (plate) sections
+                dstvCsvPath = 'data/flat.csv';
+                break;
+            case 'C':
+                profileType = 'C'; // C sections
+                dstvCsvPath = 'data/U.csv'; // C profiles are in U.csv
+                break;
+            case 'T':
+                // T sections don't have a standard profile library
+                sectionDetailsElem.disabled = true;
+                const dropdown = document.getElementById('sectionDetailsDropdown');
+                dropdown.innerHTML = '<li><a class="deep-purple-text">T sections not available in profile library</a></li>';
+                resolve();
+                return;
+            default:
+                sectionDetailsElem.disabled = true;
+                resolve();
+                return;
+        }
+        
+        // Enable the autocomplete
+        sectionDetailsElem.disabled = false;
+        
+        // Fetch CSV data
+        fetch(dstvCsvPath)
+            .then(response => response.text())
+            .then(text => {
+                // Filter data for the specific profile type
+                const allData = parseCSV(text);
+                dstvCsvData = allData.filter(row => row.profileCode === profileType);
+                
+                // Create autocomplete data
+                const sizeData = {};
+                dstvCsvData.forEach((obj, index) => {
+                    const displayText = getDstvProfileID(obj);
+                    sizeData[displayText] = null;
+                    obj.localIndex = index;
+                });
+                
+                // Update autocomplete
+                if (dstvSectionDetailsAutocompleteInstance) {
+                    dstvSectionDetailsAutocompleteInstance.destroy();
+                }
+                
+                dstvSectionDetailsAutocompleteInstance = M.Autocomplete.init(sectionDetailsElem, {
+                    data: sizeData,
+                    limit: 10,
+                    onAutocomplete: function(val) {
+                        dstvSelectedProfileSize = val;
+                        const profileData = findDstvProfileByDisplayText(val);
+                        if (profileData) {
+                            fillDstvProfileData(profileData);
+                        }
+                    }
+                });
+                
+                // Update dropdown
+                const dropdown = document.getElementById('sectionDetailsDropdown');
+                dropdown.innerHTML = "";
+                
+                dstvCsvData.forEach((obj, index) => {
+                    const item = document.createElement('li');
+                    const profileID = getDstvProfileID(obj);
+                    item.innerHTML = `<a class="deep-purple-text lighten-3" onclick="selectDstvSectionFromDropdown('${profileID}', ${index})">${profileID}</a>`;
+                    dropdown.appendChild(item);
+                });
+                
+                // Update label to active state
+                const label = sectionDetailsElem.nextElementSibling;
+                if (label) {
+                    label.classList.add('active');
+                }
+                
+                resolve();
+            })
+            .catch(error => {
+                M.toast({html: 'Error loading profile data!', classes: 'rounded toast-error', displayLength: 2000});
+                resolve();
+            });
+    });
+}
+
+function selectDstvSectionFromDropdown(displayText, index) {
+    const sectionDetailsElem = document.getElementById('sectionDetailsAutocomplete');
+    sectionDetailsElem.value = displayText;
+    dstvSelectedProfileSize = displayText;
+    
+    // Update label to active state
+    const label = sectionDetailsElem.nextElementSibling;
+    if (label) {
+        label.classList.add('active');
+    }
+    
+    // Close dropdown
+    if (dstvSectionDetailsDropdownInstance) {
+        dstvSectionDetailsDropdownInstance.close();
+    }
+    
+    // Load profile data
+    const profileData = dstvCsvData[index];
+    if (profileData) {
+        fillDstvProfileData(profileData);
+    }
+    
+    // Force Materialize update
+    M.updateTextFields();
+}
+
+function findDstvProfileByDisplayText(displayText) {
+    return dstvCsvData.find(profile => {
+        return getDstvProfileID(profile) === displayText;
+    });
+}
+
+function getDstvProfileID(obj) {
+    // Get the current section type to determine the profile type
+    const sectionType = document.getElementById('sectionTypeSelect').value;
+    
+    switch (sectionType) {
+        case 'I':
+        case 'U':
+        case 'C':
+            const code = obj.code.match(/^[a-zA-Z]+/)[0];
+            return `${code}: ${obj.name}`;
+        case 'RU': // Round
+            const roundCode = obj.code.match(/^[a-zA-Z]+/)[0];
+            return `${roundCode}: ${obj.od}`;
+        case 'B': // Flat
+            const flatCode = obj.code.match(/^[a-zA-Z]+/)[0];
+            return `${flatCode}: ${obj.b} x ${obj.thk}`;
+        case 'RO': // CHS
+            const chsCode = obj.code.match(/^[a-zA-Z]+/)[0];
+            return `${chsCode}: ${obj.od} x ${obj.thk}`;
+        case 'M': // SHS/RHS
+        case 'L': // Angles
+            const structCode = obj.code.match(/^[a-zA-Z]+/)[0];
+            return `${structCode}: ${obj.h} x ${obj.b} x ${obj.thk}`;
+        default:
+            return obj.name || obj.code;
+    }
+}
+
+function fillDstvProfileData(profileData) {
+    // Fill the relevant input fields with profile data
+    if (profileData.h) {
+        document.getElementById('heighthInput').value = profileData.h;
+    }
+    if (profileData.b) {
+        document.getElementById('flangeWidthInput').value = profileData.b;
+    }
+    if (profileData.tf) {
+        document.getElementById('flangeThicknessInput').value = profileData.tf;
+    }
+    if (profileData.tw) {
+        document.getElementById('webThicknessInput').value = profileData.tw;
+    }
+    if (profileData.thk) {
+        // For profiles that use 'thk' instead of separate flange/web thickness
+        document.getElementById('flangeThicknessInput').value = profileData.thk;
+        document.getElementById('webThicknessInput').value = profileData.thk;
+    }
+    if (profileData.r) {
+        document.getElementById('radiusInput').value = profileData.r;
+    }
+    if (profileData.kgm) {
+        document.getElementById('weightInput').value = parseFloat(profileData.kgm).toFixed(2);
+    }
+    if (profileData.od) {
+        // For round sections, use outside diameter as both height and flange width
+        document.getElementById('heighthInput').value = profileData.od;
+        document.getElementById('flangeWidthInput').value = profileData.od;
+    }
+    
+    // Update Materialize text fields
+    M.updateTextFields();
+}
+
+function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",");
+
+    return lines.slice(1).map(line => {
+        const values = line.split(",");
+        return headers.reduce((obj, header, i) => {
+            obj[header.trim()] = values[i].trim();
+            return obj;
+        }, {});
+    });
+}
+
+function resetDstvProfileData() {
+    // Reset all input fields to empty values
+    const fieldsToReset = [
+        'heighthInput',
+        'flangeWidthInput', 
+        'flangeThicknessInput',
+        'webThicknessInput',
+        'radiusInput',
+        'weightInput'
+    ];
+    
+    fieldsToReset.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = '';
+        }
+    });
+    
+    // Update Materialize text fields to reflect the changes
+    M.updateTextFields();
+}
