@@ -164,8 +164,49 @@ function getInputValue(inputId) {
     return input.value.trim();
 }
 
+// Check if any required fields are empty
+function validateInputs() {
+    const requiredFields = [
+        'orderInput',
+        'drawingInput', 
+        'PhaseInput',
+        'positionInput',
+        'gradeInput',
+        'quantityInput',
+        'sectionDetailsAutocomplete',
+        'sectionTypeSelect',
+        'lengthInput',
+        'heighthInput',
+        'flangeWidthInput',
+        'flangeThicknessInput',
+        'webThicknessInput',
+        'radiusInput',
+        'weightInput',
+        'paintSurfaceInput',
+        'webStartCutInput',
+        'webEndCutInput',
+        'flangeStartCutInput',
+        'flangeEndCutInput'
+    ];
+
+    const emptyFields = [];
+    
+    for (const fieldId of requiredFields) {
+        const value = getInputValue(fieldId);
+        if (!value) {
+            emptyFields.push(fieldId);
+        }
+    }
+    
+    return emptyFields;
+}
+
 // Generate NC1 file content based on input values
 function getNC() {
+    if (validateInputs().length > 0) {
+        M.toast({html: 'Please fill in all required fields.', classes: 'rounded toast-warning', displayLength: 2000});
+        return '';
+    }
     const data = [
         'ST',
         `** Created by OpenSteel on ${new Date().toLocaleDateString()}`,
@@ -175,7 +216,7 @@ function getNC() {
         getInputValue('positionInput'),
         getInputValue('gradeInput'),
         getInputValue('quantityInput'),
-        getInputValue('sectionTypeInput'),
+        getInputValue('sectionDetailsAutocomplete'),
         getInputValue('sectionTypeSelect'),
         getInputValue('lengthInput'),
         getInputValue('heighthInput'),
@@ -200,6 +241,7 @@ function getNC() {
 
 function downloadNC() {
     const ncData = getNC();
+    if(ncData === '') return;
     const fileName = `${getInputValue('positionInput')}.nc1`;
     const blob = new Blob([ncData], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -216,5 +258,7 @@ function downloadNC() {
 
 function createNC() {
     const fileName = `${getInputValue('positionInput')}.nc1`;
-    addFile(fileName, getNC(), 1, false);
+    const ncData = getNC();
+    if(ncData === '') return;
+    addFile(fileName, ncData, 1, false);
 }
