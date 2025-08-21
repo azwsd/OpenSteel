@@ -576,6 +576,7 @@ function editStock(index) {
     // Update the add event listener to handle updates
     addStockBtn.removeEventListener('click', addStock);
     addStockBtn.addEventListener('click', updateStock);
+    M.updateTextFields();
 }
 
 function updateStock() {
@@ -682,6 +683,7 @@ function editPiece(index) {
     // Update the add event listener to handle updates
     addPieceBtn.removeEventListener('click', addPiece);
     addPieceBtn.addEventListener('click', updatePiece);
+    M.updateTextFields();
 }
 
 function updatePiece() {
