@@ -1,0 +1,461 @@
+// Fixed CSV Batch DSTV Creator
+class CSVBatchDSTVCreator {
+    constructor() {
+        this.csvData = [];
+        this.profileLibraries = new Map(); // Cache for loaded profile libraries
+        this.supportedSectionTypes = ['I', 'U', 'L', 'M', 'RO', 'RU', 'B', 'C', 'T'];
+        this.sectionTypePaths = {
+            'I': 'data/I.csv',
+            'U': 'data/U.csv',
+            'L': 'data/L.csv',
+            'M': 'data/SHS.csv',
+            'RO': 'data/CHS.csv',
+            'RU': 'data/round.csv',
+            'B': 'data/flat.csv',
+            'C': 'data/U.csv',
+            'T': null // T sections don't have a profile library
+        };
+        this.init();
+    }
+
+    init() {
+        // Wait for DOM and Materialize to be fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupEventListeners());
+        } else {
+            this.setupEventListeners();
+        }
+    }
+
+    setupEventListeners() {
+        // Setup CSV input handler
+        const csvInput = document.getElementById('csvUploadInput');
+        if (csvInput) {
+            csvInput.addEventListener('change', (e) => this.handleCSVUpload(e));
+        }
+
+        // Setup batch from CSV button handler
+        this.setupBatchButton();
+    }
+
+    setupBatchButton() {
+        // Find the "Batch from CSV" button and add click handler
+        const createModal = document.getElementById('createModal');
+        if (createModal) {
+            const batchButton = Array.from(createModal.querySelectorAll('a.btn')).find(btn => 
+                btn.textContent.trim() === 'Batch from CSV'
+            );
+            
+            if (batchButton) {
+                batchButton.onclick = (e) => {
+                    e.preventDefault();
+                    this.triggerCSVUpload();
+                };
+            }
+        }
+    }
+
+    triggerCSVUpload() {
+        const csvInput = document.getElementById('csvUploadInput');
+        if (csvInput) {
+            csvInput.click();
+        } else {
+            console.error('CSV upload input not found');
+            if (typeof M !== 'undefined' && M.toast) {
+                M.toast({html: 'CSV upload input not found!', classes: 'rounded toast-error', displayLength: 3000});
+            }
+        }
+    }
+
+    async handleCSVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            // Show loading toast
+            const loadingToast = this.showToast('Reading CSV file...', 'rounded', Infinity);
+
+            const csvText = await this.readFileAsText(file);
+            this.csvData = this.parseCSV(csvText);
+            
+            // Close loading toast
+            if (loadingToast && loadingToast.dismiss) {
+                loadingToast.dismiss();
+            }
+            
+            if (this.csvData.length === 0) {
+                this.showToast('No valid data found in CSV file!', 'rounded toast-error', 3000);
+                return;
+            }
+
+            // Validate CSV structure
+            if (!this.validateCSVStructure(this.csvData[0])) {
+                this.showToast('Invalid CSV structure! Required columns: order, drawing, phase, position, grade, quantity, length, web_start_cut, web_end_cut, flange_start_cut, flange_end_cut, section_type, section_details', 'rounded toast-error', 6000);
+                return;
+            }
+
+            // Close the create modal before processing
+            const createModal = document.getElementById('createModal');
+            if (createModal && typeof M !== 'undefined' && M.Modal) {
+                const modalInstance = M.Modal.getInstance(createModal);
+                if (modalInstance) {
+                    modalInstance.close();
+                }
+            }
+
+            // Process the CSV data
+            await this.processBatchCSV();
+            
+            // Clear the input
+            event.target.value = '';
+            
+        } catch (error) {
+            console.error('Error processing CSV file:', error);
+            this.showToast('Error processing CSV file: ' + error.message, 'rounded toast-error', 4000);
+        }
+    }
+
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    }
+
+    parseCSV(text) {
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z_]/g, '_'));
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = this.parseCSVLine(lines[i]);
+            if (values.length !== headers.length) continue;
+
+            const row = {};
+            headers.forEach((header, index) => {
+                row[header] = values[index]?.trim() || '';
+            });
+            data.push(row);
+        }
+
+        return data;
+    }
+
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current);
+        return result;
+    }
+
+    validateCSVStructure(firstRow) {
+        const requiredColumns = [
+            'order', 'drawing', 'phase', 'position', 'grade', 'quantity', 
+            'length', 'web_start_cut', 'web_end_cut', 'flange_start_cut', 
+            'flange_end_cut', 'section_type', 'section_details'
+        ];
+
+        return requiredColumns.every(col => firstRow.hasOwnProperty(col));
+    }
+
+    async processBatchCSV() {
+        const progressToast = this.showToast(`Processing ${this.csvData.length} items...`, 'rounded', Infinity);
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (let i = 0; i < this.csvData.length; i++) {
+            const row = this.csvData[i];
+            
+            try {
+                // Update progress
+                if (progressToast && progressToast.el) {
+                    progressToast.el.innerHTML = `Processing item ${i + 1} of ${this.csvData.length}: ${row.position || 'Unknown'}`;
+                }
+                
+                const result = await this.createDSTVFromRow(row);
+                if (result.success) {
+                    successCount++;
+                    // Add the created DSTV file to the interface
+                    if (typeof addFile === 'function') {
+                        addFile(result.fileName, result.ncData, this.csvData.length, false);
+                    }
+                } else {
+                    errorCount++;
+                    errors.push(`Row ${i + 1} (${row.position}): ${result.error}`);
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push(`Row ${i + 1} (${row.position}): ${error.message}`);
+            }
+        }
+
+        // Close progress toast
+        if (progressToast && progressToast.dismiss) {
+            progressToast.dismiss();
+        }
+
+        // Show summary
+        this.showBatchSummary(successCount, errorCount, errors);
+    }
+
+    showBatchSummary(successCount, errorCount, errors) {
+        let summaryMessage = `Batch processing complete!\nSuccess: ${successCount}\nErrors: ${errorCount}`;
+        
+        if (errors.length > 0 && errors.length <= 3) {
+            summaryMessage += '\n\nErrors:\n' + errors.slice(0, 3).join('\n');
+        } else if (errors.length > 3) {
+            summaryMessage += '\n\nErrors (showing first 3):\n' + errors.slice(0, 3).join('\n');
+            summaryMessage += `\n... and ${errors.length - 3} more errors`;
+        }
+
+        const toastClass = errorCount === 0 ? 'toast-success' : (successCount === 0 ? 'toast-error' : 'toast-warning');
+        this.showToast(summaryMessage, `rounded ${toastClass}`, 8000);
+    }
+
+    async createDSTVFromRow(row) {
+        try {
+            // Validate required fields
+            const requiredFields = ['order', 'drawing', 'phase', 'position', 'grade', 'quantity', 'section_type', 'section_details'];
+            for (const field of requiredFields) {
+                if (!row[field]) {
+                    return { success: false, error: `Missing required field: ${field}` };
+                }
+            }
+
+            const sectionType = row.section_type.toUpperCase();
+            if (!this.supportedSectionTypes.includes(sectionType)) {
+                return { success: false, error: `Unsupported section type: ${sectionType}` };
+            }
+
+            // Load profile library for this section type if not already loaded
+            let profileData = null;
+            if (sectionType !== 'T') { // T sections don't have profile library
+                profileData = await this.loadProfileLibrary(sectionType);
+                if (!profileData) {
+                    return { success: false, error: `Failed to load profile library for section type: ${sectionType}` };
+                }
+            }
+
+            // Find matching profile
+            let profileMatch = null;
+            if (profileData) {
+                const normalizedSectionDetails = this.normalizeSectionDetails(row.section_details);
+                profileMatch = this.findMatchingProfile(profileData, normalizedSectionDetails, sectionType);
+                
+                if (!profileMatch) {
+                    return { success: false, error: `No matching profile found for: ${row.section_details}` };
+                }
+            }
+
+            // Create DSTV file
+            const ncData = this.generateDSTVContent(row, profileMatch, sectionType);
+            const fileName = `${row.position}.nc1`;
+
+            return { success: true, fileName, ncData };
+
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async loadProfileLibrary(sectionType) {
+        // Check if already loaded
+        if (this.profileLibraries.has(sectionType)) {
+            return this.profileLibraries.get(sectionType);
+        }
+
+        const csvPath = this.sectionTypePaths[sectionType];
+        if (!csvPath) return null;
+
+        try {
+            const response = await fetch(csvPath);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${csvPath}: ${response.status}`);
+            }
+            
+            const text = await response.text();
+            const allData = this.parseProfileCSV(text);
+            
+            // Filter data for specific profile types
+            let filteredData = allData;
+            switch (sectionType) {
+                case 'I':
+                    filteredData = allData.filter(row => row.profileCode === 'IPE' || row.profileCode === 'HE');
+                    break;
+                case 'U':
+                    filteredData = allData.filter(row => row.profileCode === 'UPE');
+                    break;
+                case 'C':
+                    filteredData = allData.filter(row => row.profileCode === 'C');
+                    break;
+                case 'L':
+                    filteredData = allData.filter(row => row.profileCode === 'EA');
+                    break;
+                case 'M':
+                    filteredData = allData.filter(row => row.profileCode === 'SHS' || row.profileCode === 'RHS');
+                    break;
+                case 'RO':
+                    filteredData = allData.filter(row => row.profileCode === 'CHS');
+                    break;
+                case 'RU':
+                    filteredData = allData.filter(row => row.profileCode === 'Round');
+                    break;
+                case 'B':
+                    filteredData = allData.filter(row => row.profileCode === 'Flat');
+                    break;
+            }
+
+            this.profileLibraries.set(sectionType, filteredData);
+            return filteredData;
+        } catch (error) {
+            console.error(`Error loading profile library for ${sectionType}:`, error);
+            return null;
+        }
+    }
+
+    parseProfileCSV(text) {
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = this.parseCSVLine(lines[i]);
+            const row = {};
+            headers.forEach((header, index) => {
+                row[header] = values[index]?.trim() || '';
+            });
+            data.push(row);
+        }
+
+        return data;
+    }
+
+    normalizeSectionDetails(sectionDetails) {
+        return sectionDetails
+            .replace(/\s+/g, '') // Remove all spaces
+            .replace(/\*/g, 'X') // Replace * with X
+            .toUpperCase(); // Convert to uppercase
+    }
+
+    findMatchingProfile(profileData, normalizedSectionDetails, sectionType) {
+        for (const profile of profileData) {
+            // Create normalized profile identifier based on section type
+            let profileIdentifier = '';
+            
+            switch (sectionType) {
+                case 'I':
+                case 'U':
+                case 'C':
+                    profileIdentifier = profile.name || profile.code || '';
+                    break;
+                case 'RU': // Round
+                    profileIdentifier = profile.od || '';
+                    break;
+                case 'B': // Flat
+                    profileIdentifier = `${profile.b}X${profile.thk}` || '';
+                    break;
+                case 'RO': // CHS
+                    profileIdentifier = `${profile.od}X${profile.thk}` || '';
+                    break;
+                case 'M': // SHS/RHS
+                case 'L': // Angles
+                    profileIdentifier = `${profile.h}X${profile.b}X${profile.thk}` || '';
+                    break;
+            }
+
+            const normalizedProfileId = this.normalizeSectionDetails(profileIdentifier);
+            
+            if (normalizedProfileId === normalizedSectionDetails) {
+                return profile;
+            }
+        }
+        return null;
+    }
+
+    generateDSTVContent(row, profileMatch, sectionType) {
+        const data = [
+            'ST',
+            `** Created by OpenSteel on ${new Date().toLocaleDateString()}`,
+            row.order || '',
+            row.drawing || '',
+            row.phase || '',
+            row.position || '',
+            row.grade || '',
+            row.quantity || '1',
+            row.section_details || '',
+            sectionType,
+            row.length || '0',
+            (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'od') : this.getProfileValue(profileMatch, 'h') || '0',
+            (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'od') : this.getProfileValue(profileMatch, 'b') || '0',
+            (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'thk') : this.getProfileValue(profileMatch, 'tf') || '0',
+            (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'thk') : this.getProfileValue(profileMatch, 'tw') || '0',
+            this.getProfileValue(profileMatch, 'r') || '0',
+            this.getProfileValue(profileMatch, 'kgm') || '0',
+            '0.00', // Paint surface area
+            row.web_start_cut || '0.00',
+            row.web_end_cut || '0.00',
+            row.flange_start_cut || '0.00',
+            row.flange_end_cut || '0.00',
+            '',
+            '',
+            '',
+            'EN'
+        ].join('\n');
+
+        return data;
+    }
+
+    getProfileValue(profile, key) {
+        if (!profile || !profile[key]) return '0';
+        const value = parseFloat(profile[key]);
+        return isNaN(value) ? '0' : value.toString();
+    }
+
+    showToast(message, classes, duration) {
+        if (typeof M !== 'undefined' && M.toast) {
+            return M.toast({
+                html: message,
+                classes: classes,
+                displayLength: duration
+            });
+        } else {
+            console.log('Toast:', message);
+            return null;
+        }
+    }
+}
+
+// Initialize the CSV Batch DSTV Creator
+let csvBatchCreator = null;
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        csvBatchCreator = new CSVBatchDSTVCreator();
+    });
+} else {
+    csvBatchCreator = new CSVBatchDSTVCreator();
+}
