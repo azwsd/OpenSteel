@@ -530,10 +530,6 @@ document.getElementById('batchExportNCButton').addEventListener('click', functio
         M.toast({ html: 'No files to export!', classes: 'rounded toast-warning', displayLength: 3000}); //Show error message if no files are loaded
         return;
     }
-    else if (filePairs.size === 1) {
-        document.getElementById('exportNCButton').click();
-        return;
-    }
     let zip = new JSZip(); //Create a new ZIP archive
     for (let [file, data] of filePairs.entries()) {
         // Remove DSTV blocks depending on user settings
