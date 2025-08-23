@@ -3,13 +3,19 @@ class CSVBatchDSTVCreator {
     constructor() {
         this.csvData = [];
         this.profileLibraries = new Map(); // Cache for loaded profile libraries
-        this.supportedSectionTypes = ['I', 'U', 'L', 'M', 'RO', 'RU', 'B', 'C', 'T'];
+        this.supportedSectionTypes = ['I', 'U', 'L', 'UA', 'EA', 'M', 'SHS', 'RHS', 'RO', 'PIPE', 'CHS', 'RU', 'B', 'C', 'T'];
         this.sectionTypePaths = {
             'I': 'data/I.csv',
             'U': 'data/U.csv',
             'L': 'data/L.csv',
+            'UA': 'data/L.csv',
+            'EA': 'data/L.csv',
             'M': 'data/SHS.csv',
+            'SHS': 'data/SHS.csv',
+            'RHS': 'data/RHS.csv',
             'RO': 'data/CHS.csv',
+            'PIPE': 'data/CHS.csv',
+            'CHS': 'data/CHS.csv',
             'RU': 'data/round.csv',
             'B': 'data/flat.csv',
             'C': 'data/U.csv',
@@ -214,23 +220,22 @@ class CSVBatchDSTVCreator {
         if (progressToast && progressToast.dismiss) {
             progressToast.dismiss();
         }
-
-        // Show summary
-        this.showBatchSummary(successCount, errorCount, errors);
     }
-
-    showBatchSummary(successCount, errorCount, errors) {
-        let summaryMessage = `Batch processing complete!\nSuccess: ${successCount}\nErrors: ${errorCount}`;
-        
-        if (errors.length > 0 && errors.length <= 3) {
-            summaryMessage += '\n\nErrors:\n' + errors.slice(0, 3).join('\n');
-        } else if (errors.length > 3) {
-            summaryMessage += '\n\nErrors (showing first 3):\n' + errors.slice(0, 3).join('\n');
-            summaryMessage += `\n... and ${errors.length - 3} more errors`;
+    
+    normalizeSectionType(sectionType) {
+        switch (sectionType) {
+            case 'PIPE':
+            case 'CHS':
+                return 'RO';
+            case 'RHS':
+            case 'SHS':
+                return 'M';
+            case 'UA':
+            case 'EA':
+                return 'L';
+            default:
+                return sectionType;
         }
-
-        const toastClass = errorCount === 0 ? 'toast-success' : (successCount === 0 ? 'toast-error' : 'toast-warning');
-        this.showToast(summaryMessage, `rounded ${toastClass}`, 8000);
     }
 
     async createDSTVFromRow(row) {
@@ -243,7 +248,7 @@ class CSVBatchDSTVCreator {
                 }
             }
 
-            const sectionType = row.section_type.toUpperCase();
+            const sectionType = this.normalizeSectionType(row.section_type.toUpperCase());
             if (!this.supportedSectionTypes.includes(sectionType)) {
                 return { success: false, error: `Unsupported section type: ${sectionType}` };
             }
@@ -296,38 +301,9 @@ class CSVBatchDSTVCreator {
             
             const text = await response.text();
             const allData = this.parseProfileCSV(text);
-            
-            // Filter data for specific profile types
-            let filteredData = allData;
-            switch (sectionType) {
-                case 'I':
-                    filteredData = allData.filter(row => row.profileCode === 'IPE' || row.profileCode === 'HE');
-                    break;
-                case 'U':
-                    filteredData = allData.filter(row => row.profileCode === 'UPE');
-                    break;
-                case 'C':
-                    filteredData = allData.filter(row => row.profileCode === 'C');
-                    break;
-                case 'L':
-                    filteredData = allData.filter(row => row.profileCode === 'EA');
-                    break;
-                case 'M':
-                    filteredData = allData.filter(row => row.profileCode === 'SHS' || row.profileCode === 'RHS');
-                    break;
-                case 'RO':
-                    filteredData = allData.filter(row => row.profileCode === 'CHS');
-                    break;
-                case 'RU':
-                    filteredData = allData.filter(row => row.profileCode === 'Round');
-                    break;
-                case 'B':
-                    filteredData = allData.filter(row => row.profileCode === 'Flat');
-                    break;
-            }
 
-            this.profileLibraries.set(sectionType, filteredData);
-            return filteredData;
+            this.profileLibraries.set(sectionType, allData);
+            return allData;
         } catch (error) {
             console.error(`Error loading profile library for ${sectionType}:`, error);
             return null;
@@ -362,34 +338,50 @@ class CSVBatchDSTVCreator {
 
     findMatchingProfile(profileData, normalizedSectionDetails, sectionType) {
         for (const profile of profileData) {
-            // Create normalized profile identifier based on section type
-            let profileIdentifier = '';
+            // Create array of possible profile identifiers based on section type
+            let profileIdentifiers = [];
             
             switch (sectionType) {
                 case 'I':
                 case 'U':
                 case 'C':
-                    profileIdentifier = profile.name || profile.code || '';
+                    if (profile.name) profileIdentifiers.push(profile.name);
+                    if (profile.alt) profileIdentifiers.push(profile.alt);
                     break;
+                    
                 case 'RU': // Round
-                    profileIdentifier = profile.od || '';
+                    if (profile.od) profileIdentifiers.push(profile.od);
                     break;
+                    
                 case 'B': // Flat
-                    profileIdentifier = `${profile.b}X${profile.thk}` || '';
+                    if (profile.b && profile.thk) profileIdentifiers.push(`${profile.b}X${profile.thk}`);
                     break;
+                    
                 case 'RO': // CHS
-                    profileIdentifier = `${profile.od}X${profile.thk}` || '';
+                    if (profile.od && profile.thk) profileIdentifiers.push(`${profile.od}X${profile.thk}`);
+                    if (profile.name) profileIdentifiers.push(profile.name);
+                    if (profile.alt) profileIdentifiers.push(profile.alt);
                     break;
+                    
                 case 'M': // SHS/RHS
+                    if (profile.h && profile.b && profile.thk) profileIdentifiers.push(`${profile.h}X${profile.b}X${profile.thk}`);
+                    break;
+                    
                 case 'L': // Angles
-                    profileIdentifier = `${profile.h}X${profile.b}X${profile.thk}` || '';
+                    if (profile.h && profile.b && profile.thk) profileIdentifiers.push(`${profile.h}X${profile.b}X${profile.thk}`);
+                    if (profile.name) profileIdentifiers.push(profile.name);
+                    if (profile.alt) profileIdentifiers.push(profile.alt);
                     break;
             }
 
-            const normalizedProfileId = this.normalizeSectionDetails(profileIdentifier);
-            
-            if (normalizedProfileId === normalizedSectionDetails) {
-                return profile;
+            // Check each possible identifier against the normalized section details
+            for (const identifier of profileIdentifiers) {
+                if (identifier) { // Make sure identifier is not empty
+                    const normalizedProfileId = this.normalizeSectionDetails(identifier);
+                    if (normalizedProfileId === normalizedSectionDetails) {
+                        return profile;
+                    }
+                }
             }
         }
         return null;
@@ -410,8 +402,8 @@ class CSVBatchDSTVCreator {
             row.length || '0',
             (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'od') : this.getProfileValue(profileMatch, 'h') || '0',
             (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'od') : this.getProfileValue(profileMatch, 'b') || '0',
-            (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'thk') : this.getProfileValue(profileMatch, 'tf') || '0',
-            (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'thk') : this.getProfileValue(profileMatch, 'tw') || '0',
+            (sectionType === 'RO' || sectionType === 'RU' || sectionType === 'L') ? this.getProfileValue(profileMatch, 'thk') : this.getProfileValue(profileMatch, 'tf') || '0',
+            (sectionType === 'RO' || sectionType === 'RU' || sectionType === 'L') ? this.getProfileValue(profileMatch, 'thk') : this.getProfileValue(profileMatch, 'tw') || '0',
             this.getProfileValue(profileMatch, 'r') || '0',
             this.getProfileValue(profileMatch, 'kgm') || '0',
             '0.00', // Paint surface area
