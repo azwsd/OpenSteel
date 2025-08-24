@@ -1,4 +1,3 @@
-// Fixed CSV Batch DSTV Creator
 class CSVBatchDSTVCreator {
     constructor() {
         this.csvData = [];
@@ -66,47 +65,40 @@ class CSVBatchDSTVCreator {
         if (csvInput) {
             csvInput.click();
         } else {
-            console.error('CSV upload input not found');
-            if (typeof M !== 'undefined' && M.toast) {
-                M.toast({html: 'CSV upload input not found!', classes: 'rounded toast-error', displayLength: 3000});
-            }
+            this.showToast('CSV upload input not found!', 'error');
+        }
+    }
+
+    // Helper method for showing toasts
+    showToast(message, type = 'error') {
+        if (typeof M !== 'undefined' && M.toast) {
+            const classes = type === 'error' ? 'rounded toast-error' : 'rounded toast-success';
+            M.toast({html: message, classes: classes, displayLength: 3000});
+        } else {
+            // Fallback to alert if Materialize is not available
+            alert(message);
         }
     }
 
     async handleCSVUpload(event) {
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         try {
-            // Show loading toast
-            const loadingToast = this.showToast('Reading CSV file...', 'rounded', Infinity);
-
             const csvText = await this.readFileAsText(file);
             this.csvData = this.parseCSV(csvText);
             
-            // Close loading toast
-            if (loadingToast && loadingToast.dismiss) {
-                loadingToast.dismiss();
-            }
-            
             if (this.csvData.length === 0) {
-                this.showToast('No valid data found in CSV file!', 'rounded toast-error', 3000);
+                this.showToast('No valid data found in CSV file!', 'error');
                 return;
             }
 
             // Validate CSV structure
             if (!this.validateCSVStructure(this.csvData[0])) {
-                this.showToast('Invalid CSV structure! Required columns: order, drawing, phase, position, grade, quantity, length, web_start_cut, web_end_cut, flange_start_cut, flange_end_cut, section_type, section_details', 'rounded toast-error', 6000);
+                this.showToast('Invalid CSV structure! Required columns: order, drawing, phase, position, grade, quantity, length, web_start_cut, web_end_cut, flange_start_cut, flange_end_cut, section_type, section_details', 'error');
                 return;
-            }
-
-            // Close the create modal before processing
-            const createModal = document.getElementById('createModal');
-            if (createModal && typeof M !== 'undefined' && M.Modal) {
-                const modalInstance = M.Modal.getInstance(createModal);
-                if (modalInstance) {
-                    modalInstance.close();
-                }
             }
 
             // Process the CSV data
@@ -116,8 +108,7 @@ class CSVBatchDSTVCreator {
             event.target.value = '';
             
         } catch (error) {
-            console.error('Error processing CSV file:', error);
-            this.showToast('Error processing CSV file: ' + error.message, 'rounded toast-error', 4000);
+            this.showToast('Error processing CSV file: ' + error.message, 'error');
         }
     }
 
@@ -139,7 +130,9 @@ class CSVBatchDSTVCreator {
 
         for (let i = 1; i < lines.length; i++) {
             const values = this.parseCSVLine(lines[i]);
-            if (values.length !== headers.length) continue;
+            if (values.length !== headers.length) {
+                continue;
+            }
 
             const row = {};
             headers.forEach((header, index) => {
@@ -184,8 +177,6 @@ class CSVBatchDSTVCreator {
     }
 
     async processBatchCSV() {
-        const progressToast = this.showToast(`Processing ${this.csvData.length} items...`, 'rounded', Infinity);
-
         let successCount = 0;
         let errorCount = 0;
         const errors = [];
@@ -194,13 +185,8 @@ class CSVBatchDSTVCreator {
             const row = this.csvData[i];
             
             try {
-                // Update progress
-                if (progressToast && progressToast.el) {
-                    progressToast.el.innerHTML = `Processing item ${i + 1} of ${this.csvData.length}: ${row.position || 'Unknown'}`;
-                }
-                
                 const result = await this.createDSTVFromRow(row);
-                if (result.success) {
+                if (result && result.success) {
                     successCount++;
                     // Add the created DSTV file to the interface
                     if (typeof addFile === 'function') {
@@ -208,7 +194,8 @@ class CSVBatchDSTVCreator {
                     }
                 } else {
                     errorCount++;
-                    errors.push(`Row ${i + 1} (${row.position}): ${result.error}`);
+                    const errorMsg = result ? result.error : 'Unknown error';
+                    errors.push(`Row ${i + 1} (${row.position}): ${errorMsg}`);
                 }
             } catch (error) {
                 errorCount++;
@@ -216,10 +203,9 @@ class CSVBatchDSTVCreator {
             }
         }
 
-        // Close progress toast
-        if (progressToast && progressToast.dismiss) {
-            progressToast.dismiss();
-        }
+        // Show completion summary
+        const summary = `Batch processing complete. Success: ${successCount}, Errors: ${errorCount}`;
+        this.showToast(summary, errorCount === 0 ? 'success' : 'error');
     }
     
     normalizeSectionType(sectionType) {
@@ -244,13 +230,15 @@ class CSVBatchDSTVCreator {
             const requiredFields = ['order', 'drawing', 'phase', 'position', 'grade', 'quantity', 'section_type', 'section_details'];
             for (const field of requiredFields) {
                 if (!row[field]) {
-                    return { success: false, error: `Missing required field: ${field}` };
+                    const error = `Missing required field: ${field}`;
+                    return { success: false, error: error };
                 }
             }
 
             const sectionType = this.normalizeSectionType(row.section_type.toUpperCase());
             if (!this.supportedSectionTypes.includes(sectionType)) {
-                return { success: false, error: `Unsupported section type: ${sectionType}` };
+                const error = `Unsupported section type: ${sectionType}`;
+                return { success: false, error: error };
             }
 
             // Load profile library for this section type if not already loaded
@@ -258,7 +246,8 @@ class CSVBatchDSTVCreator {
             if (sectionType !== 'T') { // T sections don't have profile library
                 profileData = await this.loadProfileLibrary(sectionType);
                 if (!profileData) {
-                    return { success: false, error: `Failed to load profile library for section type: ${sectionType}` };
+                    const error = `Failed to load profile library for section type: ${sectionType}`;
+                    return { success: false, error: error };
                 }
             }
 
@@ -269,7 +258,7 @@ class CSVBatchDSTVCreator {
                 profileMatch = this.findMatchingProfile(profileData, normalizedSectionDetails, sectionType);
                 
                 if (!profileMatch) {
-                    return { success: false, error: `No matching profile found for: ${row.section_details}` };
+                    // Don't return error here - continue with null profile
                 }
             }
 
@@ -277,7 +266,7 @@ class CSVBatchDSTVCreator {
             const ncData = this.generateDSTVContent(row, profileMatch, sectionType);
             const fileName = `${row.position}.nc1`;
 
-            return { success: true, fileName, ncData };
+            return { success: true, fileName: fileName, ncData: ncData };
 
         } catch (error) {
             return { success: false, error: error.message };
@@ -305,7 +294,6 @@ class CSVBatchDSTVCreator {
             this.profileLibraries.set(sectionType, allData);
             return allData;
         } catch (error) {
-            console.error(`Error loading profile library for ${sectionType}:`, error);
             return null;
         }
     }
@@ -424,19 +412,6 @@ class CSVBatchDSTVCreator {
         if (!profile || !profile[key]) return '0';
         const value = parseFloat(profile[key]);
         return isNaN(value) ? '0' : value.toString();
-    }
-
-    showToast(message, classes, duration) {
-        if (typeof M !== 'undefined' && M.toast) {
-            return M.toast({
-                html: message,
-                classes: classes,
-                displayLength: duration
-            });
-        } else {
-            console.log('Toast:', message);
-            return null;
-        }
     }
 }
 
