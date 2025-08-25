@@ -815,6 +815,9 @@ function fillDstvProfileData(profileData) {
     if (profileData.r) {
         document.getElementById('radiusInput').value = profileData.r;
     }
+    else {
+        document.getElementById('radiusInput').value = '0.00';
+    }
     if (profileData.kgm) {
         document.getElementById('weightInput').value = parseFloat(profileData.kgm).toFixed(2);
     }
@@ -823,7 +826,10 @@ function fillDstvProfileData(profileData) {
         document.getElementById('heighthInput').value = profileData.od;
         document.getElementById('flangeWidthInput').value = profileData.od;
     }
-    
+
+    // Paint surface default value
+    document.getElementById('paintSurfaceInput').value = '0.00';
+
     // Update Materialize text fields
     M.updateTextFields();
 }
