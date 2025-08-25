@@ -636,35 +636,27 @@ function loadDstvSectionDetails(sectionType) {
         let profileType = '';
         switch (sectionType) {
             case 'I':
-                profileType = 'IPE'; // Default to IPE for I sections
                 dstvCsvPath = 'data/I.csv';
                 break;
             case 'U':
-                profileType = 'UPE'; // Default to UPE for U sections  
                 dstvCsvPath = 'data/U.csv';
                 break;
             case 'L':
-                profileType = 'EA'; // Default to EA for L sections
                 dstvCsvPath = 'data/L.csv';
                 break;
             case 'M':
-                profileType = 'SHS'; // Default to SHS for M sections
                 dstvCsvPath = 'data/SHS.csv';
                 break;
             case 'RO':
-                profileType = 'CHS'; // CHS for RO (pipe) sections
                 dstvCsvPath = 'data/CHS.csv';
                 break;
             case 'RU':
-                profileType = 'Round'; // Round for RU (rod) sections
                 dstvCsvPath = 'data/round.csv';
                 break;
             case 'B':
-                profileType = 'Flat'; // Flat for B (plate) sections
                 dstvCsvPath = 'data/flat.csv';
                 break;
             case 'C':
-                profileType = 'C'; // C sections
                 dstvCsvPath = 'data/U.csv'; // C profiles are in U.csv
                 break;
             case 'T':
@@ -688,8 +680,7 @@ function loadDstvSectionDetails(sectionType) {
             .then(response => response.text())
             .then(text => {
                 // Filter data for the specific profile type
-                const allData = parseCSV(text);
-                dstvCsvData = allData.filter(row => row.profileCode === profileType);
+                dstvCsvData = parseCSV(text);
                 
                 // Create autocomplete data
                 const sizeData = {};
