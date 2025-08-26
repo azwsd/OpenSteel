@@ -560,6 +560,9 @@ function displayProfile(selectedProfile) {
         debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else M.toast({html: 'Please choose a correct profile!', classes: 'rounded toast-error', displayLength: 2000});
+
+    // Update text fields
+    M.updateTextFields();
 }
 
 function clearViewProfileData() {
