@@ -99,6 +99,18 @@
             </div>
         </div>
     </div>
+    <!--Accept Nesting Results Modal-->
+    <div id="acceptNestModal" class="modal">
+        <div class="modal-content">
+            <h4>Accept Nesting Results</h4>
+            <p>This will remove all stock used in the cutting nests and add the offcuts as new stock items.</p>
+            <p><b>Are you sure you want to proceed?</b></p>
+            <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect waves-green btn green" onclick="acceptNest()">Accept</a>
+                <a href="#!" class="modal-close waves-effect waves-red btn red">Cancel</a>
+            </div>
+        </div>
+    </div>
     <!--Mobile navbar-->
     <ul class="sidenav" id="mobile">
         <li><p class="fileTracker">File 0/0</p></li>
@@ -342,6 +354,9 @@
                         </button>
                         <button id="download-offcuts-btn" class="waves-effect waves-light btn-large deep-purple hide">
                             <i class="material-icons left">file_download</i>Download Offcuts
+                        </button>
+                        <button id="accept-nest-btn" class="waves-effect waves-light btn-large green hide">
+                            <i class="material-icons left">check_circle</i>Accept Nest
                         </button>
                     </div>
                     

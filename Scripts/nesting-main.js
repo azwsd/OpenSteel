@@ -478,12 +478,102 @@ const pieceTable = document.getElementById('piece-table').getElementsByTagName('
 const cuttingNestsDiv = document.getElementById('cutting-nests');
 const remainingPiecesDiv = document.getElementById('remaining-pieces');
 const downloadOffcutsBtn = document.getElementById('download-offcuts-btn');
+const acceptNestBtn = document.getElementById('accept-nest-btn');
 
 // Event Listeners
 addStockBtn.addEventListener('click', addStock);
 addPieceBtn.addEventListener('click', addPiece);
 optimizeBtn.addEventListener('click', optimizeCuttingNests);
 downloadOffcutsBtn.addEventListener('click', downloadOffcutCSV);
+acceptNestBtn.addEventListener('click', () => {
+    const modal = document.getElementById('acceptNestModal');
+    const instance = M.Modal.init(modal);
+    instance.open();
+});
+
+// Function to process accepted nests
+function acceptNest() {
+    if (cuttingNests.length === 0) {
+        M.toast({html: 'No nests to accept!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+
+    // Check for unlimited stock mode
+    if (localStorage.getItem('useUnlimitedStock') === 'true') {
+        M.toast({html: 'Cannot Accept Nest in Unlimited Stock Mode!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+
+    // Track offcuts to add
+    const offcutsToAdd = [];
+
+    // Track used stock to remove
+    const usedStock = [];
+
+    // Process each nest
+    cuttingNests.forEach(nest => {
+        // Add used stock to removal list
+        usedStock.push({
+            profile: nest.profile,
+            length: nest.stockLength,
+            amount: 1
+        });
+        
+        // Check if offcut already in list
+        const existingOffcutIndex = offcutsToAdd.findIndex(
+            item => item.profile === nest.profile && item.length === nest.offcut
+        );
+        
+        if (existingOffcutIndex !== -1) {
+            offcutsToAdd[existingOffcutIndex].amount += 1;
+        } else {
+            offcutsToAdd.push({
+                profile: nest.profile,
+                length: nest.offcut,
+                amount: 1
+            });
+        }
+    });
+
+    // Remove used stock
+    usedStock.forEach(used => {
+        const existingStockIndex = stockItems.findIndex(
+            item => item.profile === used.profile && item.length === used.length
+        );
+        
+        if (existingStockIndex !== -1) {
+            // Reduce the amount of the stock item
+            stockItems[existingStockIndex].amount -= used.amount;
+            
+            // If amount becomes zero or negative, remove the stock item
+            if (stockItems[existingStockIndex].amount <= 0) {
+                stockItems.splice(existingStockIndex, 1);
+            }
+        }
+    });
+
+    // Add offcuts as new stock items
+    offcutsToAdd.forEach(offcut => {
+        const existingStockIndex = stockItems.findIndex(
+            item => item.profile === offcut.profile && item.length === offcut.length
+        );
+        
+        if (existingStockIndex !== -1) {
+            // Update existing stock item
+            stockItems[existingStockIndex].amount += offcut.amount;
+        } else {
+            // Add new stock item
+            stockItems.push({
+                profile: offcut.profile,
+                length: offcut.length,
+                amount: offcut.amount
+            });
+        }
+    });
+
+    // Update the stock table
+    renderStockTable();
+}
   
 // Function to programmatically set input value
 function setInputValue(inputId, value) {
@@ -1043,6 +1133,7 @@ function optimizeCuttingNests() {
     renderCuttingNests(cuttingNests);
     cuttingNestsDiv.classList.remove('hide');
     downloadOffcutsBtn.classList.remove('hide');
+    acceptNestBtn.classList.remove('hide');
     M.Tabs.init(document.querySelectorAll('#nesting-tabs')); // Initialize tabs
 }
 
