@@ -452,6 +452,7 @@ function displayProfile(selectedProfile) {
         const weight = document.createElement('p');
         weightValue = parseFloat(selectedProfile.kgm).toFixed(2);
         const height = document.createElement('p');
+        const webHeight = document.createElement('p');
         const width = document.createElement('p');
         const webThickness = document.createElement('p');
         const flangeThickness = document.createElement('p');
@@ -461,13 +462,14 @@ function displayProfile(selectedProfile) {
 
         weight.innerHTML = `Weight: ${weightValue} kg/m`;
         height.innerHTML = `Height: ${selectedProfile.h} mm`;
+        webHeight.innerHTML = `Web height: ${selectedProfile.h - 2 * selectedProfile.tf} mm`;
         width.innerHTML = `Width: ${selectedProfile.b} mm`;
         webThickness.innerHTML = `Web thickness: ${selectedProfile.tw} mm`;
         flangeThickness.innerHTML = `Flange thickness: ${selectedProfile.tf} mm`;
         radius.innerHTML = `Radius: ${selectedProfile.r} mm`;
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
-        [weight, height, width, webThickness, flangeThickness, radius, code].forEach(e => { profileData.appendChild(e) });
+        [weight, height, webHeight, width, webThickness, flangeThickness, radius, code].forEach(e => { profileData.appendChild(e) });
         debouncedCalcWeight(); //Calculate weight based on selected profile
     }
     else if (loadedProfile == 'Rebar' || loadedProfile == 'Round') {
