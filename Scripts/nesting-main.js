@@ -529,7 +529,7 @@ function acceptNest() {
         
         if (existingOffcutIndex !== -1) {
             offcutsToAdd[existingOffcutIndex].amount += 1;
-        } else {
+        } else if (nest.offcut > 0) {
             offcutsToAdd.push({
                 profile: nest.profile,
                 length: nest.offcut,
