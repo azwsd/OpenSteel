@@ -414,13 +414,16 @@ document.addEventListener('DOMContentLoaded', function(){
         selectedFile = sessionStorage.getItem('selectedFile');
         selectFile(selectedFile); //Select saved selectedFile in session
     }
-    // Addd pieces from loaded files to nesting
+    // Load saved stock
+    stockItems = JSON.parse(localStorage.getItem('stockItems')) || [];
+    renderStockTable();
+    // Add pieces from loaded files to nesting
     const addPieceBtn = document.getElementById('add-piece');
     for (const [fileName, fileData] of filePairs) {
         selectFile(fileName);
         if(profileCode.replace(/\s+/g, '').toUpperCase() == 'B') continue; // Skip if profile is plate
         addPieceBtn.click(); // Simulate click to add piece
-      }
+    }
 });
 
 document.addEventListener('keydown', function (e) {
@@ -572,6 +575,7 @@ function acceptNest() {
     });
 
     // Update the stock table
+    localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
 }
   
@@ -596,6 +600,7 @@ function addStock() {
 
     const stockItem = { profile, length, amount };
     stockItems.push(stockItem);
+    localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
 
     // Clear inputs
@@ -694,6 +699,7 @@ function updateStock() {
     resetStockForm();
     
     // Re-render the table
+    localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
     
     M.toast({html: 'Stock updated successfully!', classes: 'rounded toast-success', displayLength: 2000});
@@ -922,6 +928,7 @@ function renderPieceTable() {
 
 function removeStock(index) {
     stockItems.splice(index, 1);
+    localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
 }
 
@@ -2459,6 +2466,7 @@ function loadStockData(fileData) {
         if (isNaN(length) || isNaN(amount)) continue; // Skip invalid lines
         stockItems.push({ profile, length, amount });
     }
+    localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
     M.toast({html: 'Stock loaded successfully!', classes: 'rounded toast-success', displayLength: 2000});
 }
@@ -2487,6 +2495,7 @@ function clearStock() {
         return;
     }
     stockItems = [];
+    localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
     M.toast({html: 'Stock cleared successfully!', classes: 'rounded toast-success', displayLength: 2000});
 }
