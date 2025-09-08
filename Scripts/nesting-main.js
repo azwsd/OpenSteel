@@ -2102,13 +2102,37 @@ function generatePDF(uniqueNests) {
       uniqueNest.count.toString()
     ]);
     
+    // Calculate totals
+    const totalNestedPieces = uniqueNests.reduce((sum, uniqueNest) => 
+    sum + (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
+    const totalQty = uniqueNests.reduce((sum, uniqueNest) => 
+    sum + uniqueNest.count, 0);
+
+    // Add totals row
+    summaryData.push([
+    'TOTAL',
+    '',
+    '',
+    totalNestedPieces.toString(),
+    '',
+    '',
+    totalQty.toString()
+    ]);
+
     // Create summary table
     doc.autoTable({
-      head: [summaryHeaders],
-      body: summaryData,
-      startY: yPosition,
-      margin: { left: margin, right: margin },
-      tableWidth: contentWidth
+    head: [summaryHeaders],
+    body: summaryData,
+    startY: yPosition,
+    margin: { left: margin, right: margin },
+    tableWidth: contentWidth,
+    didParseCell: function(data) {
+        // Style the totals row
+        if (data.row.index === summaryData.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [240, 240, 240]; // Light gray background
+        }
+    }
     });
     
     yPosition = doc.lastAutoTable.finalY + 15;
