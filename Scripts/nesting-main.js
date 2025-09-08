@@ -2106,7 +2106,7 @@ function generatePDF(uniqueNests) {
     const totalNestedPieces = uniqueNests.reduce((sum, uniqueNest) => 
     sum + (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
     const totalQty = uniqueNests.reduce((sum, uniqueNest) => 
-    sum + uniqueNest.count, 0);
+    sum + uniqueNest.count * (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
 
     // Add totals row
     summaryData.push([
