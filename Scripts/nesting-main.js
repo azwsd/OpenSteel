@@ -2079,60 +2079,138 @@ function generatePDF(uniqueNests) {
     doc.setFontSize(18);
     doc.text('Nesting Report', margin, margin + 10);
     doc.setFontSize(12);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, margin + 20);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()} by OpenSteel`, margin, margin + 20);
     doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
     
     let yPosition = margin + 35;
     
     // Add summary section
     doc.setFontSize(16);
-    doc.text('Nesting Summary', margin, yPosition);
+    doc.text('Nesting Summary by Profile', margin, yPosition);
     yPosition += 10;
-    
-    // Summary table using unique nests
-    doc.setFontSize(10);
-    const summaryHeaders = ['Nest #', 'Profile', 'Stock Length', 'Nested Pieces', 'Offcut', 'Waste', 'Qty'];
-    const summaryData = uniqueNests.map((uniqueNest, i) => [
-      `${nestCounter + i}`,
-      uniqueNest.nest.profile,
-      `${uniqueNest.nest.stockLength} mm`,
-      uniqueNest.nest.pieceAssignments.length.toString(),
-      `${Math.round(uniqueNest.nest.offcut)} mm`,
-      `${Math.round(uniqueNest.nest.waste)} mm`,
-      uniqueNest.count.toString()
-    ]);
-    
-    // Calculate totals
-    const totalNestedPieces = uniqueNests.reduce((sum, uniqueNest) => 
-    sum + (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
-    const totalQty = uniqueNests.reduce((sum, uniqueNest) => 
-    sum + uniqueNest.count * (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
 
-    // Add totals row
-    summaryData.push([
-    'TOTAL',
-    '',
-    '',
-    totalNestedPieces.toString(),
-    '',
-    '',
-    totalQty.toString()
-    ]);
-
-    // Create summary table
-    doc.autoTable({
-    head: [summaryHeaders],
-    body: summaryData,
-    startY: yPosition,
-    margin: { left: margin, right: margin },
-    tableWidth: contentWidth,
-    didParseCell: function(data) {
-        // Style the totals row
-        if (data.row.index === summaryData.length - 1) {
-        data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.fillColor = [240, 240, 240]; // Light gray background
+    // Group unique nests by profile
+    const summaryByProfile = uniqueNests.reduce((groups, uniqueNest) => {
+        const profile = uniqueNest.nest.profile;
+        if (!groups[profile]) {
+            groups[profile] = [];
         }
+        groups[profile].push(uniqueNest);
+        return groups;
+    }, {});
+
+    doc.setFontSize(10);
+    const summaryHeaders = ['Nest #', 'Stock Length', 'Nested Pieces', 'Offcut', 'Waste', 'Qty'];
+
+    // Process each profile group
+    Object.keys(summaryByProfile).forEach((profile, profileIndex) => {
+        // Check if we need a new page
+        if (yPosition > pageHeight - 50) {
+            doc.addPage();
+            yPosition = margin;
+        }
+        
+        // Add space between profiles (except for the first one)
+        if (profileIndex > 0) {
+            yPosition += 15;
+        }
+        
+        // Add profile header
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Profile: ${profile}`, margin, yPosition);
+        yPosition += 8;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        
+        const profileNests = summaryByProfile[profile];
+        
+        // Create data for this profile
+        const profileData = profileNests.map((uniqueNest, i) => [
+            `${nestCounter + uniqueNests.findIndex(n => n === uniqueNest)}`,
+            `${uniqueNest.nest.stockLength} mm`,
+            uniqueNest.nest.pieceAssignments.length.toString(),
+            `${Math.round(uniqueNest.nest.offcut)} mm`,
+            `${Math.round(uniqueNest.nest.waste)} mm`,
+            uniqueNest.count.toString()
+        ]);
+        
+        // Calculate profile totals
+        const profileTotalPieces = profileNests.reduce((sum, uniqueNest) => 
+            sum + (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
+        const profileTotalQty = profileNests.reduce((sum, uniqueNest) => 
+            sum + uniqueNest.count, 0);
+        
+        // Add profile totals row
+        profileData.push([
+            'SUBTOTAL',
+            '',
+            profileTotalPieces.toString(),
+            '',
+            '',
+            profileTotalQty.toString()
+        ]);
+        
+        // Create profile table
+        doc.autoTable({
+            head: [summaryHeaders],
+            body: profileData,
+            startY: yPosition,
+            margin: { left: margin, right: margin },
+            tableWidth: contentWidth,
+            didParseCell: function(data) {
+                // Style the subtotal row
+                if (data.row.index === profileData.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = [245, 245, 245];
+                }
+            },
+            didDrawPage: function(data) {
+                // Update yPosition after table is drawn
+                yPosition = data.cursor.y + 5;
+            }
+        });
+        
+        // Get the final Y position after the table
+        yPosition = doc.lastAutoTable.finalY + 5;
+    });
+
+    // Check if we need a new page for grand totals
+    if (yPosition > pageHeight - 80) {
+        doc.addPage();
+        yPosition = margin;
     }
+
+    // Add grand totals section
+    yPosition += 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Grand Totals', margin, yPosition);
+    yPosition += 8;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+
+    // Calculate grand totals
+    const grandTotalPieces = uniqueNests.reduce((sum, uniqueNest) => 
+        sum + (uniqueNest.nest.pieceAssignments.length * uniqueNest.count), 0);
+    const grandTotalQty = uniqueNests.reduce((sum, uniqueNest) => 
+        sum + uniqueNest.count, 0);
+
+    const grandTotalData = [
+        ['GRAND TOTAL', '', grandTotalPieces.toString(), '', '', grandTotalQty.toString()]
+    ];
+
+    doc.autoTable({
+        head: [summaryHeaders],
+        body: grandTotalData,
+        startY: yPosition,
+        margin: { left: margin, right: margin },
+        tableWidth: contentWidth,
+        didParseCell: function(data) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [220, 220, 220];
+            data.cell.styles.fontSize = 11;
+        }
     });
     
     yPosition = doc.lastAutoTable.finalY + 15;
