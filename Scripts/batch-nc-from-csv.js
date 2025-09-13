@@ -227,7 +227,7 @@ class CSVBatchDSTVCreator {
     async createDSTVFromRow(row) {
         try {
             // Validate required fields
-            const requiredFields = ['order', 'drawing', 'phase', 'position', 'grade', 'quantity', 'section_type', 'section_details'];
+            const requiredFields = ['order', 'drawing', 'phase', 'position', 'grade', 'quantity', 'length', 'section_type', 'section_details'];
             for (const field of requiredFields) {
                 if (!row[field]) {
                     const error = `Missing required field: ${field}`;
