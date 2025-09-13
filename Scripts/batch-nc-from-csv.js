@@ -203,6 +203,7 @@ class CSVBatchDSTVCreator {
             }
         }
 
+        filesPlaceHolder(); // Update file placeholder
         // Show completion summary
         const summary = `Batch processing complete. Success: ${successCount}, Errors: ${errorCount}`;
         this.showToast(summary, errorCount === 0 ? 'success' : 'error');
