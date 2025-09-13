@@ -261,4 +261,5 @@ function createNC() {
     const ncData = getNC();
     if(ncData === '') return;
     addFile(fileName, ncData, 1, false);
+    filesPlaceHolder(); // Update file placeholder
 }
