@@ -5,6 +5,11 @@ let filePairs = new Map(Object.entries(JSON.parse(sessionStorage.getItem("filePa
 let selectedFile = sessionStorage.getItem("selectedFile") || "";
 //Blocs
 let blocs = ['BO', 'SI', 'AK', 'IK', 'PU', 'KO', 'SC', 'TO', 'UE', 'PR', 'KA', 'EN']
+// Variables to store profile data for comparison
+let currentProfile = null;
+let previousProfile = null;
+let currentProfileSize = null;
+let previousProfileSize = null;
 
 function updateSessionData() {
     sessionStorage.setItem("filePairs", JSON.stringify(Object.fromEntries(filePairs)));
@@ -447,6 +452,25 @@ function loadProfile(displayText, profileData = null) {
 }
 
 function displayProfile(selectedProfile) {
+    // Store previous profile before updating current
+    if (currentProfile) {
+        previousProfile = currentProfile;
+    }
+    if (!previousProfileSize) {
+        previousProfileSize = document.getElementById('profileSizeAutocomplete').value;
+    }
+    else {
+        previousProfileSize = currentProfileSize;
+    }
+    currentProfileSize = document.getElementById('profileSizeAutocomplete').value;
+    
+    // Store current profile
+    currentProfile = {
+        profile: selectedProfile,
+        profileType: loadedProfile
+    };
+    
+    // Continue with your existing displayProfile logic
     if (loadedProfile == 'I' || loadedProfile == 'U') {
         clearViewProfileData();
         const weight = document.createElement('p');
@@ -470,7 +494,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, height, webHeight, width, webThickness, flangeThickness, radius, code].forEach(e => { profileData.appendChild(e) });
-        debouncedCalcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight();
     }
     else if (loadedProfile == 'Rebar' || loadedProfile == 'Round') {
         clearViewProfileData();
@@ -485,7 +509,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, od, code].forEach(e => { profileData.appendChild(e) });
-        debouncedCalcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight();
     }
     else if (loadedProfile == 'CHS') {
         clearViewProfileData();
@@ -506,7 +530,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, od, thickness, nps, sch, code].forEach(e => { profileData.appendChild(e) });
-        debouncedCalcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight();
     }
     else if (loadedProfile == 'Flat') {
         clearViewProfileData();
@@ -523,7 +547,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, thickness, width, code].forEach(e => { profileData.appendChild(e) });
-        debouncedCalcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight();
     }
     else if (loadedProfile == 'Square') {
         clearViewProfileData();
@@ -538,7 +562,7 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, length, code].forEach(e => { profileData.appendChild(e) });
-        debouncedCalcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight();
     }
     else if (loadedProfile == 'RHS' || loadedProfile == 'SHS' || loadedProfile == 'L') {
         clearViewProfileData();
@@ -557,17 +581,20 @@ function displayProfile(selectedProfile) {
         code.innerHTML = `Code: ${selectedProfile.code}`;
 
         [weight, thickness, height, width, code].forEach(e => { profileData.appendChild(e) });
-        debouncedCalcWeight(); //Calculate weight based on selected profile
+        debouncedCalcWeight();
     }
-    else M.toast({html: 'Please choose a correct profile!', classes: 'rounded toast-error', displayLength: 2000});
+    else {
+        M.toast({html: 'Please choose a correct profile!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
 
-    // Update text fields
     M.updateTextFields();
 }
 
 function clearViewProfileData() {
-    profileData.innerHTML = ''; //Clears content of profile data
-    weightValue = 0; //Clears weight calculation
+    const profileData = document.getElementById('profileData');
+    profileData.innerHTML = '';
+    weightValue = 0;
 }
 
 function parseCSV(text) {
@@ -822,3 +849,144 @@ function findProfileByDisplayText(displayText) {
         return getProfileID(profile) === displayText;
     });
 }
+
+// Function to generate profile HTML for the modal
+function generateProfileHTML(profileInfo, profileSize, isImage = false) {
+    if (!profileInfo) {
+        return '<p style="color: #999; font-style: italic; text-align: center; padding: 20px;">No profile selected</p>';
+    }
+    
+    const { profile: selectedProfile, profileType } = profileInfo;
+    const profileWeight = parseFloat(selectedProfile.kgm).toFixed(2);
+    
+    let profileImage = '';
+    if (isImage) {
+        const profileCode = selectedProfile.code.charAt(0);
+        let imageSrc = 'Images/Profiles/no-profile.png';
+        
+        // Determine profile image based on type
+        switch (profileType) {
+            case 'I':
+                imageSrc = 'Images/Profiles/I.png';
+                break;
+            case 'U':
+                imageSrc = 'Images/Profiles/U.png';
+                break;
+            case 'CHS':
+                imageSrc = 'Images/Profiles/CHS.png';
+                break;
+            case 'RHS':
+                imageSrc = 'Images/Profiles/RHS.png';
+                break;
+            case 'SHS':
+                imageSrc = 'Images/Profiles/SHS.png';
+                break;
+            case 'Flat':
+                imageSrc = 'Images/Profiles/Flat.png';
+                break;
+            case 'Round':
+                imageSrc = 'Images/Profiles/Round.png';
+                break;
+            case 'Square':
+                imageSrc = 'Images/Profiles/Square.png';
+                break;
+            case 'L':
+                imageSrc = 'Images/Profiles/L.png';
+                break;
+        }
+        
+        profileImage = `<div style="text-align: center; margin-bottom: 15px;">
+            <img src="${imageSrc}" alt="Profile visualization" style="max-width: 100%; height: 25rem; border: 1px solid #ddd; border-radius: 4px;">
+        </div>`;
+    }
+    
+    let profileDetails = '';
+    
+    if (profileType === 'I' || profileType === 'U') {
+        profileDetails = `
+            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
+            <p><strong>Code:</strong> ${selectedProfile.code}</p>
+            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
+            <p><strong>Height:</strong> ${selectedProfile.h} mm</p>
+            <p><strong>Web height:</strong> ${selectedProfile.h - 2 * selectedProfile.tf} mm</p>
+            <p><strong>Width:</strong> ${selectedProfile.b} mm</p>
+            <p><strong>Web thickness:</strong> ${selectedProfile.tw} mm</p>
+            <p><strong>Flange thickness:</strong> ${selectedProfile.tf} mm</p>
+            <p><strong>Radius:</strong> ${selectedProfile.r} mm</p>
+        `;
+    }
+    else if (profileType === 'Rebar' || profileType === 'Round') {
+        profileDetails = `
+            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
+            <p><strong>Code:</strong> ${selectedProfile.code}</p>
+            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
+            <p><strong>Outside diameter:</strong> ${selectedProfile.od} mm</p>
+        `;
+    }
+    else if (profileType === 'CHS') {
+        profileDetails = `
+            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
+            <p><strong>Code:</strong> ${selectedProfile.code}</p>
+            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
+            <p><strong>Outside diameter:</strong> ${selectedProfile.od} mm</p>
+            <p><strong>Wall thickness:</strong> ${selectedProfile.thk} mm</p>
+            <p><strong>NPS:</strong> ${selectedProfile.nps} inch</p>
+            <p><strong>Sch:</strong> ${selectedProfile.sch}</p>
+        `;
+    }
+    else if (profileType === 'Flat') {
+        profileDetails = `
+            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
+            <p><strong>Code:</strong> ${selectedProfile.code}</p>
+            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
+            <p><strong>Thickness:</strong> ${selectedProfile.thk} mm</p>
+            <p><strong>Width:</strong> ${selectedProfile.b} mm</p>
+        `;
+    }
+    else if (profileType === 'Square') {
+        profileDetails = `
+            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
+            <p><strong>Code:</strong> ${selectedProfile.code}</p>
+            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
+            <p><strong>Side length:</strong> ${selectedProfile.l} mm</p>
+        `;
+    }
+    else if (profileType === 'RHS' || profileType === 'SHS' || profileType === 'L') {
+        profileDetails = `
+            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
+            <p><strong>Code:</strong> ${selectedProfile.code}</p>
+            <p><strong>Weight:</strong> ${profileWeight} kg/m approx.</p>
+            <p><strong>Thickness:</strong> ${selectedProfile.thk} mm</p>
+            <p><strong>Height:</strong> ${selectedProfile.h} mm</p>
+            <p><strong>Width:</strong> ${selectedProfile.b} mm</p>
+        `;
+    }
+    
+    return profileImage + profileDetails;
+}
+
+// Function to open comparison modal
+function openComparisonModal() {
+    if (!currentProfile) {
+        M.toast({html: 'Please select a profile first!', classes: 'rounded toast-warning', displayLength: 2000});
+        return;
+    }
+    
+    // Generate HTML for both profiles
+    const currentHTML = generateProfileHTML(currentProfile, currentProfileSize, true);
+    const previousHTML = generateProfileHTML(previousProfile, previousProfileSize, true);
+    
+    // Update modal content
+    document.getElementById('currentProfileContent').innerHTML = currentHTML;
+    document.getElementById('previousProfileContent').innerHTML = previousHTML;
+    
+    // Open modal
+    const modal = M.Modal.getInstance(document.getElementById('profileComparisonModal'));
+    modal.open();
+}
+
+// Add this to your DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize comparison modal
+    M.Modal.init(document.getElementById('profileComparisonModal'));
+});
