@@ -386,7 +386,7 @@ class CSVBatchDSTVCreator {
             row.position,
             row.grade,
             row.quantity,
-            row.section_details.replace(/\s/g, '').split(':')[1] || '',
+            (row.section_details.replace(/\s/g, '').split(':')[1] || row.section_details.replace(/\s/g, '')),
             sectionType,
             row.length,
             (sectionType === 'RO' || sectionType === 'RU') ? this.getProfileValue(profileMatch, 'od') : this.getProfileValue(profileMatch, 'h') || '0',
