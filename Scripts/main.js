@@ -665,7 +665,6 @@ function loadDstvSectionDetails(sectionType) {
                 break;
             case 'T':
                 // T sections don't have a standard profile library
-                sectionDetailsElem.disabled = true;
                 const dropdown = document.getElementById('sectionDetailsDropdown');
                 dropdown.innerHTML = '<li><a class="deep-purple-text">T sections not available in profile library</a></li>';
                 resolve();
