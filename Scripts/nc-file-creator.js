@@ -216,7 +216,7 @@ function getNC() {
         getInputValue('positionInput'),
         getInputValue('gradeInput'),
         getInputValue('quantityInput'),
-        getInputValue('sectionDetailsAutocomplete'),
+        getInputValue('sectionDetailsAutocomplete').replace(/\s/g, '').split(':')[1],
         getInputValue('sectionTypeSelect'),
         getInputValue('lengthInput'),
         getInputValue('heighthInput'),
