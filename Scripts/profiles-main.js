@@ -895,7 +895,7 @@ function generateProfileHTML(profileInfo, profileSize, isImage = false) {
                 break;
         }
         
-        profileImage = `<div style="text-align: center; margin-bottom: 15px;">
+        profileImage = `<div style="text-align: center; margin: 15px;">
             <img src="${imageSrc}" alt="Profile visualization" style="max-width: 100%; height: 25rem; border: 1px solid #ddd; border-radius: 4px;">
         </div>`;
     }
@@ -962,7 +962,7 @@ function generateProfileHTML(profileInfo, profileSize, isImage = false) {
         `;
     }
     
-    return profileImage + profileDetails;
+    return profileDetails + `<div class="divider"></div>` + profileImage;
 }
 
 // Function to open comparison modal
