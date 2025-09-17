@@ -853,7 +853,16 @@ function findProfileByDisplayText(displayText) {
 // Function to generate profile HTML for the modal
 function generateProfileHTML(profileInfo, profileSize, isImage = false) {
     if (!profileInfo) {
-        return '<p style="color: #999; font-style: italic; text-align: center; padding: 20px;">No profile selected</p>';
+        return `
+            <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6"/>
+                    <path d="m21 12-6 0m-6 0-6 0"/>
+                </svg>
+                <p>No profile selected</p>
+            </div>
+        `;
     }
     
     const { profile: selectedProfile, profileType } = profileInfo;
@@ -866,103 +875,249 @@ function generateProfileHTML(profileInfo, profileSize, isImage = false) {
         
         // Determine profile image based on type
         switch (profileType) {
-            case 'I':
-                imageSrc = 'Images/Profiles/I.png';
-                break;
-            case 'U':
-                imageSrc = 'Images/Profiles/U.png';
-                break;
-            case 'CHS':
-                imageSrc = 'Images/Profiles/CHS.png';
-                break;
-            case 'RHS':
-                imageSrc = 'Images/Profiles/RHS.png';
-                break;
-            case 'SHS':
-                imageSrc = 'Images/Profiles/SHS.png';
-                break;
-            case 'Flat':
-                imageSrc = 'Images/Profiles/Flat.png';
-                break;
-            case 'Round':
-                imageSrc = 'Images/Profiles/Round.png';
-                break;
-            case 'Square':
-                imageSrc = 'Images/Profiles/Square.png';
-                break;
-            case 'L':
-                imageSrc = 'Images/Profiles/L.png';
-                break;
+            case 'I': imageSrc = 'Images/Profiles/I.png'; break;
+            case 'U': imageSrc = 'Images/Profiles/U.png'; break;
+            case 'CHS': imageSrc = 'Images/Profiles/CHS.png'; break;
+            case 'RHS': imageSrc = 'Images/Profiles/RHS.png'; break;
+            case 'SHS': imageSrc = 'Images/Profiles/SHS.png'; break;
+            case 'Flat': imageSrc = 'Images/Profiles/Flat.png'; break;
+            case 'Round': imageSrc = 'Images/Profiles/Round.png'; break;
+            case 'Square': imageSrc = 'Images/Profiles/Square.png'; break;
+            case 'L': imageSrc = 'Images/Profiles/L.png'; break;
         }
         
-        profileImage = `<div style="text-align: center; margin: 15px;">
-            <img src="${imageSrc}" alt="Profile visualization" style="max-width: 100%; height: 25rem; border: 1px solid #ddd; border-radius: 4px;">
-        </div>`;
+        profileImage = `
+            <div class="profile-image">
+                <img src="${imageSrc}" alt="Profile visualization" loading="lazy">
+            </div>
+        `;
     }
     
-    let profileDetails = '';
+    const profileName = profileSize.split(":")[1];
+    const specifications = getProfileSpecifications(selectedProfile, profileType);
+    
+    return `
+        <div class="profile-container">
+            <div class="profile-header">
+                <div class="profile-title">
+                    <h3>${profileName}</h3>
+                    <span class="profile-code">${selectedProfile.code}</span>
+                </div>
+                <div class="profile-weight">
+                    <span class="weight-value">${profileWeight}</span>
+                    <span class="weight-unit">kg/m</span>
+                </div>
+            </div>
+            
+            <div class="profile-specs">
+                ${specifications}
+            </div>
+            
+            ${profileImage}
+        </div>
+        
+        <style>
+            .profile-container {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #ffffff;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                margin: 0;
+            }
+            
+            .profile-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 24px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .profile-title h3 {
+                margin: 0 0 4px 0;
+                font-size: 1.25rem;
+                font-weight: 600;
+            }
+            
+            .profile-code {
+                background: rgba(255, 255, 255, 0.2);
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+            
+            .profile-weight {
+                text-align: right;
+            }
+            
+            .weight-value {
+                display: block;
+                font-size: 1.5rem;
+                font-weight: 700;
+                line-height: 1;
+            }
+            
+            .weight-unit {
+                font-size: 0.875rem;
+                opacity: 0.9;
+            }
+            
+            .profile-specs {
+                padding: 24px;
+                background: #fafbfc;
+            }
+            
+            .spec-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                margin: 0;
+            }
+            
+            .spec-item {
+                background: white;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid #e1e8ed;
+                transition: all 0.2s ease;
+            }
+            
+            .spec-item:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .spec-label {
+                color: #657786;
+                font-size: 0.875rem;
+                font-weight: 500;
+                margin-bottom: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            .spec-value {
+                color: #14171a;
+                font-size: 1.125rem;
+                font-weight: 600;
+                margin: 0;
+            }
+            
+            .profile-image {
+                padding: 24px;
+                text-align: center;
+                background: white;
+                border-top: 1px solid #e1e8ed;
+            }
+            
+            .profile-image img {
+                max-width: 100%;
+                height: auto;
+                max-height: 300px;
+                border-radius: 8px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s ease;
+            }
+            
+            .profile-image img:hover {
+                transform: scale(1.02);
+            }
+            
+            .empty-state {
+                text-align: center;
+                padding: 48px 24px;
+                color: #657786;
+            }
+            
+            .empty-state svg {
+                margin-bottom: 16px;
+                opacity: 0.6;
+            }
+            
+            .empty-state p {
+                margin: 0;
+                font-size: 1rem;
+                font-weight: 500;
+            }
+            
+            @media (max-width: 768px) {
+                .profile-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 12px;
+                }
+                
+                .profile-weight {
+                    text-align: left;
+                }
+                
+                .spec-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    `;
+}
+
+// Helper function to generate specifications based on profile type
+function getProfileSpecifications(profile, profileType) {
+    const specs = [];
     
     if (profileType === 'I' || profileType === 'U') {
-        profileDetails = `
-            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
-            <p><strong>Code:</strong> ${selectedProfile.code}</p>
-            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
-            <p><strong>Height:</strong> ${selectedProfile.h} mm</p>
-            <p><strong>Web height:</strong> ${selectedProfile.h - 2 * selectedProfile.tf} mm</p>
-            <p><strong>Width:</strong> ${selectedProfile.b} mm</p>
-            <p><strong>Web thickness:</strong> ${selectedProfile.tw} mm</p>
-            <p><strong>Flange thickness:</strong> ${selectedProfile.tf} mm</p>
-            <p><strong>Radius:</strong> ${selectedProfile.r} mm</p>
-        `;
+        specs.push(
+            { label: 'Height', value: `${profile.h} mm` },
+            { label: 'Web Height', value: `${profile.h - 2 * profile.tf} mm` },
+            { label: 'Width', value: `${profile.b} mm` },
+            { label: 'Web Thickness', value: `${profile.tw} mm` },
+            { label: 'Flange Thickness', value: `${profile.tf} mm` },
+            { label: 'Radius', value: `${profile.r} mm` }
+        );
     }
     else if (profileType === 'Rebar' || profileType === 'Round') {
-        profileDetails = `
-            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
-            <p><strong>Code:</strong> ${selectedProfile.code}</p>
-            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
-            <p><strong>Outside diameter:</strong> ${selectedProfile.od} mm</p>
-        `;
+        specs.push(
+            { label: 'Outside Diameter', value: `${profile.od} mm` }
+        );
     }
     else if (profileType === 'CHS') {
-        profileDetails = `
-            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
-            <p><strong>Code:</strong> ${selectedProfile.code}</p>
-            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
-            <p><strong>Outside diameter:</strong> ${selectedProfile.od} mm</p>
-            <p><strong>Wall thickness:</strong> ${selectedProfile.thk} mm</p>
-            <p><strong>NPS:</strong> ${selectedProfile.nps} inch</p>
-            <p><strong>Sch:</strong> ${selectedProfile.sch}</p>
-        `;
+        specs.push(
+            { label: 'Outside Diameter', value: `${profile.od} mm` },
+            { label: 'Wall Thickness', value: `${profile.thk} mm` },
+            { label: 'NPS', value: `${profile.nps} inch` },
+            { label: 'Schedule', value: profile.sch }
+        );
     }
     else if (profileType === 'Flat') {
-        profileDetails = `
-            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
-            <p><strong>Code:</strong> ${selectedProfile.code}</p>
-            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
-            <p><strong>Thickness:</strong> ${selectedProfile.thk} mm</p>
-            <p><strong>Width:</strong> ${selectedProfile.b} mm</p>
-        `;
+        specs.push(
+            { label: 'Thickness', value: `${profile.thk} mm` },
+            { label: 'Width', value: `${profile.b} mm` }
+        );
     }
     else if (profileType === 'Square') {
-        profileDetails = `
-            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
-            <p><strong>Code:</strong> ${selectedProfile.code}</p>
-            <p><strong>Weight:</strong> ${profileWeight} kg/m</p>
-            <p><strong>Side length:</strong> ${selectedProfile.l} mm</p>
-        `;
+        specs.push(
+            { label: 'Side Length', value: `${profile.l} mm` }
+        );
     }
     else if (profileType === 'RHS' || profileType === 'SHS' || profileType === 'L') {
-        profileDetails = `
-            <p><strong>Profile:</strong> ${profileSize.split(":")[1]}</p>
-            <p><strong>Code:</strong> ${selectedProfile.code}</p>
-            <p><strong>Weight:</strong> ${profileWeight} kg/m approx.</p>
-            <p><strong>Thickness:</strong> ${selectedProfile.thk} mm</p>
-            <p><strong>Height:</strong> ${selectedProfile.h} mm</p>
-            <p><strong>Width:</strong> ${selectedProfile.b} mm</p>
-        `;
+        specs.push(
+            { label: 'Thickness', value: `${profile.thk} mm` },
+            { label: 'Height', value: `${profile.h} mm` },
+            { label: 'Width', value: `${profile.b} mm` }
+        );
     }
     
-    return profileDetails + `<div class="divider"></div>` + profileImage;
+    return `
+        <div class="spec-grid">
+            ${specs.map(spec => `
+                <div class="spec-item">
+                    <div class="spec-label">${spec.label}</div>
+                    <div class="spec-value">${spec.value}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 // Function to open comparison modal
