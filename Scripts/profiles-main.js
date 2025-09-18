@@ -1139,9 +1139,3 @@ function openComparisonModal() {
     const modal = M.Modal.getInstance(document.getElementById('profileComparisonModal'));
     modal.open();
 }
-
-// Add this to your DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize comparison modal
-    M.Modal.init(document.getElementById('profileComparisonModal'));
-});
