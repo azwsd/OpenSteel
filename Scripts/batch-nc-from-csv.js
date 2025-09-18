@@ -427,3 +427,17 @@ if (document.readyState === 'loading') {
 } else {
     csvBatchCreator = new CSVBatchDSTVCreator();
 }
+
+function downloadBatchCsvSample() {
+    const sampleCsvContent = `order, drawing, phase, position, grade, quantity, length, web_start_cut, web_end_cut, flange_start_cut, flange_end_cut, section_type, section_details
+Order1,Drawing1,Phase1,Pos1,S235,1,1000,0,0,0,0,L,200X200X15`
+    const blob = new Blob([sampleCsvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_batch.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
