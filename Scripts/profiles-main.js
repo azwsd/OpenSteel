@@ -416,6 +416,14 @@ function getProfileID(obj) {
             return `${code}: ${obj.l}`
         case 'CHS':
             var code =  obj.code.match(/^[a-zA-Z]+/)[0];
+            if (obj.name != '') {
+                if (obj.sch != '') {
+                    return `${code}: ${obj.od} x ${obj.thk} (${obj.name})`;
+                }
+                else {
+                    return `${code}: ${obj.od} x ${obj.thk} (CHS ${obj.nps})`;
+                }
+            }
             return `${code}: ${obj.od} x ${obj.thk}`;
         case 'Flat':
             var code =  obj.code.match(/^[a-zA-Z]+/)[0];
@@ -470,7 +478,7 @@ function displayProfile(selectedProfile) {
         profileType: loadedProfile
     };
     
-    // Continue with your existing displayProfile logic
+    // Display Profile logic
     if (loadedProfile == 'I' || loadedProfile == 'U') {
         clearViewProfileData();
         const weight = document.createElement('p');
