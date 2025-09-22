@@ -112,6 +112,30 @@
             </div>
         </div>
     </div>
+    <!-- Manual Nest Edit Modal -->
+    <div id="manualEditModal" class="modal">
+    <div class="modal-content">
+        <h4>Manual Nest Editor</h4>
+        <p>Edit nests per profile. Click a nest to view/modify pieces placed on it.</p>
+
+        <div id="manual-edit-controls" style="margin-bottom:12px;">
+        <button id="manual-delete-all" class="waves-effect waves-light btn red small">Delete All Nests</button>
+        </div>
+
+        <div id="manual-edit-tabs">
+        <!-- JS populates profile/nest list here -->
+        </div>
+
+        <div id="manual-edit-detail" style="margin-top:12px;">
+        <!-- Shows details for selected nest -->
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <a href="#!" id="manual-accept-btn" class="waves-effect waves-green btn green">Accept Changes</a>
+        <a href="#!" class="modal-close waves-effect waves-green btn grey">Close</a>
+    </div>
+    </div>
     <!--Mobile navbar-->
     <ul class="sidenav" id="mobile">
         <li><p class="fileTracker">File 0/0</p></li>
@@ -369,6 +393,10 @@
                         </button>
                         <button id="download-offcuts-btn" class="waves-effect waves-light btn-large deep-purple hide">
                             <i class="material-icons left">file_download</i>Download Offcuts
+                        </button>
+                        <!-- Button to open manual edit -->
+                        <button id="manual-edit-btn" class="waves-effect waves-light btn-large deep-purple hide">
+                        <i class="material-icons left">edit</i>Manual Edit
                         </button>
                         <button id="accept-nest-btn" class="waves-effect waves-light btn-large green hide">
                             <i class="material-icons left">check_circle</i>Accept Nest

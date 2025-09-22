@@ -482,6 +482,7 @@ const cuttingNestsDiv = document.getElementById('cutting-nests');
 const remainingPiecesDiv = document.getElementById('remaining-pieces');
 const downloadOffcutsBtn = document.getElementById('download-offcuts-btn');
 const acceptNestBtn = document.getElementById('accept-nest-btn');
+const manualEditBtn = document.getElementById('manual-edit-btn');
 
 // Event Listeners
 addStockBtn.addEventListener('click', addStock);
@@ -900,8 +901,10 @@ function renderStockTable() {
 }
 
 function renderPieceTable() {
+    const pieceTable = document.getElementById('piece-table').getElementsByTagName('tbody')[0];
     pieceTable.innerHTML = '';
 
+    // Always show original pieceItems, not the draft pieces
     pieceItems.forEach((item, index) => {
         const row = pieceTable.insertRow();
         row.innerHTML = `
@@ -1141,6 +1144,7 @@ function optimizeCuttingNests() {
     cuttingNestsDiv.classList.remove('hide');
     downloadOffcutsBtn.classList.remove('hide');
     acceptNestBtn.classList.remove('hide');
+    manualEditBtn.classList.remove('hide');
     M.Tabs.init(document.querySelectorAll('#nesting-tabs')); // Initialize tabs
 }
 
@@ -2977,4 +2981,688 @@ function updateFileTracker() {
     fileTrackers.forEach(tracker => {
         tracker.textContent = `File ${selectedFileIndex + 1}/${filesCount}`;
     });
+}
+
+let manualDraftNests = [];
+let manualDraftPieces = [];
+let originalPiecesSnapshot = null;
+let manualDraftRemainingPieces = [];
+
+function _nowId() { return Date.now() + Math.floor(Math.random() * 10000); }
+function pieceKeyObj(p) { return `${p.profile}||${String(p.label) || ''}||${Number(p.length) || 0}`; }
+function escapeQuote(s) { return String(s).replace(/'/g, "\\'"); }
+
+function pickStockDefForProfile(profile) {
+  if (Array.isArray(stockItems)) {
+    let found = stockItems.find(s => String(s.profile) === String(profile));
+    if (found) return found;
+    if (stockItems.length) return stockItems[0];
+  }
+  return { length: 6000, profile: profile };
+}
+
+// Recompute nest stats
+function recomputeNestStats(nest) {
+  const gripStart = parseFloat(nest.gripStart || document.getElementById('grip-start')?.value) || 0;
+  const gripEnd   = parseFloat(nest.gripEnd   || document.getElementById('grip-end')?.value)   || 0;
+  const sawWidth  = parseFloat(nest.sawWidth  || document.getElementById('saw-width')?.value)  || 0;
+
+  const usable = (Number(nest.stockLength) || 0) - gripStart - gripEnd;
+  let used = 0;
+  (nest.pieceAssignments || []).forEach((a, i) => {
+    used += Number(a.length || a.piece?.length || 0);
+    if (i < nest.pieceAssignments.length - 1) used += sawWidth;
+  });
+
+  nest.usedLength = used;
+  nest.offcut = Math.max(0, usable - used);
+  nest.waste = nest.offcut < 0 ? Math.abs(nest.offcut) : 0;
+}
+
+// Build remaining pieces fresh
+function reconcileUnnestedWithSnapshot() {
+  if (!originalPiecesSnapshot) {
+    originalPiecesSnapshot = JSON.parse(JSON.stringify(pieceItems || []));
+  }
+
+  const origMap = {};
+  originalPiecesSnapshot.forEach(p => {
+    const k = pieceKeyObj(p);
+    origMap[k] = (origMap[k] || 0) + (Number(p.amount) || 1);
+  });
+
+  const usedMap = {};
+  manualDraftNests.forEach(n => {
+    (n.pieceAssignments || []).forEach(a => {
+      const src = (a.piece && (a.piece.originalPiece || a.piece)) || a;
+      const k = pieceKeyObj({ profile: n.profile || src.profile, label: src.label, length: src.length });
+      usedMap[k] = (usedMap[k] || 0) + 1;
+    });
+  });
+
+  // Update the separate remaining pieces array
+  manualDraftRemainingPieces = [];
+  Object.keys(origMap).forEach(k => {
+    const leftover = origMap[k] - (usedMap[k] || 0);
+    if (leftover > 0) {
+      const proto = originalPiecesSnapshot.find(pp => pieceKeyObj(pp) === k);
+      manualDraftRemainingPieces.push({
+        id: proto?.id || _nowId(),
+        profile: proto?.profile,
+        label: proto?.label,
+        length: proto?.length,
+        amount: leftover,
+        color: proto?.color
+      });
+    }
+  });
+}
+
+// Function to get current remaining pieces count for display
+function getRemainingPiecesFromDraft() {
+  reconcileUnnestedWithSnapshot(); // Ensure manualDraftPieces is up to date
+  return manualDraftPieces;
+}
+
+function gatherUnnestedPiecesForProfile(profile) {
+  const map = {};
+  manualDraftRemainingPieces.forEach(p => {
+    if (String(p.profile) !== String(profile)) return;
+    const k = pieceKeyObj(p);
+    if (!map[k]) map[k] = { label: p.label, length: Number(p.length), amount: 0, sample: p };
+    map[k].amount += (Number(p.amount) || 0);
+  });
+  return Object.values(map);
+}
+
+// Function to show remaining stock info
+function renderManualEditModal() {
+  reconcileUnnestedWithSnapshot(); // This updates manualDraftRemainingPieces
+
+  const container = document.getElementById('manual-edit-tabs');
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
+
+  const nestsByProfile = {};
+  manualDraftNests.forEach((n, idx) => {
+    if (!nestsByProfile[n.profile]) nestsByProfile[n.profile] = [];
+    nestsByProfile[n.profile].push({ nest: n, idx });
+  });
+
+  const allProfiles = new Set([
+    ...Object.keys(nestsByProfile),
+    ...(stockItems || []).map(s => String(s.profile)),
+    ...(originalPiecesSnapshot || []).map(p => String(p.profile))
+  ]);
+
+  allProfiles.forEach(profile => {
+    const profCard = document.createElement('div');
+    profCard.className = 'card-panel';
+    profCard.innerHTML = `<h6>Profile: ${profile}</h6>`;
+
+    // Show remaining pieces from separate tracking
+    const remaining = gatherUnnestedPiecesForProfile(profile);
+    const remTotal = remaining.reduce((s, r) => s + (r.amount || 0), 0);
+    const remDiv = document.createElement('div');
+    remDiv.innerHTML = `<strong>Remaining pieces: ${remTotal}</strong>`;
+    profCard.appendChild(remDiv);
+
+    // Show remaining stock info
+    const remainingStock = getRemainingStockForProfile(profile);
+    const stockDiv = document.createElement('div');
+    stockDiv.style.marginBottom = '10px';
+    
+    if (remainingStock.length === 0) {
+      stockDiv.innerHTML = `<span style="color: red;"><strong>No remaining stock</strong></span>`;
+    } else if (remainingStock[0].isUnlimited) {
+      stockDiv.innerHTML = `<span style="color: green;"><strong>Unlimited stock: ${remainingStock[0].length}mm</strong></span>`;
+    } else {
+      const stockInfo = remainingStock.map(s => `${s.length}mm (${s.remaining} left)`).join(', ');
+      stockDiv.innerHTML = `<strong>Available stock:</strong> ${stockInfo}`;
+    }
+    profCard.appendChild(stockDiv);
+
+    // Show existing nests
+    (nestsByProfile[profile] || []).forEach((entry, i) => {
+      const row = document.createElement('div');
+      row.style.margin = '6px 0';
+      const btn = document.createElement('button');
+      btn.className = 'waves-effect waves-light btn-flat';
+      btn.innerText = `Nest ${i + 1} — Stock ${entry.nest.stockLength}mm — ${entry.nest.pieceAssignments.length} pcs (Offcut: ${Math.round(entry.nest.offcut || 0)}mm)`;
+      btn.onclick = () => manualShowNestDetail(profile, entry.idx);
+
+      const rm = document.createElement('button');
+      rm.className = 'waves-effect waves-light btn-small red';
+      rm.style.marginLeft = '8px';
+      rm.innerText = 'Remove';
+      rm.onclick = () => manualRemoveSingleNest(entry.idx);
+
+      row.appendChild(btn);
+      row.appendChild(rm);
+      profCard.appendChild(row);
+    });
+
+    // Add stock button (disabled if no stock available)
+    const addStockBtn = document.createElement('button');
+    addStockBtn.className = remainingStock.length > 0 ? 
+      'waves-effect waves-light btn-small green' : 
+      'waves-effect waves-light btn-small disabled grey';
+    addStockBtn.style.marginTop = '6px';
+    addStockBtn.innerText = remainingStock.length > 0 ? '+ Add Stock' : 'No Stock Available';
+    
+    if (remainingStock.length > 0) {
+      addStockBtn.onclick = () => manualAddStock(profile);
+    }
+    
+    profCard.appendChild(addStockBtn);
+    wrapper.appendChild(profCard);
+  });
+
+  container.appendChild(wrapper);
+
+  document.getElementById('manual-delete-all').onclick = () => {
+    manualDeleteAllNests();
+    renderManualEditModal();
+    document.getElementById('manual-edit-detail').innerHTML = '';
+  };
+}
+
+// Show nest detail
+function manualShowNestDetail(profile, idx) {
+  const detail = document.getElementById('manual-edit-detail');
+  const nest = manualDraftNests[idx];
+  if (!nest) { detail.innerHTML = '<p>Invalid nest</p>'; return; }
+
+  window.selectedManualNestIndex = idx;
+
+  let html = `<h5>${profile} — Nest ${idx + 1}</h5>`;
+  html += `<p>Stock length: ${nest.stockLength}mm | Offcut: ${Math.round(nest.offcut || 0)}mm</p>`;
+  html += `<table class="striped"><thead><tr><th>#</th><th>Label</th><th>Len</th><th>Pos</th><th></th></tr></thead><tbody>`;
+  nest.pieceAssignments.forEach((a, i) => {
+    html += `<tr>
+      <td>${i + 1}</td><td>${a.piece.label}</td><td>${a.piece.length}</td><td>${Math.round(a.position || 0)}</td>
+      <td><button class="btn-small red" onclick="manualRemovePieceFromNest(${idx},${i})">Remove</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+
+  const remaining = gatherUnnestedPiecesForProfile(profile);
+  html += '<h6>Remaining Pieces</h6>';
+  if (!remaining.length) {
+    html += '<p><em>No remaining pieces.</em></p>';
+  } else {
+    remaining.forEach(r => {
+      html += `<div class="chip">${r.label} (${r.length}mm) × ${r.amount}
+        <button class="tiny" onclick="manualAddPieceToNestByKey('${profile}','${escapeQuote(r.label)}',${r.length})">Add</button>
+      </div>`;
+    });
+  }
+
+  detail.innerHTML = html;
+}
+
+// Remove piece
+function manualRemovePieceFromNest(nestIdx, pieceIdx) {
+  const nest = manualDraftNests[nestIdx];
+  const assignment = nest.pieceAssignments.splice(pieceIdx, 1)[0];
+  if (!assignment) return;
+
+  const info = (assignment.piece && (assignment.piece.originalPiece || assignment.piece)) || assignment;
+  const key = pieceKeyObj({ profile: nest.profile, label: info.label, length: info.length });
+  
+  // Add back to remaining pieces
+  const found = manualDraftRemainingPieces.find(p => pieceKeyObj(p) === key);
+  if (found) {
+    found.amount = (Number(found.amount) || 0) + 1;
+  } else {
+    manualDraftRemainingPieces.push({ 
+      id: _nowId(), 
+      profile: nest.profile, 
+      label: info.label, 
+      length: info.length, 
+      amount: 1, 
+      color: info.color 
+    });
+  }
+
+  recomputeNestStats(nest);
+  renderManualEditModal();
+  manualShowNestDetail(nest.profile, nestIdx);
+}
+
+// Add piece
+function manualAddPieceToNestByKey(profile, label, length) {
+  const idx = window.selectedManualNestIndex;
+  if (idx == null) return;
+  
+  const pool = manualDraftRemainingPieces.find(p => 
+    p.profile == profile && p.label == label && p.length == length
+  );
+  if (!pool || pool.amount <= 0) return;
+
+  const nest = manualDraftNests[idx];
+  const sawWidth = parseFloat(nest.sawWidth || document.getElementById('saw-width')?.value) || 0;
+  const gripStart = parseFloat(nest.gripStart || document.getElementById('grip-start')?.value) || 0;
+  const gripEnd = parseFloat(nest.gripEnd || document.getElementById('grip-end')?.value) || 0;
+  const usable = nest.stockLength - gripStart - gripEnd;
+
+  let used = 0;
+  nest.pieceAssignments.forEach((a, i) => {
+    used += Number(a.length);
+    if (i < nest.pieceAssignments.length - 1) used += sawWidth;
+  });
+  if (nest.pieceAssignments.length > 0) used += sawWidth;
+
+  if (used + pool.length > usable) {
+    return M.toast({ html: 'Exceeds bar length', classes: 'rounded toast-error' });
+  }
+
+  const pos = gripStart + used;
+  nest.pieceAssignments.push({
+    piece: { originalPiece: pool, label: pool.label, length: pool.length, color: pool.color, parentID: pool.id },
+    position: pos, 
+    length: pool.length
+  });
+
+  // Remove from remaining pieces
+  pool.amount--;
+  if (pool.amount <= 0) {
+    const poolIndex = manualDraftRemainingPieces.indexOf(pool);
+    if (poolIndex > -1) manualDraftRemainingPieces.splice(poolIndex, 1);
+  }
+
+  recomputeNestStats(nest);
+  renderManualEditModal();
+  manualShowNestDetail(profile, idx);
+}
+
+// Maunal edit mode - Add stock
+function manualAddStock(profile) {
+  const remainingStock = getRemainingStockForProfile(profile);
+  
+  if (!remainingStock.length) {
+    return M.toast({ 
+      html: `No remaining stock available for profile: ${profile}`, 
+      classes: 'rounded toast-error',
+      displayLength: 3000 
+    });
+  }
+
+  // If only one stock length available, use it directly
+  if (remainingStock.length === 1) {
+    const stock = remainingStock[0];
+    createNewNest(profile, stock.length);
+    return;
+  }
+
+  // If multiple stock lengths, show selection dialog
+  showStockSelectionDialog(profile, remainingStock);
+}
+
+// Remove single nest
+function manualRemoveSingleNest(idx) {
+  const nest = manualDraftNests[idx];
+  if (!nest) return;
+  
+  // Return all pieces to remaining
+  nest.pieceAssignments.forEach(a => {
+    const info = (a.piece && (a.piece.originalPiece || a.piece)) || a;
+    const key = pieceKeyObj({ profile: nest.profile, label: info.label, length: info.length });
+    const found = manualDraftRemainingPieces.find(p => pieceKeyObj(p) === key);
+    if (found) {
+      found.amount = (Number(found.amount) || 0) + 1;
+    } else {
+      manualDraftRemainingPieces.push({ 
+        id: _nowId(), 
+        profile: nest.profile, 
+        label: info.label, 
+        length: info.length, 
+        amount: 1, 
+        color: info.color 
+      });
+    }
+  });
+  
+  manualDraftNests.splice(idx, 1);
+  renderManualEditModal();
+  document.getElementById('manual-edit-detail').innerHTML = '';
+}
+
+// Delete all nests
+function manualDeleteAllNests() {
+  manualDraftNests.forEach(n => {
+    n.pieceAssignments.forEach(a => {
+      const info = (a.piece && (a.piece.originalPiece || a.piece)) || a;
+      const key = pieceKeyObj({ profile: n.profile, label: info.label, length: info.length });
+      const found = manualDraftRemainingPieces.find(p => pieceKeyObj(p) === key);
+      if (found) {
+        found.amount = (Number(found.amount) || 0) + 1;
+      } else {
+        manualDraftRemainingPieces.push({ 
+          id: _nowId(), 
+          profile: n.profile, 
+          label: info.label, 
+          length: info.length, 
+          amount: 1, 
+          color: info.color 
+        });
+      }
+    });
+  });
+  manualDraftNests = [];
+  renderManualEditModal();
+  document.getElementById('manual-edit-detail').innerHTML = '';
+}
+
+// Accept changes
+function acceptManualChanges() {
+  manualDraftNests.forEach(n => recomputeNestStats(n));
+  cuttingNests = JSON.parse(JSON.stringify(manualDraftNests));
+  renderCuttingNests && renderCuttingNests(cuttingNests);
+  const modalEl = document.getElementById('manualEditModal');
+  M.Modal.getInstance(modalEl).close();
+  M.toast({ html: 'Manual edits applied - original piece data preserved', classes: 'rounded toast-success' });
+}
+
+// Open modal
+document.getElementById('manual-edit-btn').addEventListener('click', () => {
+  manualDraftNests = JSON.parse(JSON.stringify(cuttingNests || []));
+  manualDraftPieces = JSON.parse(JSON.stringify(pieceItems || []));
+  originalPiecesSnapshot = JSON.parse(JSON.stringify(pieceItems || []));
+  renderManualEditModal();
+  const modalEl = document.getElementById('manualEditModal');
+  M.Modal.init(modalEl, {}).open();
+  document.getElementById('manual-accept-btn').onclick = acceptManualChanges;
+});
+
+// Get remaining stock counts for a specific profile
+function getRemainingStockForProfile(profile) {
+  const unlimited = localStorage.getItem("useUnlimitedStock") === "true";
+  
+  if (unlimited) {
+    return [{ length: parseFloat(localStorage.getItem("unlimitedStockLength")) || 12000, remaining: 999999, isUnlimited: true }];
+  }
+
+  // Get all stock definitions for this profile
+  const profileStocks = (stockItems || []).filter(s => String(s.profile) === String(profile));
+  
+  if (!profileStocks.length) {
+    return [];
+  }
+
+  // Count how many times each stock length has been used in manual nests
+  const usedCounts = {};
+  manualDraftNests.forEach(nest => {
+    if (String(nest.profile) === String(profile)) {
+      const length = Number(nest.stockLength);
+      usedCounts[length] = (usedCounts[length] || 0) + 1;
+    }
+  });
+
+  // Calculate remaining stock for each length
+  const remainingStock = [];
+  profileStocks.forEach(stock => {
+    const length = Number(stock.length);
+    const totalAvailable = Number(stock.amount || stock.count || stock.quantity || 1);
+    const used = usedCounts[length] || 0;
+    const remaining = totalAvailable - used;
+    
+    if (remaining > 0) {
+      remainingStock.push({
+        length: length,
+        remaining: remaining,
+        totalAvailable: totalAvailable,
+        used: used,
+        isUnlimited: false
+      });
+    }
+  });
+
+  return remainingStock;
+}
+
+// Show dialog to select stock length when multiple options are available
+function showStockSelectionDialog(profile, remainingStock) {
+  // Create modal content
+  let modalContent = `
+    <div class="modal-content">
+      <h4>Select Stock Length for ${profile}</h4>
+      <p>Choose which stock length to use:</p>
+      <div class="collection">
+  `;
+  
+  remainingStock.forEach((stock, index) => {
+    const statusText = stock.isUnlimited ? 
+      `Unlimited (${stock.length}mm)` : 
+      `${stock.length}mm - ${stock.remaining} remaining (${stock.used}/${stock.totalAvailable} used)`;
+    
+    modalContent += `
+      <a href="#!" class="collection-item waves-effect" onclick="selectStockAndClose('${profile}', ${stock.length}, ${index})">
+        <span class="title">${statusText}</span>
+      </a>
+    `;
+  });
+  
+  modalContent += `
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+    </div>
+  `;
+  
+  // Create and show modal
+  const modalId = 'stock-selection-modal';
+  let existingModal = document.getElementById(modalId);
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const modalDiv = document.createElement('div');
+  modalDiv.id = modalId;
+  modalDiv.className = 'modal';
+  modalDiv.innerHTML = modalContent;
+  document.body.appendChild(modalDiv);
+  
+  const modalInstance = M.Modal.init(modalDiv);
+  modalInstance.open();
+  
+  // Store reference for the selection function
+  window.stockSelectionModal = modalInstance;
+}
+
+// Function called when user selects a stock length
+function selectStockAndClose(profile, length, index) {
+  createNewNest(profile, length);
+  if (window.stockSelectionModal) {
+    window.stockSelectionModal.close();
+  }
+}
+
+// Create a new nest with specified stock length
+function createNewNest(profile, barLength) {
+  const newNest = {
+    profile: profile,
+    stockLength: barLength,
+    gripStart: parseFloat(document.getElementById('grip-start')?.value) || 0,
+    gripEnd: parseFloat(document.getElementById('grip-end')?.value) || 0,
+    sawWidth: parseFloat(document.getElementById('saw-width')?.value) || 0,
+    pieceAssignments: []
+  };
+
+  recomputeNestStats(newNest);
+  manualDraftNests.push(newNest);
+  
+  renderManualEditModal();
+  manualShowNestDetail(profile, manualDraftNests.length - 1);
+  
+  M.toast({ 
+    html: `Added ${barLength}mm stock for ${profile}`, 
+    classes: 'rounded toast-success' 
+  });
+}
+
+// Update the main results view to reflect current manual draft state
+function updateMainResultsView() {
+  // Only update if the results are currently visible
+  const cuttingNestsDiv = document.getElementById('cutting-nests');
+  if (!cuttingNestsDiv || cuttingNestsDiv.classList.contains('hide')) {
+    return; // No results to update
+  }
+  
+  // Create a custom render function that uses draft data without modifying globals
+  renderCuttingNestsWithDraftData(manualDraftNests, manualDraftPieces);
+}
+
+function renderCuttingNestsWithDraftData(draftNests, draftPieces) {
+  const cuttingNestsDiv = document.getElementById('cutting-nests');
+  if (!cuttingNestsDiv) return;
+  
+  // Create a temporary copy of the original render logic but with draft data
+  cuttingNestsDiv.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  let remaining = draftPieces.map(i => ({ ...i }));
+  
+  // Get unique nests with their counts
+  const uniqueNests = getUniqueNests(draftNests);
+  
+  // Group unique nests by profile
+  const nestsByProfile = {};
+  uniqueNests.forEach(uniqueNest => {
+    const profile = uniqueNest.nest.profile;
+    if (!nestsByProfile[profile]) {
+      nestsByProfile[profile] = [];
+    }
+    nestsByProfile[profile].push(uniqueNest);
+  });
+  
+  const firstNestNumber = Number(document.getElementById('first-nest-number').value) || 1;
+  
+  // Use simplified rendering logic focused on showing the current state
+  const createElem = (tag, className, html = '') => {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (html) el.innerHTML = html;
+    return el;
+  };
+  
+  // Create a summary card showing draft state
+  const summaryCard = createElem('div', 'card');
+  const summaryContent = createElem('div', 'card-content');
+  const summaryTitle = createElem('span', 'card-title');
+  summaryTitle.textContent = 'Manual Edit Preview (Draft State)';
+  summaryContent.appendChild(summaryTitle);
+  
+  // Calculate draft statistics
+  let totalDraftNests = uniqueNests.reduce((sum, nest) => sum + nest.count, 0);
+  let totalDraftPieces = draftNests.reduce((sum, nest) => sum + nest.pieceAssignments.length, 0);
+  let remainingPiecesCount = remaining.reduce((sum, piece) => sum + piece.amount, 0);
+  
+  const statsDiv = createElem('div', 'card-panel blue-grey lighten-5');
+  statsDiv.innerHTML = `
+    <div class="row">
+      <div class="col s12 m3">
+        <p>Draft Nests: <strong>${totalDraftNests}</strong></p>
+      </div>
+      <div class="col s12 m3">
+        <p>Nested Pieces: <strong>${totalDraftPieces}</strong></p>
+      </div>
+      <div class="col s12 m3">
+        <p>Remaining Pieces: <strong>${remainingPiecesCount}</strong></p>
+      </div>
+      <div class="col s12 m3">
+        <p>Profiles: <strong>${Object.keys(nestsByProfile).length}</strong></p>
+      </div>
+    </div>
+  `;
+  summaryContent.appendChild(statsDiv);
+  
+  summaryCard.appendChild(summaryContent);
+  fragment.appendChild(summaryCard);
+  
+  // Show profile breakdown
+  Object.entries(nestsByProfile).forEach(([profile, profileNests]) => {
+    const profileCard = createElem('div', 'card');
+    const profileContent = createElem('div', 'card-content');
+    const profileTitle = createElem('span', 'card-title');
+    profileTitle.textContent = `Profile: ${profile}`;
+    profileContent.appendChild(profileTitle);
+    
+    const profileStats = profileNests.reduce((acc, uniqueNest) => {
+      const count = uniqueNest.count;
+      const nest = uniqueNest.nest;
+      acc.totalNests += count;
+      acc.totalPieces += nest.pieceAssignments.length * count;
+      return acc;
+    }, { totalNests: 0, totalPieces: 0 });
+    
+    const profileStatsDiv = createElem('div', 'row');
+    profileStatsDiv.innerHTML = `
+      <div class="col s6">
+        <p>Nests: <strong>${profileStats.totalNests}</strong></p>
+      </div>
+      <div class="col s6">
+        <p>Pieces: <strong>${profileStats.totalPieces}</strong></p>
+      </div>
+    `;
+    profileContent.appendChild(profileStatsDiv);
+    
+    profileCard.appendChild(profileContent);
+    fragment.appendChild(profileCard);
+  });
+  
+  // Show remaining pieces if any
+  if (remainingPiecesCount > 0) {
+    const remainingCard = createElem('div', 'card');
+    const remainingContent = createElem('div', 'card-content');
+    const remainingTitle = createElem('span', 'card-title');
+    remainingTitle.textContent = 'Remaining Pieces';
+    remainingContent.appendChild(remainingTitle);
+    
+    const remainingList = createElem('div', 'collection');
+    remaining.forEach(piece => {
+      if (piece.amount > 0) {
+        const item = createElem('div', 'collection-item');
+        item.innerHTML = `
+          <div class="row">
+            <div class="col s3">${piece.profile}</div>
+            <div class="col s3">${piece.label}</div>
+            <div class="col s3">${piece.length}mm</div>
+            <div class="col s3">Qty: ${piece.amount}</div>
+          </div>
+        `;
+        remainingList.appendChild(item);
+      }
+    });
+    remainingContent.appendChild(remainingList);
+    remainingCard.appendChild(remainingContent);
+    fragment.appendChild(remainingCard);
+  }
+  
+  cuttingNestsDiv.appendChild(fragment);
+}
+
+// Create a new nest with specified stock length
+function createNewNest(profile, barLength) {
+  const newNest = {
+    profile: profile,
+    stockLength: barLength,
+    gripStart: parseFloat(document.getElementById('grip-start')?.value) || 0,
+    gripEnd: parseFloat(document.getElementById('grip-end')?.value) || 0,
+    sawWidth: parseFloat(document.getElementById('saw-width')?.value) || 0,
+    pieceAssignments: []
+  };
+
+  recomputeNestStats(newNest);
+  manualDraftNests.push(newNest);
+  
+  // Update both views
+  renderManualEditModal();
+  updateMainResultsView();
+  manualShowNestDetail(profile, manualDraftNests.length - 1);
+  
+  M.toast({ 
+    html: `Added ${barLength}mm stock for ${profile}`, 
+    classes: 'rounded toast-success' 
+  });
 }
