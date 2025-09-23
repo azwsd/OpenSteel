@@ -1754,17 +1754,24 @@ table th, table td {
 /* Responsive adjustments */
 @media (max-width: 992px) {
   .manual-edit-wrapper {
+    display: flex;
     flex-direction: column;
+    align-items: stretch;
+    gap: 16px; /* spacing between panels */
   }
   
   .manual-profiles-container {
-    max-height: 50vh;
+    width: 100% !important;
+    max-height: none !important;
   }
   
-  .manual-detail-panel {
-    position: relative;
-    max-height: none;
-    margin-top: 20px;
+  .manual-detail-panel,
+  .right-panel {
+    position: relative !important; /* remove sticky */
+    top: auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
   }
   
   .nest-details {
@@ -1777,6 +1784,126 @@ table th, table td {
   
   .remaining-pieces-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-tabs-container .col.s12 {
+    padding: 12px;
+    height: auto;
+  }
+
+  .profile-summary {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .summary-stats {
+    gap: 12px;
+    justify-content: space-around;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  /* Nest list items */
+  .nest-item {
+    padding: 10px 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nest-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Nested pieces compact view */
+  .nested-pieces-compact {
+    max-height: 200px;
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .nested-piece-item {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  /* Action buttons full width */
+  .piece-remove-btn,
+  .profile-actions .btn-small,
+  .nest-remove-btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+
+  /* Right panel adjustments */
+  .manual-detail-panel,
+  .right-panel {
+    position: relative;
+    top: auto;
+    max-height: none;
+    height: auto;
+    margin-top: 16px;
+  }
+
+  /* Remaining pieces grid - single column */
+  .remaining-pieces-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Stock option cards stacked layout */
+  .stock-option-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .stock-length {
+    font-size: 0.9rem;
+  }
+
+  /* Text size adjustments */
+  .piece-label {
+    font-size: 0.85rem;
+  }
+  .piece-meta,
+  .piece-qty {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-item {
+    min-width: 50px;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+
+  .nest-title {
+    font-size: 0.95rem;
+  }
+
+  .nest-details {
+    font-size: 0.75rem;
+  }
+
+  .piece-indicator {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+
+  .stock-option-card {
+    padding: 10px;
   }
 }
 
