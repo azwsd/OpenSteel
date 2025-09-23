@@ -3335,7 +3335,7 @@ function manualShowNestDetail(profile, idx) {
                     <th>#</th>
                     <th>Label</th>
                     <th>Length</th>
-                    <th>Position</th>
+                    <th>Delete</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3349,15 +3349,13 @@ function manualShowNestDetail(profile, idx) {
                             </div>
                         </td>
                         <td><strong>${a.piece.length}mm</strong></td>
-                        <td>${Math.round(a.position || 0)}mm</td>
-                        <td></td>
-                        </tr>
-                        <tr class="action-row">
                         <td colspan="5" style="text-align: center; padding: 8px;">
                             <button class="btn-small red waves-effect" onclick="manualRemovePieceFromNest(${idx},${i})">
                             <i class="material-icons">remove</i>
                             </button>
                         </td>
+                        <td></td>
+                        </tr>
                     </tr>
                   `).join('')}
                 </tbody>
