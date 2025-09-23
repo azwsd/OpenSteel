@@ -3466,6 +3466,7 @@ function manualAddPieceToNestByKey(profile, label, length) {
 
   const pos = gripStart + used;
   nest.pieceAssignments.push({
+    label: pool.label,
     piece: { originalPiece: pool, label: pool.label, length: pool.length, color: pool.color, parentID: pool.id },
     position: pos, 
     length: pool.length
