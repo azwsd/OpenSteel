@@ -3528,7 +3528,7 @@ function acceptManualChanges() {
   renderCuttingNests && renderCuttingNests(cuttingNests);
   const modalEl = document.getElementById('manualEditModal');
   M.Modal.getInstance(modalEl).close();
-  M.toast({ html: 'Manual edits applied - original piece data preserved', classes: 'rounded toast-success' });
+  M.toast({ html: 'Manual edits applied!', classes: 'rounded toast-success' });
 }
 
 // Open modal
@@ -3681,146 +3681,6 @@ function createNewNest(profile, barLength) {
   });
 }
 
-// Update the main results view to reflect current manual draft state
-function updateMainResultsView() {
-  // Only update if the results are currently visible
-  const cuttingNestsDiv = document.getElementById('cutting-nests');
-  if (!cuttingNestsDiv || cuttingNestsDiv.classList.contains('hide')) {
-    return; // No results to update
-  }
-  
-  // Create a custom render function that uses draft data without modifying globals
-  renderCuttingNestsWithDraftData(manualDraftNests, manualDraftPieces);
-}
-
-function renderCuttingNestsWithDraftData(draftNests, draftPieces) {
-  const cuttingNestsDiv = document.getElementById('cutting-nests');
-  if (!cuttingNestsDiv) return;
-  
-  // Create a temporary copy of the original render logic but with draft data
-  cuttingNestsDiv.innerHTML = '';
-  const fragment = document.createDocumentFragment();
-  let remaining = draftPieces.map(i => ({ ...i }));
-  
-  // Get unique nests with their counts
-  const uniqueNests = getUniqueNests(draftNests);
-  
-  // Group unique nests by profile
-  const nestsByProfile = {};
-  uniqueNests.forEach(uniqueNest => {
-    const profile = uniqueNest.nest.profile;
-    if (!nestsByProfile[profile]) {
-      nestsByProfile[profile] = [];
-    }
-    nestsByProfile[profile].push(uniqueNest);
-  });
-  
-  const firstNestNumber = Number(document.getElementById('first-nest-number').value) || 1;
-  
-  // Use simplified rendering logic focused on showing the current state
-  const createElem = (tag, className, html = '') => {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (html) el.innerHTML = html;
-    return el;
-  };
-  
-  // Create a summary card showing draft state
-  const summaryCard = createElem('div', 'card');
-  const summaryContent = createElem('div', 'card-content');
-  const summaryTitle = createElem('span', 'card-title');
-  summaryTitle.textContent = 'Manual Edit Preview (Draft State)';
-  summaryContent.appendChild(summaryTitle);
-  
-  // Calculate draft statistics
-  let totalDraftNests = uniqueNests.reduce((sum, nest) => sum + nest.count, 0);
-  let totalDraftPieces = draftNests.reduce((sum, nest) => sum + nest.pieceAssignments.length, 0);
-  let remainingPiecesCount = remaining.reduce((sum, piece) => sum + piece.amount, 0);
-  
-  const statsDiv = createElem('div', 'card-panel blue-grey lighten-5');
-  statsDiv.innerHTML = `
-    <div class="row">
-      <div class="col s12 m3">
-        <p>Draft Nests: <strong>${totalDraftNests}</strong></p>
-      </div>
-      <div class="col s12 m3">
-        <p>Nested Pieces: <strong>${totalDraftPieces}</strong></p>
-      </div>
-      <div class="col s12 m3">
-        <p>Remaining Pieces: <strong>${remainingPiecesCount}</strong></p>
-      </div>
-      <div class="col s12 m3">
-        <p>Profiles: <strong>${Object.keys(nestsByProfile).length}</strong></p>
-      </div>
-    </div>
-  `;
-  summaryContent.appendChild(statsDiv);
-  
-  summaryCard.appendChild(summaryContent);
-  fragment.appendChild(summaryCard);
-  
-  // Show profile breakdown
-  Object.entries(nestsByProfile).forEach(([profile, profileNests]) => {
-    const profileCard = createElem('div', 'card');
-    const profileContent = createElem('div', 'card-content');
-    const profileTitle = createElem('span', 'card-title');
-    profileTitle.textContent = `Profile: ${profile}`;
-    profileContent.appendChild(profileTitle);
-    
-    const profileStats = profileNests.reduce((acc, uniqueNest) => {
-      const count = uniqueNest.count;
-      const nest = uniqueNest.nest;
-      acc.totalNests += count;
-      acc.totalPieces += nest.pieceAssignments.length * count;
-      return acc;
-    }, { totalNests: 0, totalPieces: 0 });
-    
-    const profileStatsDiv = createElem('div', 'row');
-    profileStatsDiv.innerHTML = `
-      <div class="col s6">
-        <p>Nests: <strong>${profileStats.totalNests}</strong></p>
-      </div>
-      <div class="col s6">
-        <p>Pieces: <strong>${profileStats.totalPieces}</strong></p>
-      </div>
-    `;
-    profileContent.appendChild(profileStatsDiv);
-    
-    profileCard.appendChild(profileContent);
-    fragment.appendChild(profileCard);
-  });
-  
-  // Show remaining pieces if any
-  if (remainingPiecesCount > 0) {
-    const remainingCard = createElem('div', 'card');
-    const remainingContent = createElem('div', 'card-content');
-    const remainingTitle = createElem('span', 'card-title');
-    remainingTitle.textContent = 'Remaining Pieces';
-    remainingContent.appendChild(remainingTitle);
-    
-    const remainingList = createElem('div', 'collection');
-    remaining.forEach(piece => {
-      if (piece.amount > 0) {
-        const item = createElem('div', 'collection-item');
-        item.innerHTML = `
-          <div class="row">
-            <div class="col s3">${piece.profile}</div>
-            <div class="col s3">${piece.label}</div>
-            <div class="col s3">${piece.length}mm</div>
-            <div class="col s3">Qty: ${piece.amount}</div>
-          </div>
-        `;
-        remainingList.appendChild(item);
-      }
-    });
-    remainingContent.appendChild(remainingList);
-    remainingCard.appendChild(remainingContent);
-    fragment.appendChild(remainingCard);
-  }
-  
-  cuttingNestsDiv.appendChild(fragment);
-}
-
 // Create a new nest with specified stock length
 function createNewNest(profile, barLength) {
   const newNest = {
@@ -3837,7 +3697,6 @@ function createNewNest(profile, barLength) {
   
   // Update both views
   renderManualEditModal();
-  updateMainResultsView();
   manualShowNestDetail(profile, manualDraftNests.length - 1);
   
   M.toast({ 
