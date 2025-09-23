@@ -3046,17 +3046,19 @@ function recomputeNestStats(nest) {
   const gripStart = parseFloat(nest.gripStart || document.getElementById('grip-start')?.value) || 0;
   const gripEnd   = parseFloat(nest.gripEnd   || document.getElementById('grip-end')?.value)   || 0;
   const sawWidth  = parseFloat(nest.sawWidth  || document.getElementById('saw-width')?.value)  || 0;
+  const minOffcut = parseFloat(localStorage.getItem('minOffcut') || '0');
 
   const usable = (Number(nest.stockLength) || 0) - gripStart - gripEnd;
-  let used = 0;
+  let used = gripStart == 0 ? 0 : sawWidth; // Initial saw width if grip start is used
   (nest.pieceAssignments || []).forEach((a, i) => {
     used += Number(a.length || a.piece?.length || 0);
-    if (i < nest.pieceAssignments.length - 1) used += sawWidth;
+    if (i < nest.pieceAssignments.length) used += sawWidth;
   });
 
   nest.usedLength = used;
-  nest.offcut = Math.max(0, usable - used);
-  nest.waste = nest.offcut < 0 ? Math.abs(nest.offcut) : 0;
+  const offcut = usable - used;
+  nest.offcut = offcut >= minOffcut ? offcut : 0;
+  nest.waste = gripStart + gripEnd + (gripStart == 0 ? nest.pieceAssignments.length : nest.pieceAssignments.length + 1) * sawWidth + (offcut < minOffcut ? offcut : 0);
 }
 
 // Build remaining pieces fresh
