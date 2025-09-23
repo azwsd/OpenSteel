@@ -3081,8 +3081,37 @@ function renderManualEditModal() {
 
   const container = document.getElementById('manual-edit-tabs');
   container.innerHTML = '';
-  const wrapper = document.createElement('div');
-
+  
+  // Create main layout with better structure
+  const mainWrapper = document.createElement('div');
+  mainWrapper.className = 'row manual-edit-wrapper';
+  
+  // Left panel for profiles and nests
+  const leftPanel = document.createElement('div');
+  leftPanel.className = 'col s12 m7 l8';
+  leftPanel.innerHTML = '<div id="profiles-panel" class="manual-profiles-container"></div>';
+  
+  // Right panel for nest details
+  const rightPanel = document.createElement('div');
+  rightPanel.className = 'col s12 m5 l4 right-panel';
+  rightPanel.innerHTML = `
+    <div class="manual-detail-panel">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title grey-text">
+            <i class="material-icons left">info</i>Select a nest to edit
+          </span>
+          <p class="grey-text">Click on any nest from the left panel to view and edit its details here.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  mainWrapper.appendChild(leftPanel);
+  mainWrapper.appendChild(rightPanel);
+  
+  const profilesPanel = leftPanel.querySelector('#profiles-panel');
+  
   const nestsByProfile = {};
   manualDraftNests.forEach((n, idx) => {
     if (!nestsByProfile[n.profile]) nestsByProfile[n.profile] = [];
@@ -3097,108 +3126,248 @@ function renderManualEditModal() {
 
   allProfiles.forEach(profile => {
     const profCard = document.createElement('div');
-    profCard.className = 'card-panel';
-    profCard.innerHTML = `<h6>Profile: ${profile}</h6>`;
-
-    // Show remaining pieces from separate tracking
+    profCard.className = 'card manual-profile-card';
+    
+    // Profile header with status indicators
     const remaining = gatherUnnestedPiecesForProfile(profile);
     const remTotal = remaining.reduce((s, r) => s + (r.amount || 0), 0);
-    const remDiv = document.createElement('div');
-    remDiv.innerHTML = `<strong>Remaining pieces: ${remTotal}</strong>`;
-    profCard.appendChild(remDiv);
-
-    // Show remaining stock info
     const remainingStock = getRemainingStockForProfile(profile);
-    const stockDiv = document.createElement('div');
-    stockDiv.style.marginBottom = '10px';
+    const nestsCount = (nestsByProfile[profile] || []).length;
     
+    let stockStatus = '';
+    let stockClass = '';
     if (remainingStock.length === 0) {
-      stockDiv.innerHTML = `<span style="color: red;"><strong>No remaining stock</strong></span>`;
+      stockStatus = '<span class="red-text"><i class="material-icons tiny">warning</i> No stock</span>';
+      stockClass = 'no-stock';
     } else if (remainingStock[0].isUnlimited) {
-      stockDiv.innerHTML = `<span style="color: green;"><strong>Unlimited stock: ${remainingStock[0].length}mm</strong></span>`;
+      stockStatus = '<span class="green-text"><i class="material-icons tiny">check_circle</i> Unlimited stock</span>';
+      stockClass = 'unlimited-stock';
     } else {
-      const stockInfo = remainingStock.map(s => `${s.length}mm (${s.remaining} left)`).join(', ');
-      stockDiv.innerHTML = `<strong>Available stock:</strong> ${stockInfo}`;
-    }
-    profCard.appendChild(stockDiv);
-
-    // Show existing nests
-    (nestsByProfile[profile] || []).forEach((entry, i) => {
-      const row = document.createElement('div');
-      row.style.margin = '6px 0';
-      const btn = document.createElement('button');
-      btn.className = 'waves-effect waves-light btn-flat';
-      btn.innerText = `Nest ${i + 1} — Stock ${entry.nest.stockLength}mm — ${entry.nest.pieceAssignments.length} pcs (Offcut: ${Math.round(entry.nest.offcut || 0)}mm)`;
-      btn.onclick = () => manualShowNestDetail(profile, entry.idx);
-
-      const rm = document.createElement('button');
-      rm.className = 'waves-effect waves-light btn-small red';
-      rm.style.marginLeft = '8px';
-      rm.innerText = 'Remove';
-      rm.onclick = () => manualRemoveSingleNest(entry.idx);
-
-      row.appendChild(btn);
-      row.appendChild(rm);
-      profCard.appendChild(row);
-    });
-
-    // Add stock button (disabled if no stock available)
-    const addStockBtn = document.createElement('button');
-    addStockBtn.className = remainingStock.length > 0 ? 
-      'waves-effect waves-light btn-small green' : 
-      'waves-effect waves-light btn-small disabled grey';
-    addStockBtn.style.marginTop = '6px';
-    addStockBtn.innerText = remainingStock.length > 0 ? '+ Add Stock' : 'No Stock Available';
-    
-    if (remainingStock.length > 0) {
-      addStockBtn.onclick = () => manualAddStock(profile);
+      stockStatus = '<span class="blue-text"><i class="material-icons tiny">inventory</i> Stock available</span>';
+      stockClass = 'has-stock';
     }
     
-    profCard.appendChild(addStockBtn);
-    wrapper.appendChild(profCard);
+    profCard.innerHTML = `
+      <div class="card-content">
+        <div class="profile-header">
+          <span class="card-title">${profile}</span>
+          <div class="profile-stats">
+            <div class="stat-chips">
+              <div class="chip ${nestsCount > 0 ? 'green lighten-4' : 'grey lighten-3'}">
+                <i class="material-icons tiny">folder</i> ${nestsCount} nests
+              </div>
+              <div class="chip ${remTotal > 0 ? 'orange lighten-4' : 'green lighten-4'}">
+                <i class="material-icons tiny">playlist_add</i> ${remTotal} remaining
+              </div>
+              <div class="stock-status ${stockClass}">${stockStatus}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="profile-actions">
+          <button class="waves-effect waves-light btn-small ${remainingStock.length > 0 ? 'green' : 'disabled grey'}" 
+                  ${remainingStock.length > 0 ? `onclick="manualAddStock('${profile}')"` : ''}>
+            <i class="material-icons left">add</i>Add Stock
+          </button>
+        </div>
+        
+        <div class="nests-container">
+          ${(nestsByProfile[profile] || []).map((entry, i) => `
+            <div class="nest-item waves-effect waves-light" onclick="manualShowNestDetail('${profile}', ${entry.idx})" data-nest-idx="${entry.idx}">
+              <div class="nest-info">
+                <div class="nest-title">
+                  <i class="material-icons">view_agenda</i>
+                  <span>Nest ${i + 1}</span>
+                </div>
+                <div class="nest-details">
+                  <span class="stock-length">${entry.nest.stockLength}mm stock</span>
+                  <span class="pieces-count">${entry.nest.pieceAssignments.length} pieces</span>
+                  <span class="offcut-info">Offcut: ${Math.round(entry.nest.offcut || 0)}mm</span>
+                </div>
+              </div>
+              <div class="nest-actions">
+                <button class="btn-small red nest-remove-btn" onclick="event.stopPropagation(); manualRemoveSingleNest(${entry.idx})">
+                  <i class="material-icons">delete</i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    
+    profilesPanel.appendChild(profCard);
   });
 
-  container.appendChild(wrapper);
+  container.appendChild(mainWrapper);
 
+  // Delete all button
   document.getElementById('manual-delete-all').onclick = () => {
-    manualDeleteAllNests();
-    renderManualEditModal();
-    document.getElementById('manual-edit-detail').innerHTML = '';
+    if (manualDraftNests.length === 0) {
+      M.toast({html: 'No nests to delete', classes: 'rounded toast-warning', displayLength: 2000});
+      return;
+    }
+    
+    // Show confirmation
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'modal';
+    confirmModal.innerHTML = `
+      <div class="modal-content">
+        <h4><i class="material-icons left red-text">warning</i>Delete All Nests?</h4>
+        <p>This will remove all ${manualDraftNests.length} nests and return all pieces to the remaining pieces pool.</p>
+      </div>
+      <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+        <a href="#!" class="waves-effect waves-red btn red" onclick="confirmDeleteAll()">
+          <i class="material-icons left">delete_forever</i>Delete All
+        </a>
+      </div>
+    `;
+    document.body.appendChild(confirmModal);
+    
+    const modalInstance = M.Modal.init(confirmModal);
+    modalInstance.open();
+    
+    window.confirmDeleteAll = () => {
+      manualDeleteAllNests();
+      renderManualEditModal();
+      clearNestDetail();
+      modalInstance.close();
+      document.body.removeChild(confirmModal);
+      M.toast({html: 'All nests deleted', classes: 'rounded toast-success', displayLength: 2000});
+    };
   };
+}
+
+// Clear nest detail view
+function clearNestDetail() {
+  const rightPanel = document.querySelector('.manual-detail-panel');
+  rightPanel.innerHTML = `
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title grey-text">
+          <i class="material-icons left">info</i>Select a nest to edit
+        </span>
+        <p class="grey-text">Click on any nest from the left panel to view and edit its details here.</p>
+      </div>
+    </div>
+  `;
+  
+  // Remove selection highlighting
+  document.querySelectorAll('.nest-item').forEach(item => {
+    item.classList.remove('selected-nest');
+  });
 }
 
 // Show nest detail
 function manualShowNestDetail(profile, idx) {
-  const detail = document.getElementById('manual-edit-detail');
+  const rightPanel = document.querySelector('.manual-detail-panel');
   const nest = manualDraftNests[idx];
-  if (!nest) { detail.innerHTML = '<p>Invalid nest</p>'; return; }
-
-  window.selectedManualNestIndex = idx;
-
-  let html = `<h5>${profile} — Nest ${idx + 1}</h5>`;
-  html += `<p>Stock length: ${nest.stockLength}mm | Offcut: ${Math.round(nest.offcut || 0)}mm</p>`;
-  html += `<table class="striped"><thead><tr><th>#</th><th>Label</th><th>Len</th><th>Pos</th><th></th></tr></thead><tbody>`;
-  nest.pieceAssignments.forEach((a, i) => {
-    html += `<tr>
-      <td>${i + 1}</td><td>${a.piece.label}</td><td>${a.piece.length}</td><td>${Math.round(a.position || 0)}</td>
-      <td><button class="btn-small red" onclick="manualRemovePieceFromNest(${idx},${i})">Remove</button></td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-
-  const remaining = gatherUnnestedPiecesForProfile(profile);
-  html += '<h6>Remaining Pieces</h6>';
-  if (!remaining.length) {
-    html += '<p><em>No remaining pieces.</em></p>';
-  } else {
-    remaining.forEach(r => {
-      html += `<div class="chip">${r.label} (${r.length}mm) × ${r.amount}
-        <button class="tiny" onclick="manualAddPieceToNestByKey('${profile}','${escapeQuote(r.label)}',${r.length})">Add</button>
-      </div>`;
-    });
+  if (!nest) { 
+    rightPanel.innerHTML = '<div class="card"><div class="card-content"><p class="red-text">Invalid nest</p></div></div>'; 
+    return; 
   }
 
-  detail.innerHTML = html;
+  window.selectedManualNestIndex = idx;
+  
+  // Highlight selected nest
+  document.querySelectorAll('.nest-item').forEach(item => {
+    item.classList.remove('selected-nest');
+  });
+  document.querySelector(`[data-nest-idx="${idx}"]`)?.classList.add('selected-nest');
+
+  const remaining = gatherUnnestedPiecesForProfile(profile);
+  
+  rightPanel.innerHTML = `
+    <div class="card nest-detail-card">
+      <div class="card-content">
+        <div class="remaining-pieces-section">
+            <h6><i class="material-icons left">add_box</i>Available Pieces</h6>
+            ${!remaining.length ? 
+                '<div class="empty-state"><p class="grey-text center-align">No remaining pieces for this profile</p></div>' :
+                `<div class="remaining-pieces-grid">
+                ${remaining.map(r => `
+                    <div class="remaining-piece-card">
+                    <div class="piece-info">
+                        <div class="piece-color-indicator" style="background-color: ${r.sample?.color || '#ccc'}"></div>
+                        <div class="piece-details">
+                        <strong>${r.label}</strong>
+                        <span class="piece-length">${r.length}mm</span>
+                        <span class="piece-qty">Qty: ${r.amount}</span>
+                        </div>
+                    </div>
+                    <button class="btn-small green waves-effect" onclick="manualAddPieceToNestByKey('${profile}','${escapeQuote(r.label)}',${r.length})">
+                        <i class="material-icons">add</i>
+                    </button>
+                    </div>
+                `).join('')}
+                </div>`
+            }
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="nest-header-detail">
+          <span class="card-title">
+            <i class="material-icons left">view_agenda</i>
+            ${profile} - Nest Details
+          </span>
+          <div class="nest-stats-chips">
+            <div class="chip blue lighten-4">
+              <i class="material-icons tiny">straighten</i> ${nest.stockLength}mm
+            </div>
+            <div class="chip green lighten-4">
+              <i class="material-icons tiny">content_cut</i> ${Math.round(nest.offcut || 0)}mm offcut
+            </div>
+          </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="nest-pieces-section">
+          <h6><i class="material-icons left">list</i>Nested Pieces</h6>
+          ${nest.pieceAssignments.length === 0 ? 
+            '<div class="empty-state"><p class="grey-text center-align">No pieces nested yet</p></div>' :
+            `<div class="pieces-table-container">
+              <table class="striped responsive-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Label</th>
+                    <th>Length</th>
+                    <th>Position</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${nest.pieceAssignments.map((a, i) => `
+                    <tr>
+                        <td><span class="piece-number">${i + 1}</span></td>
+                        <td>
+                            <div class="piece-label-container">
+                            <div class="piece-color-indicator" style="background-color: ${a.piece.color || '#ccc'}"></div>
+                            <span>${a.piece.label}</span>
+                            </div>
+                        </td>
+                        <td><strong>${a.piece.length}mm</strong></td>
+                        <td>${Math.round(a.position || 0)}mm</td>
+                        <td></td>
+                        </tr>
+                        <tr class="action-row">
+                        <td colspan="5" style="text-align: center; padding: 8px;">
+                            <button class="btn-small red waves-effect" onclick="manualRemovePieceFromNest(${idx},${i})">
+                            <i class="material-icons">remove</i>
+                            </button>
+                        </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>`
+          }
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // Remove piece
@@ -3423,23 +3592,35 @@ function getRemainingStockForProfile(profile) {
 
 // Show dialog to select stock length when multiple options are available
 function showStockSelectionDialog(profile, remainingStock) {
-  // Create modal content
   let modalContent = `
     <div class="modal-content">
-      <h4>Select Stock Length for ${profile}</h4>
-      <p>Choose which stock length to use:</p>
-      <div class="collection">
+      <h4><i class="material-icons left">inventory</i>Select Stock Length</h4>
+      <p>Choose which stock length to use for <strong>${profile}</strong>:</p>
+      <div class="stock-options-container">
   `;
   
   remainingStock.forEach((stock, index) => {
     const statusText = stock.isUnlimited ? 
-      `Unlimited (${stock.length}mm)` : 
-      `${stock.length}mm - ${stock.remaining} remaining (${stock.used}/${stock.totalAvailable} used)`;
+      `${stock.length}mm - Unlimited` : 
+      `${stock.length}mm - ${stock.remaining} available`;
+    
+    const statusBadge = stock.isUnlimited ?
+      '<span class="badge green white-text">Unlimited</span>' :
+      `<span class="badge blue white-text">${stock.remaining} left</span>`;
     
     modalContent += `
-      <a href="#!" class="collection-item waves-effect" onclick="selectStockAndClose('${profile}', ${stock.length}, ${index})">
-        <span class="title">${statusText}</span>
-      </a>
+      <div class="stock-option-card waves-effect" onclick="selectStockAndClose('${profile}', ${stock.length}, ${index})">
+        <div class="stock-option-content">
+          <div class="stock-length">
+            <i class="material-icons">straighten</i>
+            <strong>${stock.length}mm</strong>
+          </div>
+          <div class="stock-status">
+            ${statusBadge}
+          </div>
+        </div>
+        <i class="material-icons right">chevron_right</i>
+      </div>
     `;
   });
   
@@ -3447,11 +3628,12 @@ function showStockSelectionDialog(profile, remainingStock) {
       </div>
     </div>
     <div class="modal-footer">
-      <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+      <a href="#!" class="modal-close waves-effect waves-grey btn-flat">
+        <i class="material-icons left">cancel</i>Cancel
+      </a>
     </div>
   `;
   
-  // Create and show modal
   const modalId = 'stock-selection-modal';
   let existingModal = document.getElementById(modalId);
   if (existingModal) {
@@ -3460,14 +3642,13 @@ function showStockSelectionDialog(profile, remainingStock) {
   
   const modalDiv = document.createElement('div');
   modalDiv.id = modalId;
-  modalDiv.className = 'modal';
+  modalDiv.className = 'modal modal-fixed-footer';
   modalDiv.innerHTML = modalContent;
   document.body.appendChild(modalDiv);
   
   const modalInstance = M.Modal.init(modalDiv);
   modalInstance.open();
   
-  // Store reference for the selection function
   window.stockSelectionModal = modalInstance;
 }
 
