@@ -514,6 +514,9 @@ function acceptNest() {
     // Track used stock to remove
     const usedStock = [];
 
+    // Track used pieces to remove
+    const usedPieces = new Map(); // Map: pieceId -> count
+
     // Process each nest
     cuttingNests.forEach(nest => {
         // Add used stock to removal list
@@ -537,6 +540,17 @@ function acceptNest() {
                 amount: 1
             });
         }
+
+        // Track used pieces
+        nest.pieceAssignments.forEach(assignment => {
+            const piece = assignment.piece;
+            const parentID = piece.parentID || piece.originalPiece?.id || piece.id;
+            
+            if (parentID) {
+                const currentCount = usedPieces.get(parentID) || 0;
+                usedPieces.set(parentID, currentCount + 1);
+            }
+        });
     });
 
     // Remove used stock
@@ -552,6 +566,21 @@ function acceptNest() {
             // If amount becomes zero or negative, remove the stock item
             if (stockItems[existingStockIndex].amount <= 0) {
                 stockItems.splice(existingStockIndex, 1);
+            }
+        }
+    });
+
+    // Remove used pieces
+    usedPieces.forEach((usedCount, pieceId) => {
+        const pieceIndex = pieceItems.findIndex(item => item.id === pieceId);
+        
+        if (pieceIndex !== -1) {
+            // Reduce the amount of the piece item
+            pieceItems[pieceIndex].amount -= usedCount;
+            
+            // If amount becomes zero or negative, remove the piece item
+            if (pieceItems[pieceIndex].amount <= 0) {
+                pieceItems.splice(pieceIndex, 1);
             }
         }
     });
@@ -575,9 +604,20 @@ function acceptNest() {
         }
     });
 
-    // Update the stock table
+    // Update the stock table and piece table
     localStorage.setItem('stockItems', JSON.stringify(stockItems));
     renderStockTable();
+    renderPieceTable();
+
+    // Clear the nesting results since they've been accepted
+    cuttingNests = [];
+    cuttingNestsDiv.classList.add('hide');
+    downloadOffcutsBtn.classList.add('hide');
+    acceptNestBtn.classList.add('hide');
+    manualEditBtn.classList.add('hide');
+
+    // Show success message
+    M.toast({html: 'Nests accepted successfully! Stock and pieces updated.', classes: 'rounded toast-success', displayLength: 3000});
 }
   
 // Function to programmatically set input value
@@ -614,7 +654,7 @@ function addPiece() {
     const profile = document.getElementById('piece-profile').value.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
     const length = parseFloat(document.getElementById('piece-length').value);
     const amount = parseInt(document.getElementById('piece-amount').value);
-    const label = document.getElementById('piece-label').value == '' ? length : document.getElementById('piece-label').value;
+    const label = document.getElementById('piece-label').value == '' ? length.toString() : document.getElementById('piece-label').value;
     const color = stringToColor(label);
 
     if (!profile || isNaN(length) || isNaN(amount) || length <= 0 || amount <= 0) {
