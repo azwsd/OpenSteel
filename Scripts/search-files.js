@@ -216,7 +216,6 @@ function initGroupBySelects() {
 
     // Bind onchange event
     select.onchange = (e) => {
-      console.log("Grouping by:", e.target.value);
       groupFiles(e.target.value);
     };
   });
