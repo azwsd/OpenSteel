@@ -128,7 +128,8 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
-    updateSessionData()
+    refreshGrouping();
+    updateSessionData();
 }
 
 //deletes file of pressed button
@@ -157,7 +158,8 @@ function deleteFile(btn, event){
         document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
         selectedFile = '';
     }
-    updateSessionData()
+    refreshGrouping();
+    updateSessionData();
 }
 
 //clears all files
@@ -183,7 +185,8 @@ function clearAllFiles(){
     document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
     document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
-    updateSessionData()
+    refreshGrouping()
+    updateSessionData();
 }
 
 //clicks a hidden insert element when the list item is clicked

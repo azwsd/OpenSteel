@@ -139,7 +139,8 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
-    updateSessionData()
+    refreshGrouping();
+    updateSessionData();
 }
 
 //deletes file of pressed button
@@ -170,7 +171,8 @@ function deleteFile(btn, event){
         document.getElementById('weightResult').value = ''; //Reset weight result
         selectedFile = '';
     }
-    updateSessionData()
+    refreshGrouping();
+    updateSessionData();
 }
 
 //clears all files
@@ -197,6 +199,7 @@ function clearAllFiles(){
     document.getElementById('profileTypeAutocomplete').value = ''; //Reset profile button
     document.getElementById('profileSizeAutocomplete').value = ''; //Reset profile size button
     document.getElementById('weightResult').value = ''; //Reset weight result
+    refreshGrouping();
     updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }

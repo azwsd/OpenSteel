@@ -134,6 +134,7 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
+    refreshGrouping();
     updateSessionData();
 }
 
@@ -157,6 +158,7 @@ function deleteFile(btn, event){
         clearHeaderData();
         selectedFile = '';
     }
+    refreshGrouping();
     updateSessionData();
 }
 
@@ -176,6 +178,7 @@ function clearAllFiles(){
     selectedFile = ''; //Clears stored selected file
     filesPlaceHolder(); //shows place holder
     clearHeaderData(); //clears the header data
+    refreshGrouping();
     updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }

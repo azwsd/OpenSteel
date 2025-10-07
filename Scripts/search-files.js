@@ -225,3 +225,12 @@ function initGroupBySelects() {
 document.addEventListener('DOMContentLoaded', function() {
   initGroupBySelects();
 });
+
+// Refresh grouping
+function refreshGrouping() {
+  const currentSelect = document.querySelector('.groupBySelect');
+  if (!currentSelect) return;
+  
+  const currentValue = currentSelect.value || '';
+  groupFiles(currentValue);
+}
