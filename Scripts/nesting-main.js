@@ -134,7 +134,6 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
-    refreshGrouping();
     updateSessionData();
 }
 
@@ -158,7 +157,6 @@ function deleteFile(btn, event){
         clearHeaderData();
         selectedFile = '';
     }
-    refreshGrouping();
     updateSessionData();
 }
 
@@ -178,7 +176,6 @@ function clearAllFiles(){
     selectedFile = ''; //Clears stored selected file
     filesPlaceHolder(); //shows place holder
     clearHeaderData(); //clears the header data
-    refreshGrouping();
     updateSessionData();
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
 }
@@ -1150,395 +1147,557 @@ function optimizeCuttingNests() {
         });
     }
 
-    for (const profile in profileGroups) {
-        if (!stockGroups[profile]) {
-            M.toast({html: `No available stock for profile: ${profile}!`, classes: 'rounded toast-warning', displayLength: 2000});
-            continue;
+    // Run in background blob worker — UI never blocks
+    cuttingNests = [];
+    _setNestingUI(true);
+    const worker = _getNestingWorker();
+    worker.onmessage = function(e) {
+        _setNestingUI(false);
+        const { cuttingNests: result, warnings } = e.data;
+        cuttingNests = result;
+        warnings.forEach(w => M.toast({ html: w, classes: 'rounded toast-warning', displayLength: 2000 }));
+        renderCuttingNests(cuttingNests);
+        cuttingNestsDiv.classList.remove('hide');
+        downloadOffcutsBtn.classList.remove('hide');
+        acceptNestBtn.classList.remove('hide');
+        manualEditBtn.classList.remove('hide');
+        M.Tabs.init(document.querySelectorAll('#nesting-tabs'));
+    };
+    worker.onerror = function(err) {
+        _setNestingUI(false);
+        M.toast({ html: 'Nesting error: ' + err.message, classes: 'rounded toast-error', displayLength: 4000 });
+    };
+    worker.postMessage({ profileGroups, stockGroups, params: {
+        gripStart, gripEnd, sawWidth, maxUniqueLabels, minOffcut,
+        preferShorterStocks, useUnlimitedStock, unlimitedStockLength
+    }});
+}
+
+let _nestingWorker = null;
+
+const _WORKER_CODE = `
+self.onmessage = function(e) {
+    var pg  = e.data.profileGroups,
+        sg  = e.data.stockGroups,
+        par = e.data.params;
+    var gripStart=par.gripStart, gripEnd=par.gripEnd, sawWidth=par.sawWidth,
+        maxUniqueLabels=par.maxUniqueLabels, minOffcut=par.minOffcut,
+        preferShorterStocks=par.preferShorterStocks,
+        useUnlimitedStock=par.useUnlimitedStock,
+        unlimitedStockLength=par.unlimitedStockLength;
+    var cuttingNests=[], warnings=[];
+
+    for (var profile in pg) {
+        if (!sg[profile]) { warnings.push('No available stock for profile: '+profile+'!'); continue; }
+        var pieces=pg[profile], stocks=sg[profile];
+        for (var pi=0;pi<pieces.length;pi++) pieces[pi].assigned=false;
+        for (var si=0;si<stocks.length;si++) {
+            stocks[si].used=false; stocks[si].pieceAssignments=[];
+            stocks[si].remainingLength=stocks[si].usableLength;
+            stocks[si].hasLastPieceWithoutSaw=false;
         }
-
-        const pieces = profileGroups[profile];
-        const stocks = stockGroups[profile];
-        
-        // Reset assignment status
-        pieces.forEach(p => p.assigned = false);
-        stocks.forEach(s => {
-            s.used = false;
-            s.pieceAssignments = [];
-            s.remainingLength = s.usableLength;
-            s.hasLastPieceWithoutSaw = false;
-        });
-
-        // Sort stocks by length if preferShorterStocks is checked
-        if (preferShorterStocks) {
-            stocks.sort((a, b) => a.length - b.length);
-        }
-
+        if (preferShorterStocks) stocks.sort(function(a,b){return a.length-b.length;});
         if (useUnlimitedStock) {
-            binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups, unlimitedStockLength);
+            ffdUnlimited(pieces,stocks,gripStart,gripEnd,sawWidth,maxUniqueLabels,profile,sg,unlimitedStockLength);
         } else {
-            binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels);
+            optimize(pieces,stocks,gripStart,sawWidth,maxUniqueLabels);
         }
-        
-        // Process results
-        processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth);
+        collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut);
+    }
+    self.postMessage({cuttingNests:cuttingNests, warnings:warnings});
+};
+
+// ── DP 0/1 Knapsack ───────────────────────────────────────────────────────────
+// Finds the EXACT optimal subset of items that maximises total piece length
+// fitting in usableLength (respecting saw cuts). Returns {pieces, waste}.
+//
+// Key insight: virtual capacity = usableLength + sawWidth, each item costs
+// (length + sawWidth). This correctly accounts for the last piece needing no
+// saw after it (the extra sawWidth in the virtual capacity absorbs it).
+//
+// For label constraint: if more unique labels exist than allowed, falls back
+// to the original backtracking which handles it exactly.
+function dpKnapsack(items, usableLength, sawWidth, maxUniqueLabels) {
+    if (!items.length) return {pieces:[], waste:usableLength};
+
+    // Check whether the label constraint can bind
+    var labelSet={}, labelCount=0;
+    for (var i=0;i<items.length;i++) {
+        if (!labelSet[items[i].label]) { labelSet[items[i].label]=1; labelCount++; }
+    }
+    if (labelCount > maxUniqueLabels) {
+        // Fall back to backtracking which handles label constraint exactly
+        return backtrackKnapsack(items, usableLength, sawWidth, maxUniqueLabels);
     }
 
-    renderCuttingNests(cuttingNests);
-    cuttingNestsDiv.classList.remove('hide');
-    downloadOffcutsBtn.classList.remove('hide');
-    acceptNestBtn.classList.remove('hide');
-    manualEditBtn.classList.remove('hide');
-    M.Tabs.init(document.querySelectorAll('#nesting-tabs')); // Initialize tabs
+    // Scale lengths to integers (handle up to 1 decimal place)
+    var scale = 1;
+    for (var i=0;i<items.length;i++) {
+        var s = String(items[i].length);
+        if (s.indexOf('.')!==-1 && s.split('.')[1].length > 0) scale = 10;
+    }
+    var C = Math.floor((usableLength + sawWidth) * scale);
+    var sw = Math.round(sawWidth * scale);
+
+    // dp[c] = max total piece length (scaled) using at most c virtual space
+    var dp  = new Int32Array(C + 1);
+    // par[c] = index into items[] that was placed at this state (for traceback)
+    var par = new Int32Array(C + 1).fill(-1);
+    // prev[c] = previous capacity state before placing par[c]
+    var prev = new Int32Array(C + 1).fill(-1);
+
+    for (var i=0;i<items.length;i++) {
+        var cost = Math.round((items[i].length + sawWidth) * scale);
+        if (cost > C) continue;
+        // Backward scan — ensures each item used at most once
+        for (var c=C; c>=cost; c--) {
+            var nv = dp[c-cost] + Math.round(items[i].length * scale);
+            if (nv > dp[c]) { dp[c]=nv; par[c]=i; prev[c]=c-cost; }
+        }
+    }
+
+    // Find state with maximum total length
+    var bestLen=0, bestC=0;
+    for (var c=1;c<=C;c++) { if (dp[c]>bestLen) {bestLen=dp[c];bestC=c;} }
+    if (bestLen===0) return {pieces:[], waste:usableLength};
+
+    // Traceback
+    var selIdx=[], c=bestC;
+    while (c>0 && par[c]!==-1) { selIdx.push(par[c]); c=prev[c]; }
+    selIdx.reverse();
+
+    var pieces=selIdx.map(function(idx,k) {
+        return Object.assign({},items[idx],{withoutSawWidth: k===selIdx.length-1});
+    });
+    var totalLen=selIdx.reduce(function(s,idx){return s+items[idx].length;},0);
+    return {pieces:pieces, waste:usableLength-totalLen};
 }
 
-// Modified version of your binPackingOptimization that handles unlimited stock
-function binPackingOptimizationWithUnlimitedStock(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels, profile, stockGroups, unlimitedStockLength) {
-    // Sort pieces by length (decreasing)
-    pieces.sort((a, b) => b.length - a.length);
-    
-    // Make a deep copy of pieces to work with
-    const unassignedPieces = [...pieces];
-    
-    // Function to add more stock if needed
-    function ensureStockAvailability() {
-        const unusedStocks = stocks.filter(s => !s.used);
-        // Add more stock when we're running low on unused stock
-        if (unusedStocks.length < 5) {
-            const currentCount = stocks.length;
-            for (let i = 0; i < 20; i++) {
-                const newStock = {
-                    id: `unlimited-stock-${profile}-${currentCount + i}`,
-                    length: unlimitedStockLength,
-                    originalStock: {
-                        profile: profile,
-                        length: unlimitedStockLength,
-                        amount: 'unlimited'
-                    },
-                    usableLength: unlimitedStockLength - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
-                    remainingLength: unlimitedStockLength - gripStart - gripEnd - (gripStart === 0 ? 0 : sawWidth),
-                    pieceAssignments: [],
-                    offcut: 0,
-                    waste: 0,
-                    used: false,
-                    hasLastPieceWithoutSaw: false,
-                    isUnlimitedStock: true
-                };
-                stocks.push(newStock);
+// ── Backtracking knapsack (used when label constraint is binding) ──────────────
+function backtrackKnapsack(items, stockLength, sawWidth, maxUniqueLabels) {
+    var best={pieces:[], waste:stockLength};
+    function bt(start,cur,rem,labels,curLen) {
+        if (cur.length>0) {
+            if (curLen > stockLength-best.waste) {
+                best={pieces:cur.slice(), waste:stockLength-curLen};
+                if (best.waste===0) return;
             }
-            stockGroups[profile] = stocks; // Update the reference
+        }
+        for (var i=start;i<items.length;i++) {
+            var pc=items[i];
+            if (!labels[pc.label] && Object.keys(labels).length>=maxUniqueLabels) continue;
+            var withSaw=pc.length+sawWidth;
+            if (withSaw<=rem) {
+                var nl=Object.assign({},labels); nl[pc.label]=1;
+                cur.push(Object.assign({},pc,{withoutSawWidth:false}));
+                bt(i+1,cur,rem-withSaw,nl,curLen+pc.length);
+                cur.pop();
+                if (best.waste===0) return;
+            } else if (pc.length<=rem) {
+                var nl2=Object.assign({},labels); nl2[pc.label]=1;
+                cur.push(Object.assign({},pc,{withoutSawWidth:true}));
+                var len=curLen+pc.length;
+                if (len>stockLength-best.waste) best={pieces:cur.slice(),waste:stockLength-len};
+                cur.pop();
+                if (best.waste===0) return;
+            }
         }
     }
-    
-    // Bin packing with pattern generation
-    while (unassignedPieces.length > 0) {
-        // Ensure enough stock is available
-        ensureStockAvailability();
-        
-        // Find an unused stock
-        let currentStock = stocks.find(s => !s.used);
-        if (!currentStock) {
-            // This shouldn't happen with unlimited stock, but just in case
-            ensureStockAvailability();
-            currentStock = stocks.find(s => !s.used);
+    bt(0,[],stockLength,{},0);
+    return best;
+}
+
+// ── FFD using DP pricing ──────────────────────────────────────────────────────
+function runFFD(orderedPieces, stocks, gripStart, sawWidth, maxUniqueLabels) {
+    for (var si=0;si<stocks.length;si++) {
+        stocks[si].used=false; stocks[si].pieceAssignments=[];
+        stocks[si].remainingLength=stocks[si].usableLength;
+        stocks[si].hasLastPieceWithoutSaw=false;
+    }
+    var unassigned=orderedPieces.map(function(p){return Object.assign({},p,{assigned:false});});
+    while (unassigned.length>0) {
+        var bar=null;
+        for (var si2=0;si2<stocks.length;si2++) { if(!stocks[si2].used){bar=stocks[si2];break;} }
+        if (!bar) break;
+        bar.used=true;
+        var pat=dpKnapsack(unassigned,bar.usableLength,sawWidth,maxUniqueLabels);
+        if (!pat.pieces.length) {bar.used=false;break;}
+        placePattern(bar,pat.pieces,gripStart,sawWidth,unassigned);
+    }
+    return stocks.filter(function(s){return s.used;}).length;
+}
+
+function placePattern(bar, pieces, gripStart, sawWidth, unassigned) {
+    var pos=gripStart+(bar.usableLength-bar.remainingLength);
+    for (var bi=0;bi<pieces.length;bi++) {
+        var bp=pieces[bi], idx=-1;
+        for (var ui=0;ui<unassigned.length;ui++) {
+            if (unassigned[ui].id===bp.id && !unassigned[ui].assigned) {idx=ui;break;}
         }
-        
-        if (!currentStock) {
-            M.toast({html: `Error: Could not create unlimited stock!`, classes: 'rounded toast-error', displayLength: 2000});
-            break;
-        }
-        
-        // Mark this stock as used
-        currentStock.used = true;
-        
-        // Generate best pattern for this stock with unique label constraint
-        const stockUsableLength = currentStock.usableLength;
-        const bestPattern = findBestPatternForStock(unassignedPieces, stockUsableLength, sawWidth, maxUniqueLabels);
-        
-        if (bestPattern.pieces.length === 0) {
-            // No pieces fit in this stock
-            currentStock.used = false;
-            M.toast({html: `Some pieces are too long for ${unlimitedStockLength}mm stock!`, classes: 'rounded toast-warning', displayLength: 2000});
-            break;
-        }
-        
-        // Assign pieces according to pattern
-        let currentPos = gripStart;
-        bestPattern.pieces.forEach((piece, index) => {
-            // Find index in unassignedPieces array
-            const pieceIndex = unassignedPieces.findIndex(p => 
-                p.id === piece.id && !p.assigned
-            );
-            
-            if (pieceIndex !== -1) {
-                // Mark piece as assigned
-                unassignedPieces[pieceIndex].assigned = true;
-                
-                // Add to stock's piece assignments
-                currentStock.pieceAssignments.push({
-                    piece: unassignedPieces[pieceIndex],
-                    position: currentPos,
-                    length: unassignedPieces[pieceIndex].length,
-                    label: unassignedPieces[pieceIndex].label,
-                    color: unassignedPieces[pieceIndex].color,
-                    withoutSawWidth: piece.withoutSawWidth || false // Track if placed without saw width
-                });
-                
-                // Update position for next piece
-                currentPos += unassignedPieces[pieceIndex].length;
-                
-                // Add saw width only if this piece was placed with saw width
-                if (index < bestPattern.pieces.length - 1 && !piece.withoutSawWidth) {
-                    currentPos += sawWidth;
-                }
-                
-                // Update flag if this is the last piece and it was placed without saw width
-                if (index === bestPattern.pieces.length - 1 && piece.withoutSawWidth) {
-                    currentStock.hasLastPieceWithoutSaw = true;
-                }
-                
-                // Remove from unassigned pieces
-                unassignedPieces.splice(pieceIndex, 1);
-            }
+        if (idx===-1) continue;
+        unassigned[idx].assigned=true;
+        bar.pieceAssignments.push({
+            piece:unassigned[idx], position:pos,
+            length:unassigned[idx].length, label:unassigned[idx].label,
+            color:unassigned[idx].color, withoutSawWidth:bp.withoutSawWidth||false
         });
-        
-        // Update remaining length
-        currentStock.remainingLength = currentStock.usableLength - 
-            (currentPos - gripStart);
+        pos+=unassigned[idx].length;
+        if (bi<pieces.length-1 && !bp.withoutSawWidth) pos+=sawWidth;
+        if (bi===pieces.length-1 && bp.withoutSawWidth) bar.hasLastPieceWithoutSaw=true;
+        unassigned.splice(idx,1);
     }
+    bar.remainingLength=bar.usableLength-(pos-gripStart);
 }
 
-function binPackingOptimization(pieces, stocks, gripStart, gripEnd, sawWidth, maxUniqueLabels) {
-    // Sort pieces by length (decreasing)
-    pieces.sort((a, b) => b.length - a.length);
-    
-    // Make a deep copy of pieces to work with
-    const unassignedPieces = [...pieces];
-    
-    // Bin packing with pattern generation
-    while (unassignedPieces.length > 0) {
-        // Find an unused stock
-        let currentStock = stocks.find(s => !s.used);
-        if (!currentStock) {
-            M.toast({html: `Not all pieces were nested!`, classes: 'rounded toast-warning', displayLength: 2000});
-            break;
-        }
-        
-        // Mark this stock as used
-        currentStock.used = true;
-        
-        // Generate best pattern for this stock with unique label constraint
-        const stockUsableLength = currentStock.usableLength;
-        const bestPattern = findBestPatternForStock(unassignedPieces, stockUsableLength, sawWidth, maxUniqueLabels);
-        
-        if (bestPattern.pieces.length === 0) {
-            // No pieces fit in this stock
-            currentStock.used = false;
-            break;
-        }
-        
-        // Assign pieces according to pattern
-        let currentPos = gripStart;
-        bestPattern.pieces.forEach((piece, index) => {
-            // Find index in unassignedPieces array
-            const pieceIndex = unassignedPieces.findIndex(p => 
-                p.id === piece.id && !p.assigned
-            );
-            
-            if (pieceIndex !== -1) {
-                // Mark piece as assigned
-                unassignedPieces[pieceIndex].assigned = true;
-                
-                // Add to stock's piece assignments
-                currentStock.pieceAssignments.push({
-                    piece: unassignedPieces[pieceIndex],
-                    position: currentPos,
-                    length: unassignedPieces[pieceIndex].length,
-                    label: unassignedPieces[pieceIndex].label,
-                    color: unassignedPieces[pieceIndex].color,
-                    withoutSawWidth: piece.withoutSawWidth || false // Track if placed without saw width
-                });
-                
-                // Update position for next piece
-                currentPos += unassignedPieces[pieceIndex].length;
-                
-                // Add saw width only if this piece was placed with saw width
-                if (index < bestPattern.pieces.length - 1 && !piece.withoutSawWidth) {
-                    currentPos += sawWidth;
-                }
-                
-                // Update flag if this is the last piece and it was placed without saw width
-                if (index === bestPattern.pieces.length - 1 && piece.withoutSawWidth) {
-                    currentStock.hasLastPieceWithoutSaw = true;
-                }
-                
-                // Remove from unassigned pieces
-                unassignedPieces.splice(pieceIndex, 1);
-            }
-        });
-        
-        // Update remaining length
-        currentStock.remainingLength = currentStock.usableLength - (currentPos - gripStart);
-    }
-}
+// ── MBS Improvement (Fleszar-Hindi 2002) ─────────────────────────────────────
+// Minimal Bin Slack: repeatedly pick the fullest open bar (smallest remaining
+// space) and try to use DP to fill that remaining space with pieces moved from
+// other bars.  A filled bar stays at 0 slack and allows the emptiest bars to
+// potentially be eliminated.  Restart whenever any bar is eliminated.
+function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
+    var improved=true;
+    while (improved) {
+        improved=false;
+        var used=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;});
+        if (used.length<=1) break;
 
-function findBestPatternForStock(pieces, stockLength, sawWidth, maxUniqueLabels) {
-    // Generate all valid combinations of pieces that fit within the stock
-    const validPatterns = generateAllValidPatterns(pieces, stockLength, sawWidth, maxUniqueLabels);
-    
-    if (validPatterns.length === 0) {
-        return { pieces: [], waste: stockLength };
-    }
-    
-    // Find pattern with minimum waste (best utilization)
-    validPatterns.sort((a, b) => a.waste - b.waste);
-    return validPatterns[0];
-}
+        // Sort: tightest (smallest remaining) first — these are the MBS targets
+        used.sort(function(a,b){return a.remainingLength-b.remainingLength;});
 
-function generateAllValidPatterns(pieces, stockLength, sawWidth, maxUniqueLabels, maxPatterns = 1000) {
-    const patterns = [];
-    
-    // Generate patterns using backtracking
-    function backtrack(start, currentPattern, remainingLength, uniqueLabels) {
-        // Check if we have a valid pattern
-        if (currentPattern.length > 0) {
-            // Calculate waste
-            const usedLength = currentPattern.reduce((sum, p, idx) => {
-                // Add piece length
-                let total = sum + p.length;
-                // Add saw width only if not the last piece or if it's not marked as withoutSawWidth
-                if (idx < currentPattern.length - 1 && !p.withoutSawWidth) {
-                    total += sawWidth;
+        for (var ti=0;ti<used.length;ti++) {
+            var target=used[ti];
+            if (target.remainingLength<=0) continue; // already perfectly packed
+
+            // Collect all pieces from OTHER bars that could go into target's slack
+            var donors=used.filter(function(b){return b!==target;});
+            var pool=[];
+            for (var di=0;di<donors.length;di++) {
+                for (var pi=0;pi<donors[di].pieceAssignments.length;pi++) {
+                    pool.push({assign:donors[di].pieceAssignments[pi], bar:donors[di]});
                 }
-                return total;
-            }, 0);
-            
-            const waste = stockLength - usedLength;
-            
-            // Add this pattern to our collection
-            patterns.push({
-                pieces: [...currentPattern],
-                waste: waste,
-                utilization: (usedLength / stockLength) * 100
-            });
-            
-            // Limit pattern generation for performance
-            if (patterns.length >= maxPatterns) {
-                return;
             }
-        }
-        
-        // Try adding more pieces
-        for (let i = start; i < pieces.length; i++) {
-            const piece = pieces[i];
-            
-            // Check if adding this piece would exceed the unique labels constraint
-            const newLabel = piece.label;
-            if (!uniqueLabels.has(newLabel) && uniqueLabels.size >= maxUniqueLabels) {
-                continue; // Skip this piece if it would exceed the max unique labels
-            }
-            
-            // Try fitting with saw width first
-            const additionalLengthWithSaw = piece.length + sawWidth;
-            
-            if (additionalLengthWithSaw <= remainingLength) {
-                // Add piece to current pattern (with saw width)
-                const pieceWithSaw = { ...piece, withoutSawWidth: false };
-                currentPattern.push(pieceWithSaw);
-                
-                // Update unique labels
-                const updatedUniqueLabels = new Set(uniqueLabels);
-                updatedUniqueLabels.add(newLabel);
-                
-                // Recursive call with remaining length
-                backtrack(i + 1, currentPattern, remainingLength - additionalLengthWithSaw, updatedUniqueLabels);
-                
-                // Backtrack
-                currentPattern.pop();
-            } 
-            // If it doesn't fit with saw width, try without saw width
-            else if (piece.length <= remainingLength) {
-                // Add piece to current pattern (without saw width)
-                const pieceWithoutSaw = { ...piece, withoutSawWidth: true };
-                currentPattern.push(pieceWithoutSaw);
-                
-                // Update unique labels
-                const updatedUniqueLabels = new Set(uniqueLabels);
-                updatedUniqueLabels.add(newLabel);
-                
-                const usedLength = currentPattern.reduce((sum, p, idx) => {
-                    let total = sum + p.length;
-                    if (idx < currentPattern.length - 1 && !p.withoutSawWidth) {
-                        total += sawWidth;
+            var poolPieces=pool.map(function(x){return x.assign.piece;});
+
+            // Use DP to find best subset of donor pieces that fills target's slack
+            // Space available for appending: remaining - sawWidth (need one saw to join)
+            var avail=target.remainingLength-sawWidth;
+            if (avail<=0) continue;
+            var pat=dpKnapsack(poolPieces,avail,sawWidth,maxUniqueLabels);
+            if (!pat.pieces.length) continue;
+
+            // Find which pool entries correspond to selected pieces
+            var toMove=[];
+            var patIds=pat.pieces.map(function(p){return p.id;});
+            var used2=new Set ? new Set() : {};
+            for (var pi2=0;pi2<pat.pieces.length;pi2++) {
+                for (var pi3=0;pi3<pool.length;pi3++) {
+                    var key=pool[pi3].bar.id+':'+pool[pi3].assign.piece.id;
+                    if (pool[pi3].assign.piece.id===pat.pieces[pi2].id && !used2[key]) {
+                        used2[key]=1;
+                        toMove.push({bar:pool[pi3].bar, assign:pool[pi3].assign, newPiece:pat.pieces[pi2]});
+                        break;
                     }
-                    return total;
-                }, 0);
-                
-                const waste = stockLength - usedLength;
-                
-                patterns.push({
-                    pieces: [...currentPattern],
-                    waste: waste,
-                    utilization: (usedLength / stockLength) * 100
+                }
+            }
+            if (toMove.length!==pat.pieces.length) continue;
+
+            // Commit: remove from donor bars, add to target
+            var donorMap={};
+            for (var mi=0;mi<toMove.length;mi++) {
+                var m=toMove[mi];
+                var barId=m.bar.id;
+                if (!donorMap[barId]) donorMap[barId]={bar:m.bar,removes:[]};
+                donorMap[barId].removes.push(m.assign);
+            }
+            // Calculate new remaining lengths for donor bars
+            var valid=true;
+            var updates=[];
+            for (var barId in donorMap) {
+                var dbar=donorMap[barId].bar;
+                var removes=donorMap[barId].removes;
+                var newRem=dbar.remainingLength;
+                for (var ri=0;ri<removes.length;ri++) {
+                    newRem+=removes[ri].length+(removes[ri].withoutSawWidth?0:sawWidth);
+                }
+                updates.push({bar:dbar, removes:removes, newRem:newRem});
+            }
+            // Apply updates to donor bars
+            for (var ui2=0;ui2<updates.length;ui2++) {
+                var upd=updates[ui2];
+                for (var ri2=0;ri2<upd.removes.length;ri2++) {
+                    var idx2=upd.bar.pieceAssignments.indexOf(upd.removes[ri2]);
+                    if (idx2!==-1) upd.bar.pieceAssignments.splice(idx2,1);
+                    if (!upd.bar.pieceAssignments.length) {
+                        upd.bar.used=false;
+                        upd.bar.remainingLength=upd.bar.usableLength;
+                        improved=true;
+                    } else {
+                        upd.bar.remainingLength=upd.newRem;
+                    }
+                }
+            }
+            // Add moved pieces to target
+            var spaceUsed=sawWidth; // one saw to join
+            for (var mi2=0;mi2<toMove.length;mi2++) {
+                var np=toMove[mi2].newPiece;
+                target.pieceAssignments.push({
+                    piece:np, position:0, length:np.length,
+                    label:np.label, color:np.color,
+                    withoutSawWidth:np.withoutSawWidth||false
                 });
-                
-                // Backtrack
-                currentPattern.pop();
+                spaceUsed+=np.length+(np.withoutSawWidth?0:sawWidth);
+            }
+            target.remainingLength-=spaceUsed;
+            if (improved) break; // restart with fresh bar list
+        }
+    }
+}
+
+// ── LNS — destroy N emptiest bars and re-pack freed pieces with DP ────────────
+function lns(stocks, sawWidth, maxUniqueLabels) {
+    var anyImp=true;
+    while (anyImp) {
+        anyImp=false;
+        var used=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;});
+        if (used.length<=1) break;
+        used.sort(function(a,b){return b.remainingLength-a.remainingLength;});
+
+        for (var dn=1;dn<=Math.min(4,Math.floor(used.length/2));dn++) {
+            var destroy=used.slice(0,dn);
+            var others=used.slice(dn);
+
+            var freed=[];
+            for (var di=0;di<destroy.length;di++) {
+                for (var pi=0;pi<destroy[di].pieceAssignments.length;pi++) {
+                    freed.push(destroy[di].pieceAssignments[pi].piece);
+                }
+            }
+            freed.sort(function(a,b){return b.length-a.length;});
+
+            // Try to fit freed pieces into remaining space of other bars using DP
+            var tempRem=others.map(function(b){return b.remainingLength;});
+            var plans=others.map(function(){return [];});
+            var unplaced=freed.slice();
+
+            // Sort others by most remaining space first
+            var order=others.map(function(_,i){return i;});
+            order.sort(function(a,b){return tempRem[b]-tempRem[a];});
+
+            for (var ii=0;ii<order.length&&unplaced.length>0;ii++) {
+                var oi=order[ii];
+                var avail=tempRem[oi]-sawWidth; // need saw to append
+                if (avail<=0) continue;
+                var pat=dpKnapsack(unplaced,avail,sawWidth,maxUniqueLabels);
+                if (!pat.pieces.length) continue;
+                var consumed=sawWidth;
+                for (var k=0;k<pat.pieces.length;k++) {
+                    consumed+=pat.pieces[k].length+(pat.pieces[k].withoutSawWidth?0:sawWidth);
+                }
+                plans[oi]=plans[oi].concat(pat.pieces);
+                tempRem[oi]-=consumed;
+                for (var pk=0;pk<pat.pieces.length;pk++) {
+                    for (var ul=0;ul<unplaced.length;ul++) {
+                        if (unplaced[ul].id===pat.pieces[pk].id) {unplaced.splice(ul,1);break;}
+                    }
+                }
+            }
+
+            if (unplaced.length===0) {
+                for (var oi2=0;oi2<others.length;oi2++) {
+                    for (var pl=0;pl<plans[oi2].length;pl++) {
+                        var p=plans[oi2][pl];
+                        others[oi2].pieceAssignments.push({
+                            piece:p, position:0, length:p.length,
+                            label:p.label, color:p.color,
+                            withoutSawWidth:p.withoutSawWidth||false
+                        });
+                    }
+                    others[oi2].remainingLength=tempRem[oi2];
+                }
+                for (var di2=0;di2<destroy.length;di2++) {
+                    destroy[di2].used=false; destroy[di2].pieceAssignments=[];
+                    destroy[di2].remainingLength=destroy[di2].usableLength;
+                    destroy[di2].hasLastPieceWithoutSaw=false;
+                }
+                anyImp=true; break;
             }
         }
     }
-    
-    // Start backtracking with empty pattern and empty set of unique labels
-    backtrack(0, [], stockLength, new Set());
-    
-    // Prioritize patterns with more pieces and less waste
-    return patterns.sort((a, b) => {
-        // First prioritize by piece count (more pieces)
-        const pieceDiff = b.pieces.length - a.pieces.length;
-        if (pieceDiff !== 0) return pieceDiff;
-        
-        // Then by waste (less waste)
-        return a.waste - b.waste;
-    });
 }
 
-function processStockResults(stocks, cuttingNests, gripStart, gripEnd, sawWidth) {
-    stocks.forEach(stock => {
-        if (stock.used && stock.pieceAssignments.length > 0) {
-            // Calculate total used length
-            let usedLength = 0;
-            let sawCuts = gripStart === 0 ? 0 : 1;
-            
-            stock.pieceAssignments.forEach((assignment, index) => {
-                usedLength += assignment.length;
-                // Count saw cuts (all pieces except the last one, unless last one is without saw width)
-                if (index < stock.pieceAssignments.length && !assignment.withoutSawWidth) {
-                    sawCuts++;
-                }
-            });
-            
-            // Calculate waste and offcut
-            let totalWaste = sawCuts * sawWidth + gripStart + gripEnd;
-            let offcut = stock.length - usedLength - totalWaste;
-            const minOffcut = parseInt(document.getElementById('min-offcut').value);
-            if (offcut < minOffcut) {
-                totalWaste += offcut; // Add offcut to waste if it's less than minOffcut
-                offcut = 0; // If offcut is less than minOffcut, set to 0
+// ── Local search: move one piece, retry MBS+LNS ──────────────────────────────
+function localSearch(stocks, sawWidth, maxUniqueLabels) {
+    var used=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;});
+    if (used.length<=1) return false;
+    used.sort(function(a,b){return b.remainingLength-a.remainingLength;});
+    var cands=used.slice(0,Math.max(1,Math.ceil(used.length*0.3)));
+
+    for (var ai=0;ai<cands.length;ai++) {
+        var barA=cands[ai];
+        for (var pi=0;pi<barA.pieceAssignments.length;pi++) {
+            var assign=barA.pieceAssignments[pi];
+            var piece=assign.piece;
+            var needed=piece.length+sawWidth;
+
+            for (var bi=0;bi<used.length;bi++) {
+                if (used[bi]===barA) continue;
+                var barB=used[bi];
+                if (barB.remainingLength<needed) continue;
+
+                // Tentative move
+                barA.pieceAssignments.splice(pi,1);
+                barA.remainingLength+=piece.length+(assign.withoutSawWidth?0:sawWidth);
+                barB.pieceAssignments.push({piece:piece,position:0,length:piece.length,
+                    label:piece.label,color:piece.color,withoutSawWidth:false});
+                barB.remainingLength-=needed;
+
+                var before=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;}).length;
+                mbsImprove(stocks,sawWidth,maxUniqueLabels);
+                lns(stocks,sawWidth,maxUniqueLabels);
+                var after=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;}).length;
+
+                if (after<before) return true;
+
+                // Undo
+                barB.pieceAssignments.pop();
+                barB.remainingLength+=needed;
+                barA.pieceAssignments.splice(pi,0,assign);
+                barA.remainingLength-=piece.length+(assign.withoutSawWidth?0:sawWidth);
             }
-            
-            cuttingNests.push({
-                profile: stock.originalStock.profile,
-                stockLength: stock.length,
-                gripStart: gripStart,
-                gripEnd: gripEnd,
-                sawWidth: sawWidth,
-                pieceAssignments: stock.pieceAssignments,
-                offcut: offcut,
-                waste: totalWaste,
-                hasLastPieceWithoutSaw: stock.hasLastPieceWithoutSaw
-            });
         }
-    });
+    }
+    return false;
 }
+
+// ── Main optimiser ────────────────────────────────────────────────────────────
+function optimize(pieces, stocks, gripStart, sawWidth, maxUniqueLabels) {
+    function shuffle(arr) {
+        var a=arr.slice();
+        for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}
+        return a;
+    }
+    function clone(src) {
+        return src.map(function(s){
+            return Object.assign({},s,{pieceAssignments:[],used:false,
+                remainingLength:s.usableLength,hasLastPieceWithoutSaw:false});
+        });
+    }
+    function apply(stocks,snap) {
+        for(var i=0;i<stocks.length;i++){
+            stocks[i].used=snap[i].used; stocks[i].pieceAssignments=snap[i].pieceAssignments;
+            stocks[i].remainingLength=snap[i].remainingLength;
+            stocks[i].hasLastPieceWithoutSaw=snap[i].hasLastPieceWithoutSaw;
+        }
+    }
+
+    // Phase 1: Multi-start FFD with DP pricing (20 runs)
+    var byDec=pieces.slice().sort(function(a,b){return b.length-a.length;});
+    var best=Infinity, bestSnap=null;
+    var orderings=[byDec];
+    for(var i=0;i<19;i++) orderings.push(shuffle(pieces));
+
+    for(var oi=0;oi<orderings.length;oi++) {
+        var trial=clone(stocks);
+        var cnt=runFFD(orderings[oi],trial,gripStart,sawWidth,maxUniqueLabels);
+        if(cnt<best){best=cnt;bestSnap=trial;}
+    }
+    apply(stocks,bestSnap);
+
+    // Phase 2: MBS improvement (Fleszar-Hindi 2002)
+    mbsImprove(stocks,sawWidth,maxUniqueLabels);
+
+    // Phase 3: LNS
+    lns(stocks,sawWidth,maxUniqueLabels);
+
+    // Phase 4: Local search loop — move one piece then retry MBS+LNS
+    var imp=true;
+    while(imp) { imp=localSearch(stocks,sawWidth,maxUniqueLabels); }
+}
+
+// ── Unlimited stock (original logic) ─────────────────────────────────────────
+function ffdUnlimited(pieces,stocks,gripStart,gripEnd,sawWidth,maxUniqueLabels,profile,sg,unlimitedStockLength) {
+    pieces.sort(function(a,b){return b.length-a.length;});
+    var unassigned=pieces.slice();
+    function ensure() {
+        var unused=0; for(var i=0;i<stocks.length;i++){if(!stocks[i].used)unused++;}
+        if(unused<5) {
+            var base=stocks.length;
+            for(var j=0;j<20;j++) {
+                var uLen=unlimitedStockLength-gripStart-gripEnd-(gripStart===0?0:sawWidth);
+                stocks.push({id:'u-'+profile+'-'+(base+j),length:unlimitedStockLength,
+                    originalStock:{profile:profile,length:unlimitedStockLength,amount:'unlimited'},
+                    usableLength:uLen,remainingLength:uLen,
+                    pieceAssignments:[],offcut:0,waste:0,
+                    used:false,hasLastPieceWithoutSaw:false,isUnlimitedStock:true});
+            }
+            sg[profile]=stocks;
+        }
+    }
+    while(unassigned.length>0) {
+        ensure();
+        var bar=null;
+        for(var si=0;si<stocks.length;si++){if(!stocks[si].used){bar=stocks[si];break;}}
+        if(!bar) break;
+        bar.used=true;
+        var pat=dpKnapsack(unassigned,bar.usableLength,sawWidth,maxUniqueLabels);
+        if(!pat.pieces.length){bar.used=false;break;}
+        var pos=gripStart;
+        for(var bi=0;bi<pat.pieces.length;bi++) {
+            var bp=pat.pieces[bi],idx=-1;
+            for(var ui=0;ui<unassigned.length;ui++){if(unassigned[ui].id===bp.id&&!unassigned[ui].assigned){idx=ui;break;}}
+            if(idx===-1) continue;
+            unassigned[idx].assigned=true;
+            bar.pieceAssignments.push({piece:unassigned[idx],position:pos,
+                length:unassigned[idx].length,label:unassigned[idx].label,
+                color:unassigned[idx].color,withoutSawWidth:bp.withoutSawWidth||false});
+            pos+=unassigned[idx].length;
+            if(bi<pat.pieces.length-1&&!bp.withoutSawWidth) pos+=sawWidth;
+            if(bi===pat.pieces.length-1&&bp.withoutSawWidth) bar.hasLastPieceWithoutSaw=true;
+            unassigned.splice(idx,1);
+        }
+        bar.remainingLength=bar.usableLength-(pos-gripStart);
+    }
+}
+
+// ── Collect results (no DOM access) ──────────────────────────────────────────
+function collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut) {
+    for(var i=0;i<stocks.length;i++) {
+        var s=stocks[i];
+        if(!s.used||!s.pieceAssignments.length) continue;
+        var usedLen=0, sawCuts=gripStart===0?0:1;
+        for(var j=0;j<s.pieceAssignments.length;j++) {
+            var a=s.pieceAssignments[j];
+            usedLen+=a.length;
+            if(!a.withoutSawWidth) sawCuts++;
+        }
+        var totalWaste=sawCuts*sawWidth+gripStart+gripEnd;
+        var offcut=s.length-usedLen-totalWaste;
+        if(offcut<minOffcut){totalWaste+=offcut;offcut=0;}
+        cuttingNests.push({
+            profile:s.originalStock.profile,stockLength:s.length,
+            gripStart:gripStart,gripEnd:gripEnd,sawWidth:sawWidth,
+            pieceAssignments:s.pieceAssignments,
+            offcut:offcut,waste:totalWaste,
+            hasLastPieceWithoutSaw:s.hasLastPieceWithoutSaw
+        });
+    }
+}
+`;
+
+function _getNestingWorker() {
+    if (_nestingWorker) return _nestingWorker;
+    var blob = new Blob([_WORKER_CODE], { type: 'application/javascript' });
+    _nestingWorker = new Worker(URL.createObjectURL(blob));
+    return _nestingWorker;
+}
+
+function _setNestingUI(running) {
+    var spinner = document.getElementById('nesting-spinner');
+    var btn = document.getElementById('optimize-btn');
+    if (spinner) spinner.classList.toggle('hide', !running);
+    if (btn) { btn.disabled = running; btn.classList.toggle('disabled', running); }
+}
+
 
 // Render the nesting results
 function renderCuttingNests(nests) {
