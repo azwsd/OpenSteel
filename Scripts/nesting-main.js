@@ -2935,8 +2935,10 @@ function exportFncNest() {
     const labels = getUniqueNestLabels();
 
     let piecesBlocks = '';
-    Object.entries(labels).forEach(([label, data]) => {
-        if(pieceItemsFromFiles[label] === undefined) return; // Skip if label not found in pieceItemsFromFiles
+    Object.entries(labels)
+    .sort(([, a], [, b]) => b.isUniqueProfile - a.isUniqueProfile)
+    .forEach(([label, data]) => {
+        if(pieceItemsFromFiles[label] === undefined) return;
         piecesBlocks += createFNC(pieceItemsFromFiles[label][1], data.count, data.isUniqueProfile) + '\n';
     });
 
