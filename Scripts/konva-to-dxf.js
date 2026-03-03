@@ -35,8 +35,8 @@ function handleRectangleAsPolygon(rect, stageHeight, formatNum) {
 
     //Rotate each corner around the rectangle center
     const rad = rotDeg * Math.PI/180;
-    const cx  = (corners[0].x + corners[2].x)/2;
-    const cy  = (corners[0].y + corners[2].y)/2;
+    const cx  = x;
+    const cy  = y;
     const cos = Math.cos(rad), sin = Math.sin(rad);
     corners = corners.map(p => ({
     x: cx + (p.x - cx)*cos - (p.y - cy)*sin,
