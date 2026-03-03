@@ -418,6 +418,23 @@
                             <i class="material-icons left">check_circle</i>Accept Nest
                         </button>
                     </div>
+
+                    <!-- External Cutting Optimization -->
+                    <div class="divider"></div>
+                    <div class="section">
+                        <h5 class="deep-purple-text">External Cutting Optimization</h5>
+                        <p class="grey-text" style="margin-top:0">Export your pieces as a CSV for Cutting Optimization, then import the result to build nests here automatically.</p>
+                        <div class="center-align" style="margin-top:16px; display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center;">
+                            <button class="waves-effect waves-light btn-large deep-purple" onclick="downloadCutOptCSV()">
+                                <i class="material-icons left">file_download</i>Export Pieces CSV
+                            </button>
+                            <label class="waves-effect waves-light btn-large teal" style="cursor:pointer; margin:0; line-height:54px; height:54px; padding:0 16px; display:inline-flex; align-items:center; gap:8px;">
+                                <i class="material-icons">file_upload</i>
+                                <span>Import Cut Opt. Result</span>
+                                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importCutOptResult(event)">
+                            </label>
+                        </div>
+                    </div>
                     
                     <div id="cutting-nests" class="section hide">
                         <h5 class="deep-purple-text">Nests</h5>

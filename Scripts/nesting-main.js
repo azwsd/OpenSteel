@@ -3909,3 +3909,283 @@ function createNewNest(profile, barLength) {
     classes: 'rounded toast-success' 
   });
 }
+
+// Export pieces as cut-optimisation CSV
+// Format (no headers):  length,0,qty,profile,0,label,,,,,0,0,0,0,,
+function downloadCutOptCSV() {
+    if (!pieceItems || pieceItems.length === 0) {
+        M.toast({ html: 'No piece items to export!', classes: 'rounded toast-warning', displayLength: 2000 });
+        return;
+    }
+
+    const lines = pieceItems.map(function(p) {
+        var profile = String(p.profile || '').replace(/,/g, ' ');
+        var label   = String(p.label || p.length).replace(/,/g, ' ');
+        return p.length + ',0,' + p.amount + ',' + profile + ',0,' + label + ',,,,,0,0,0,0,,';
+    });
+
+    var blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/csv' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'cut_optimization_pieces.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    M.toast({ html: 'Pieces exported as CSV!', classes: 'rounded toast-success', displayLength: 2000 });
+}
+
+// Minimal XLSX reader
+
+function _u16le(b, p) { return b[p] | (b[p+1] << 8); }
+function _u32le(b, p) { return ((b[p] | (b[p+1]<<8) | (b[p+2]<<16) | (b[p+3]<<24)) >>> 0); }
+
+// Only extracts the two XML files we need.
+function _zipEntries(bytes) {
+    var entries = {};
+    var pos = 0;
+    var needed = { 'xl/sharedStrings.xml': true, 'xl/worksheets/sheet1.xml': true };
+
+    while (pos < bytes.length - 30) {
+        // Local file header signature PK\x03\x04
+        if (!(bytes[pos] === 0x50 && bytes[pos+1] === 0x4B &&
+              bytes[pos+2] === 0x03 && bytes[pos+3] === 0x04)) {
+            pos++;
+            continue;
+        }
+
+        var compress = _u16le(bytes, pos + 8);
+        var csize    = _u32le(bytes, pos + 18);
+        var fnLen    = _u16le(bytes, pos + 26);
+        var exLen    = _u16le(bytes, pos + 28);
+        var fname    = '';
+        for (var i = 0; i < fnLen; i++) fname += String.fromCharCode(bytes[pos + 30 + i]);
+
+        var dataStart = pos + 30 + fnLen + exLen;
+
+        if (needed[fname]) {
+            entries[fname] = { compress: compress, data: bytes.slice(dataStart, dataStart + csize) };
+        }
+
+        // Advance past this entry; if csize is 0 the real size is in the data descriptor
+        if (csize === 0) {
+            // Scan for next PK signature
+            pos = dataStart + 1;
+        } else {
+            pos = dataStart + csize;
+        }
+
+        // Early exit once we have both files
+        if (entries['xl/sharedStrings.xml'] && entries['xl/worksheets/sheet1.xml']) break;
+    }
+    return entries;
+}
+
+// Decompress a raw-deflate Uint8Array → string (UTF-8)
+async function _inflate(bytes) {
+    var ds     = new DecompressionStream('deflate-raw');
+    var writer = ds.writable.getWriter();
+    var reader = ds.readable.getReader();
+
+    // Write + close must be sequenced properly
+    var writePromise = writer.write(bytes).then(function() { return writer.close(); });
+
+    var chunks = [];
+    var reading = true;
+    while (reading) {
+        var result = await reader.read();
+        if (result.done) { reading = false; } else { chunks.push(result.value); }
+    }
+    await writePromise;
+
+    var total  = chunks.reduce(function(s, c) { return s + c.length; }, 0);
+    var merged = new Uint8Array(total);
+    var off    = 0;
+    for (var c of chunks) { merged.set(c, off); off += c.length; }
+    return new TextDecoder().decode(merged);
+}
+
+// Parse an XLSX ArrayBuffer → array-of-arrays (rows × cells)
+async function parseXlsx(arrayBuffer) {
+    var bytes   = new Uint8Array(arrayBuffer);
+    var entries = _zipEntries(bytes);
+
+    if (!entries['xl/worksheets/sheet1.xml']) {
+        throw new Error('Cannot find sheet1.xml inside the XLSX. Is this a valid .xlsx file?');
+    }
+
+    // Decompress or decode each needed file
+    async function getText(entry) {
+        if (!entry) return '';
+        if (entry.compress === 0) return new TextDecoder().decode(entry.data);
+        if (entry.compress === 8) return await _inflate(entry.data);
+        throw new Error('Unsupported ZIP compression method: ' + entry.compress);
+    }
+
+    var ssXml   = await getText(entries['xl/sharedStrings.xml']);
+    var wsXml   = await getText(entries['xl/worksheets/sheet1.xml']);
+
+    // Parse shared strings
+    var sharedStrings = [];
+    if (ssXml) {
+        var ssDoc = new DOMParser().parseFromString(ssXml, 'application/xml');
+        ssDoc.querySelectorAll('si').forEach(function(si) {
+            var parts = Array.from(si.querySelectorAll('t')).map(function(t) { return t.textContent || ''; });
+            sharedStrings.push(parts.join(''));
+        });
+    }
+
+    // Parse worksheet rows
+    var rows = [];
+    var wsDoc = new DOMParser().parseFromString(wsXml, 'application/xml');
+    wsDoc.querySelectorAll('row').forEach(function(rowEl) {
+        var cells = [];
+        rowEl.querySelectorAll('c').forEach(function(c) {
+            var t   = c.getAttribute('t');
+            var vEl = c.querySelector('v');
+            var val = vEl ? (vEl.textContent || '') : '';
+            if (t === 's' && val !== '') val = sharedStrings[parseInt(val, 10)] || '';
+            cells.push(val.trim());
+        });
+        rows.push(cells);
+    });
+
+    return rows;
+}
+
+// Parse cuts column
+function _parseCuts(str) {
+    var result = [];
+    var re = /\(\s*([\d.]+)\s*;\s*([^)]+?)\s*\)/g;
+    var m;
+    while ((m = re.exec(str)) !== null) {
+        result.push({ length: parseFloat(m[1]), label: m[2].trim() });
+    }
+    return result;
+}
+
+// Convert parsed XLSX rows → cuttingNests objects
+function _buildNestsFromRows(rows) {
+    if (!rows || rows.length < 2) return [];
+
+    // Detect and skip header row
+    var firstRow = rows[0].map(function(c) { return c.toLowerCase(); });
+    var hasHeader = firstRow.some(function(c) { return c === 'length' || c === 'material' || c === 'cuts'; });
+    var dataRows  = hasHeader ? rows.slice(1) : rows;
+
+    // Column index detection (default positional)
+    var iLen = 0, iMat = 1, iQty = 2, iCuts = 5;
+    if (hasHeader) {
+        firstRow.forEach(function(c, i) {
+            if (c === 'length')   iLen  = i;
+            if (c === 'material') iMat  = i;
+            if (c === 'quantity') iQty  = i;
+            if (c === 'cuts')     iCuts = i;
+        });
+    }
+
+    var gripStart = parseFloat(document.getElementById('grip-start').value) || 0;
+    var gripEnd   = parseFloat(document.getElementById('grip-end').value)   || 0;
+    var sawWidth  = parseFloat(document.getElementById('saw-width').value)  || 0;
+
+    var nests = [];
+
+    dataRows.forEach(function(row) {
+        if (!row.length || row.every(function(c) { return c === ''; })) return;
+
+        var stockLength = parseFloat(row[iLen]);
+        var profile     = String(row[iMat] || '').trim();
+        var quantity    = parseInt(row[iQty], 10) || 1;
+        var cutsStr     = String(row[iCuts] || '');
+
+        if (!profile || isNaN(stockLength) || stockLength <= 0) return;
+
+        var cuts = _parseCuts(cutsStr);
+
+        var assignments = cuts.map(function(cut) {
+            // Try to match back to an existing pieceItem by profile+label, then profile+length
+            var match = null;
+            if (pieceItems) {
+                match = pieceItems.find(function(p) {
+                    return String(p.profile) === profile && String(p.label) === String(cut.label);
+                }) || pieceItems.find(function(p) {
+                    return String(p.profile) === profile && Number(p.length) === Number(cut.length);
+                });
+            }
+            var color    = match ? match.color : stringToColor(cut.label);
+            var parentID = match ? match.id    : null;
+            return {
+                label  : cut.label,
+                length : cut.length,
+                piece  : {
+                    label        : cut.label,
+                    length       : cut.length,
+                    color        : color,
+                    parentID     : parentID,
+                    originalPiece: match || null
+                }
+            };
+        });
+
+        for (var q = 0; q < quantity; q++) {
+            var nest = {
+                profile     : profile,
+                stockLength : stockLength,
+                gripStart   : gripStart,
+                gripEnd     : gripEnd,
+                sawWidth    : sawWidth,
+                pieceAssignments : JSON.parse(JSON.stringify(assignments)),
+                offcut      : 0,
+                waste       : 0,
+                hasLastPieceWithoutSaw: false
+            };
+            recomputeNestStats(nest);
+            nests.push(nest);
+        }
+    });
+
+    return nests;
+}
+
+// HTML onchange handler for the Cutting Optimization result input
+async function importCutOptResult(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    event.target.value = ''; // allow re-upload of same file
+
+    try {
+        var buffer = await file.arrayBuffer();
+        var rows   = await parseXlsx(buffer);
+
+        if (!rows || rows.length === 0) {
+            M.toast({ html: 'Could not read data from file!', classes: 'rounded toast-error', displayLength: 3000 });
+            return;
+        }
+
+        var nests = _buildNestsFromRows(rows);
+
+        if (!nests || nests.length === 0) {
+            M.toast({ html: 'No valid nests found in file. Check format.', classes: 'rounded toast-warning', displayLength: 3000 });
+            return;
+        }
+
+        cuttingNests = nests;
+        renderCuttingNests(cuttingNests);
+        cuttingNestsDiv.classList.remove('hide');
+        downloadOffcutsBtn.classList.remove('hide');
+        acceptNestBtn.classList.remove('hide');
+        manualEditBtn.classList.remove('hide');
+        M.Tabs.init(document.querySelectorAll('#nesting-tabs'));
+
+        M.toast({
+            html: 'Imported ' + nests.length + ' nest' + (nests.length !== 1 ? 's' : '') + ' from cut optimization result!',
+            classes: 'rounded toast-success',
+            displayLength: 3000
+        });
+
+    } catch (err) {
+        console.error('[CutOpt Import]', err);
+        M.toast({ html: 'Import failed: ' + err.message, classes: 'rounded toast-error', displayLength: 5000 });
+    }
+}
