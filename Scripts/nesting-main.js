@@ -4179,13 +4179,12 @@ async function importCutOptResult(event) {
         M.Tabs.init(document.querySelectorAll('#nesting-tabs'));
 
         M.toast({
-            html: 'Imported ' + nests.length + ' nest' + (nests.length !== 1 ? 's' : '') + ' from cut optimization result!',
+            html: 'Imported ' + nests.length + ' nest' + (nests.length !== 1 ? 's' : '') + ' from cutting optimization result!',
             classes: 'rounded toast-success',
             displayLength: 3000
         });
 
     } catch (err) {
-        console.error('[CutOpt Import]', err);
         M.toast({ html: 'Import failed: ' + err.message, classes: 'rounded toast-error', displayLength: 5000 });
     }
 }
