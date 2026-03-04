@@ -2274,6 +2274,8 @@ function renderCuttingNests(nests) {
 function generatePDF(uniqueNests) {
     // Get the jsPDF constructor from the window.jspdf object
     const { jsPDF } = window.jspdf;
+
+    const firstNestNumber = Number(document.getElementById('first-nest-number').value) || 1;
     
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -2333,7 +2335,7 @@ function generatePDF(uniqueNests) {
         
         // Create data for this profile
         const profileData = profileNests.map((uniqueNest, i) => [
-            `${nestCounter + uniqueNests.findIndex(n => n === uniqueNest)}`,
+            `${firstNestNumber + uniqueNests.findIndex(n => n === uniqueNest)}`,
             `${uniqueNest.nest.stockLength} mm`,
             uniqueNest.nest.pieceAssignments.length.toString(),
             `${Math.round(uniqueNest.nest.offcut)} mm`,
@@ -2474,7 +2476,7 @@ function generatePDF(uniqueNests) {
         
         // Add nest title with quantity
         doc.setFontSize(14);
-        doc.text(`Nest #${nestCounter + uniqueNest.originalIndex} - Profile: ${pat.profile}${count > 1 ? ` (Qty: ${count})` : ' (Qty: 1)'}`, margin, yPosition);
+        doc.text(`Nest #${firstNestNumber + uniqueNest.originalIndex} - Profile: ${pat.profile}${count > 1 ? ` (Qty: ${count})` : ' (Qty: 1)'}`, margin, yPosition);
         yPosition += 8;
         
         // Add nest stats
