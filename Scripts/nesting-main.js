@@ -2970,6 +2970,8 @@ function exportFncNest() {
         });
     }
 
+    // Fallback if nest counter is not a number or undefined, set it to 1
+    if (nestCounter === undefined || isNaN(nestCounter)) nestCounter = 1;
     let nestsBlocks = createNestBlocks(nestCounter, missingPieces);
 
     // Create download link with nesting data
@@ -4190,6 +4192,8 @@ async function importCutOptResult(event) {
         }
 
         cuttingNests = nests;
+        nestCounter = Number(document.getElementById('first-nest-number').value) ||
+                      Number(localStorage.getItem('first-nest-number')) || 1;
         renderCuttingNests(cuttingNests);
         cuttingNestsDiv.classList.remove('hide');
         downloadOffcutsBtn.classList.remove('hide');
@@ -4205,5 +4209,152 @@ async function importCutOptResult(event) {
 
     } catch (err) {
         M.toast({ html: 'Import failed: ' + err.message, classes: 'rounded toast-error', displayLength: 5000 });
+    }
+}
+
+// CAM file import parser
+function parseCamFile(text) {
+    var nests = [];
+    var barSections = text.split('_BAR_');
+
+    for (var i = 1; i < barSections.length; i++) {
+        var section = barSections[i];
+
+        function getVal(key) {
+            var re = new RegExp('^' + key + ':(.+)$', 'm');
+            var m  = section.match(re);
+            return m ? m[1].trim().replace(/\r$/, '') : null;
+        }
+
+        var rawProfile  = getVal('BAR_PRO') || '';
+        var grade       = getVal('BAR_MAT') || '';
+        var stockLength = parseFloat(getVal('BAR_LEN') || '0');
+        var barQty      = parseInt(getVal('BAR_QTY')  || '1', 10);
+        var sawWidth    = parseFloat(getVal('BAR_SC')  || '0');
+        var gripStart   = parseFloat(getVal('BAR_SP')  || '0');
+        var gripEnd     = parseFloat(getVal('BAR_SL')  || '0');
+
+        var profile = rawProfile
+            .replace(/(\d)\*(\d)/g, '$1X$2')
+            .replace(/\s+/g, '-');
+
+        if (!profile || isNaN(stockLength) || stockLength <= 0) continue;
+
+        if (sawWidth  === 0) sawWidth  = parseFloat(document.getElementById('saw-width')?.value)  || 0;
+        if (gripStart === 0) gripStart = parseFloat(document.getElementById('grip-start')?.value) || 0;
+        if (gripEnd   === 0) gripEnd   = parseFloat(document.getElementById('grip-end')?.value)   || 0;
+
+        var assignments = [];
+        var itemBlockMatch = section.match(/\[ITEM\]([\s\S]*?)(?=;\s*STEEL|$)/);
+
+        if (itemBlockMatch) {
+            var itemLines = itemBlockMatch[1].split('\n');
+            for (var j = 0; j < itemLines.length; j++) {
+                var line = itemLines[j].trim().replace(/\r$/, '');
+                if (!line || line.charAt(0) === ';') continue;
+
+                var firstComma  = line.indexOf(',');
+                var secondComma = line.indexOf(',', firstComma + 1);
+                if (firstComma === -1 || secondComma === -1) continue;
+
+                var position = line.substring(firstComma + 1, secondComma).trim();
+                var rest     = line.substring(secondComma + 1).trim().split(/\s+/);
+
+                var pieceLength = parseFloat(rest[0]);
+                var pieceQty    = parseInt(rest[1] || '1', 10);
+
+                if (isNaN(pieceLength) || pieceLength <= 0) continue;
+
+                var label = position;
+                var match = null;
+                if (pieceItems) {
+                    match = pieceItems.find(function(p) {
+                        return String(p.profile) === profile && String(p.label) === label;
+                    }) || pieceItems.find(function(p) {
+                        return String(p.profile) === profile && Number(p.length) === Number(pieceLength);
+                    });
+                }
+
+                var color = match ? match.color : stringToColor(label);
+
+                for (var q = 0; q < pieceQty; q++) {
+                    assignments.push({
+                        label  : label,
+                        length : pieceLength,
+                        piece  : {
+                            label        : label,
+                            length       : pieceLength,
+                            color        : color,
+                            profile      : profile,
+                            parentID     : match ? match.id : null,
+                            originalPiece: match || null
+                        }
+                    });
+                }
+            }
+        }
+
+        for (var n = 0; n < barQty; n++) {
+            var nest = {
+                profile          : profile,
+                grade            : grade,
+                stockLength      : stockLength,
+                gripStart        : gripStart,
+                gripEnd          : gripEnd,
+                sawWidth         : sawWidth,
+                pieceAssignments : JSON.parse(JSON.stringify(assignments)),
+                offcut           : 0,
+                waste            : 0,
+                hasLastPieceWithoutSaw: false
+            };
+            recomputeNestStats(nest);
+            nests.push(nest);
+        }
+    }
+
+    return nests;
+}
+
+async function importCamFile(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    event.target.value = '';
+
+    try {
+        var text  = await file.text();
+        var nests = parseCamFile(text);
+
+        if (!nests || nests.length === 0) {
+            M.toast({
+                html    : 'No valid nests found in CAM file. Check that _BAR_ sections exist.',
+                classes : 'rounded toast-warning',
+                displayLength: 3500
+            });
+            return;
+        }
+
+        cuttingNests = nests;
+        // Read nestCounter before renderCuttingNests updates the UI field, to make sure we use the correct starting number
+        nestCounter = Number(document.getElementById('first-nest-number').value) ||
+                      Number(localStorage.getItem('first-nest-number')) || 1;
+        renderCuttingNests(cuttingNests);
+        cuttingNestsDiv.classList.remove('hide');
+        downloadOffcutsBtn.classList.remove('hide');
+        acceptNestBtn.classList.remove('hide');
+        manualEditBtn.classList.remove('hide');
+        M.Tabs.init(document.querySelectorAll('#nesting-tabs'));
+
+        M.toast({
+            html    : 'Imported ' + nests.length + ' nest' + (nests.length !== 1 ? 's' : '') + ' from ' + file.name,
+            classes : 'rounded toast-success',
+            displayLength: 3000
+        });
+
+    } catch (err) {
+        M.toast({
+            html    : 'CAM import failed: ' + err.message,
+            classes : 'rounded toast-error',
+            displayLength: 5000
+        });
     }
 }
