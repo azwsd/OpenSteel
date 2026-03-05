@@ -1727,8 +1727,20 @@ function renderCuttingNests(nests) {
         return el;
     };
   
-    const updateRemaining = parentID => {
-        const idx = remaining.findIndex(i => i.id === parentID);
+    const updateRemaining = (parentID, label, profile) => {
+        let idx = remaining.findIndex(i => i.id === parentID);
+        // Fallback: when pieces were imported from a cut-opt result, all cuts of the
+        // same label share the *first* matching pieceItem's id.  Once that row is
+        // exhausted and removed, subsequent calls with the same id return -1.
+        // We then fall back to finding any remaining row with the same label+profile
+        // so that duplicate rows (same label, split across multiple CSV lines) are
+        // correctly drained in sequence.
+        if (idx === -1 && label !== undefined) {
+            idx = remaining.findIndex(i =>
+                String(i.label) === String(label) &&
+                (profile === undefined || String(i.profile) === String(profile))
+            );
+        }
         if (idx === -1) return;
         remaining[idx].amount--;
         if (remaining[idx].amount <= 0) remaining.splice(idx, 1);
@@ -1923,7 +1935,7 @@ function renderCuttingNests(nests) {
             totalPieceLength += p.piece.length * count;
             // Update remaining pieces based on unique nest counts
             for (let j = 0; j < count; j++) {
-                updateRemaining(p.piece.parentID);
+                updateRemaining(p.piece.parentID, p.piece.label, nest.profile);
             }
         });
     });
@@ -2233,7 +2245,7 @@ function renderCuttingNests(nests) {
     const exportButtonContainer = createElem('div', 'export-button-container center-align');
     const exportButton = createElem('a', 'waves-effect waves-light btn-large deep-purple');
     exportButton.innerHTML = '<i class="material-icons left">file_download</i>Export to PDF';
-    exportButton.onclick = () => generatePDF(uniqueNests);
+    exportButton.onclick = () => generatePDF(uniqueNests, firstNestNumber);
 
     // Create a custom checkbox container that won't be affected by Materialize
     const checkboxContainer = createElem('div', 'custom-checkbox-container');
@@ -2271,11 +2283,14 @@ function renderCuttingNests(nests) {
 }
 
 // Function to generate PDF from the nesting data
-function generatePDF(uniqueNests) {
+function generatePDF(uniqueNests, firstNestNumber) {
     // Get the jsPDF constructor from the window.jspdf object
     const { jsPDF } = window.jspdf;
-
-    const firstNestNumber = Number(document.getElementById('first-nest-number').value) || 1;
+    
+    // firstNestNumber is passed in from renderCuttingNests so it reflects
+    // the number used when the nests were rendered, not the already-advanced
+    // value that the input field holds after rendering updates it.
+    firstNestNumber = firstNestNumber || 1;
     
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -4099,7 +4114,7 @@ function _buildNestsFromRows(rows) {
         if (!row.length || row.every(function(c) { return c === ''; })) return;
 
         var stockLength = parseFloat(row[iLen]);
-        var profile     = String(row[iMat] || '').trim();
+        var profile     = String(row[iMat] || '').trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-');
         var quantity    = parseInt(row[iQty], 10) || 1;
         var cutsStr     = String(row[iCuts] || '');
 
