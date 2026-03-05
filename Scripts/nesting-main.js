@@ -4230,19 +4230,15 @@ function parseCamFile(text) {
         var grade       = getVal('BAR_MAT') || '';
         var stockLength = parseFloat(getVal('BAR_LEN') || '0');
         var barQty      = parseInt(getVal('BAR_QTY')  || '1', 10);
-        var sawWidth    = parseFloat(getVal('BAR_SC')  || '0');
+        var gripEnd  = parseFloat(getVal('BAR_SC')  || '0');
         var gripStart   = parseFloat(getVal('BAR_SP')  || '0');
-        var gripEnd     = parseFloat(getVal('BAR_SL')  || '0');
+        var sawWidth     = parseFloat(getVal('BAR_SL')  || '0');
 
         var profile = rawProfile
             .replace(/(\d)\*(\d)/g, '$1X$2')
             .replace(/\s+/g, '-');
 
         if (!profile || isNaN(stockLength) || stockLength <= 0) continue;
-
-        if (sawWidth  === 0) sawWidth  = parseFloat(document.getElementById('saw-width')?.value)  || 0;
-        if (gripStart === 0) gripStart = parseFloat(document.getElementById('grip-start')?.value) || 0;
-        if (gripEnd   === 0) gripEnd   = parseFloat(document.getElementById('grip-end')?.value)   || 0;
 
         var assignments = [];
         var itemBlockMatch = section.match(/\[ITEM\]([\s\S]*?)(?=;\s*STEEL|$)/);
