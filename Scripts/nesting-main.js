@@ -334,7 +334,7 @@ function ncParseHeaderData(fileData){
         //Removes \r from the end of string, replaces spaces with dashes, and removes leading and trailing spaces
         line = line.trim().replace(/\s+/g, '-').replace(/\r$/, '');
         //removes ST line
-        if (line.slice(0, 2).toUpperCase() == 'ST') continue;
+        if (line.toUpperCase() === 'ST') continue;
         //reads only the first 24 lines
         if (lineCounter == 24) break;
         //removes comment lines
