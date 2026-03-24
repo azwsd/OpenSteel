@@ -74,7 +74,7 @@ function selectFile(file){
 }
 
 //adds file to the html page
-function addFile(fileName, fileData, fileCount, isReload = false){
+function addFile(fileName, fileData, fileCount, isReload = false, isBatch = false){
     //handles if the file already exists
     if (filePairs.has(fileName) && !isReload)
     {
@@ -128,8 +128,11 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
-    refreshGrouping();
-    updateSessionData();
+    
+    if (!isBatch) {
+        if (typeof refreshGrouping === 'function') refreshGrouping();
+        updateSessionData();
+    }
 }
 
 //deletes file of pressed button

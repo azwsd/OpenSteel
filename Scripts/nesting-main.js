@@ -80,7 +80,7 @@ function selectFile(file){
 }
 
 //adds file to the html page
-function addFile(fileName, fileData, fileCount, isReload = false){
+function addFile(fileName, fileData, fileCount, isReload = false, isBatch = false){
     //handles if the file already exists
     if (filePairs.has(fileName) && !isReload)
     {
@@ -134,7 +134,7 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
-    updateSessionData();
+    if (!isBatch) updateSessionData();
 }
 
 //deletes file of pressed button
@@ -246,13 +246,18 @@ async function handleFiles(files) {
     // Convert file list into a file array
     let filesArray = [...files];
     if (!filesArray.length) return;
-    for (const file of filesArray) {
-        const fileName = file.name;
-        if (!verifyFile(fileName)) continue;
-        const fileData = await file.text();
+
+    const fileContents = await Promise.all(filesArray.map(async file => {
+        if (!verifyFile(file.name)) return null;
+        return { name: file.name, text: await file.text() };
+    }));
+
+    for (const fileObj of fileContents) {
+        if (!fileObj) continue;
         // Add the file to the view
-        addFile(fileName, fileData, fileCount);
+        addFile(fileObj.name, fileObj.text, fileCount, false, true);
     }
+    updateSessionData();
 }
 
 // Counter to track drag enter/leave events
@@ -408,21 +413,36 @@ function loadProfilesPage(){
 
 document.addEventListener('DOMContentLoaded', function(){
     if (filePairs != {}) {
-        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true); //Load saved files in session
-    }
-    if (selectedFile != '') {
-        selectedFile = sessionStorage.getItem('selectedFile');
-        selectFile(selectedFile); //Select saved selectedFile in session
+        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true, true); //Load saved files in session
     }
     // Load saved stock
     stockItems = JSON.parse(localStorage.getItem('stockItems')) || [];
     renderStockTable();
+    
     // Add pieces from loaded files to nesting
-    const addPieceBtn = document.getElementById('add-piece');
+    let piecesAdded = false;
     for (const [fileName, fileData] of filePairs) {
-        selectFile(fileName);
+        ncParseHeaderData(fileData);
         if(profileCode.replace(/\s+/g, '').toUpperCase() == 'B') continue; // Skip if profile is plate
-        addPieceBtn.click(); // Simulate click to add piece
+        
+        const pieceLabel = label || length.toString();
+        const color = stringToColor(pieceLabel);
+        
+        pieceItems.push({ 
+            profile: profile.trim().replace(/(\d)\*(\d)/g, '$1X$2').replace(/\s+/g, '-'), 
+            length: parseFloat(length), 
+            amount: parseInt(quantity), 
+            label: pieceLabel, 
+            color: color, 
+            id: Date.now() + Math.random() 
+        });
+        piecesAdded = true;
+    }
+    if (piecesAdded) renderPieceTable();
+
+    if (selectedFile != '') {
+        selectedFile = sessionStorage.getItem('selectedFile');
+        selectFile(selectedFile); //Select saved selectedFile in session
     }
 });
 

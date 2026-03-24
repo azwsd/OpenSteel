@@ -85,7 +85,7 @@ function selectFile(file){
 }
 
 //adds file to the html page
-function addFile(fileName, fileData, fileCount, isReload = false){
+function addFile(fileName, fileData, fileCount, isReload = false, isBatch = false){
     //handles if the file already exists
     if (filePairs.has(fileName) && !isReload)
     {
@@ -139,8 +139,11 @@ function addFile(fileName, fileData, fileCount, isReload = false){
     if (fileCounter == 1) filesPlaceHolder();
     //selects imported file in view
     if (fileCounter == fileCount && !isReload) selectFile(fileName);
-    refreshGrouping();
-    updateSessionData();
+    
+    if (!isBatch) {
+        refreshGrouping();
+        updateSessionData();
+    }
 }
 
 //deletes file of pressed button
@@ -270,13 +273,20 @@ async function handleFiles(files) {
     // Convert file list into a file array
     let filesArray = [...files];
     if (!filesArray.length) return;
-    for (const file of filesArray) {
-        const fileName = file.name;
-        if (!verifyFile(fileName)) continue;
-        const fileData = await file.text();
+
+    const fileContents = await Promise.all(filesArray.map(async file => {
+        if (!verifyFile(file.name)) return null;
+        return { name: file.name, text: await file.text() };
+    }));
+
+    for (const fileObj of fileContents) {
+        if (!fileObj) continue;
         // Add the file to the view
-        addFile(fileName, fileData, fileCount);
+        addFile(fileObj.name, fileObj.text, fileCount, false, true);
     }
+    
+    refreshGrouping();
+    updateSessionData();
 }
 
 // Counter to track drag enter/leave events
@@ -396,7 +406,8 @@ document.addEventListener('DOMContentLoaded', function(){
     
     // Load saved files if they exist
     if (filePairs != {}) {
-        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true);
+        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true, true);
+        refreshGrouping();
     }
     if (selectedFile != '') {
         selectedFile = sessionStorage.getItem('selectedFile');

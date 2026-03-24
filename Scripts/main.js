@@ -42,7 +42,7 @@ async function handleFiles(files) {
                  M.toast({ html: 'Conversion Failed!', classes: 'rounded toast-error', displayLength: 3000});
             }
             if (result) {
-                addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
+                addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount, false, true);
             }
             continue;
         }
@@ -74,7 +74,7 @@ async function handleFiles(files) {
                     M.toast({ html: 'Conversion Failed!', classes: 'rounded toast-error', displayLength: 3000});
                 }
                 if (result) {
-                    addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount);
+                    addFile(fileName.replace(/\.dxf$/, ".nc1"), result, fileCount, false, true);
                 }
             } 
             finally {
@@ -108,8 +108,11 @@ async function handleFiles(files) {
     }
 
     // Nc file just add to view
-    addFile(fileName, fileData, fileCount);
+    addFile(fileName, fileData, fileCount, false, true);
     }
+
+    if (typeof refreshGrouping === 'function') refreshGrouping();
+    updateSessionData();
 }
 
 // Counter to track drag enter/leave events
@@ -424,7 +427,8 @@ function loadNestingPage(){
 
 document.addEventListener('DOMContentLoaded', function(){
     if (filePairs != {}) {
-        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true); //Load saved files in session
+        for (let [fileName, fileData] of filePairs) addFile(fileName, fileData, filePairs.size, true, true); //Load saved files in session
+        if (typeof refreshGrouping === 'function') refreshGrouping();
     }
     if (selectedFile != '') {
         selectedFile = sessionStorage.getItem('selectedFile');
