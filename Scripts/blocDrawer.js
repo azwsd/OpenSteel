@@ -110,20 +110,38 @@ function drawContours() {
             isFirstIteration = true;
         }
 
-        if (arcData.length !== 0 && arcType === 'partial') {
+        if (arcData.length !== 0 && (arcType === 'partial' || arcType === 'full')) {
             let sX = arcData[0];
             let sY = arcData[1];
             let cX = arcData[2];
             let cY = arcData[3];
             let eX = arcData[5];
             let eY = arcData[6];
-            let notchTool = arcData[7];
-            [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
-            [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
+            let notchTool = arcType === 'partial' ? arcData[7] : '';
             const r = Math.abs(arcData[4]);
 
-            if(sX == eX && sY == eY) {
-                [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
+            // For non-holes, calculate logical center BEFORE transforming coordinates
+            if (!(sX == eX && sY == eY)) {
+                let isClockwise = arcData[4] > 0 ? false : true;
+                if (arcType === 'full') {
+                    isClockwise = arcData[4] > 0 ? true : false;
+                }
+                if (arcType === 'partial') {
+                    // find center in logical o-view coordinates
+                    [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, 'o-view');
+                }
+            }
+
+            // Save logical end point for the next segment
+            prevX = eX;
+            prevY = eY;
+
+            // Transform coordinates to canvas space
+            [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
+            [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
+            [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
+
+            if(sX == eX && sY == eY && arcType === 'partial') {
                 [cX, cY] = [((sX + cX) / 2), (sY + cY) / 2];
                 hole = new Konva.Circle({
                     x: cX, 
@@ -155,27 +173,36 @@ function drawContours() {
             }
             else {
                 let isClockwise = arcData[4] > 0 ? false : true;
-                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view); //Get center point correctly
+                if (arcType === 'full') {
+                    isClockwise = arcData[4] > 0 ? true : false;
+                }
+                
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
 
-                let arcAngle = calcArcAngle(startAngle, endAngle, isClockwise);
-                let rotationAngle = isClockwise ? startAngle : endAngle;
+                // Adjust sweep direction if view is v-view or u-view because Y is inverted
+                let isCanvasClockwise = isClockwise;
+                if (view === 'v-view' || view === 'u-view') {
+                    isCanvasClockwise = !isClockwise;
+                }
+
+                let arcAngle = calcArcAngle(startAngle, endAngle, isCanvasClockwise);
+                let rotationAngle = isCanvasClockwise ? startAngle : endAngle;
 
                 let arc = new Konva.Arc({
-                x: cX,
-                y: cY,
-                innerRadius: r,
-                outerRadius: r,
-                angle: arcAngle,
-                stroke: 'black',
-                rotation: rotationAngle,
-                clockwise: false,
-                strokeWidth: 3,
-                name: 'contour-arc',
-                snapPoints : [
-                    {cX, cY}
-                ],
+                    x: cX,
+                    y: cY,
+                    innerRadius: r,
+                    outerRadius: r,
+                    angle: arcAngle,
+                    stroke: 'black',
+                    rotation: rotationAngle,
+                    clockwise: false,
+                    strokeWidth: 3,
+                    name: 'contour-arc',
+                    snapPoints : [
+                        {cX, cY}
+                    ],
                 });
                 addSnapIndicator(cX, cY, view);
         
@@ -184,59 +211,6 @@ function drawContours() {
                 layer.batchDraw();
             }
 
-            prevX = arcData[5];
-            prevY = arcData[6];
-        
-            arcData = [];
-            arcType = '';
-            arcLine = 0;
-            continue;
-        }
-
-        if (arcData.length !== 0 && arcType === 'full') {
-            //Get center point correctly
-            let cX = arcData[2];
-            let cY = arcData[3];
-            let sX = arcData[0];
-            let sY = arcData[1];
-            let eX = arcData[5];
-            let eY = arcData[6];
-            [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
-            [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
-            [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
-            let isClockwise = arcData[4] > 0 ? true : false;
-            const r = Math.abs(arcData[4]);
-        
-            //Compute start and end angles in degrees
-            let startAngle = calcAngle(sX, sY, cX, cY);
-            let endAngle = calcAngle(eX, eY, cX, cY);
-            
-            let arcAngle = calcArcAngle(startAngle, endAngle, isClockwise);
-            let rotationAngle = isClockwise ? startAngle : endAngle;
-            
-            let arc = new Konva.Arc({
-                x: cX,
-                y: cY,
-                innerRadius: r,
-                outerRadius: r,
-                angle: arcAngle,
-                stroke: 'black',
-                rotation: rotationAngle, 
-                clockwise: true,
-                strokeWidth: 3,
-                name: 'contour-arc',
-                snapPoints : [
-                    {cX, cY}
-                ],
-            });
-            addSnapIndicator(cX, cY, view);
-            arc.strokeScaleEnabled(false); //Prevent stroke scaling when zooming
-            layer.add(arc);
-            layer.batchDraw();
-            
-            prevX = arcData[5];
-            prevY = arcData[6];
-        
             arcData = [];
             arcType = '';
             arcLine = 0;
@@ -613,9 +587,14 @@ function calcAngle(pX, pY, cX, cY){
 function calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view) {
     let [mX, mY] = [(sX + eX) / 2, (sY + eY) / 2]; //Center of start and end points
     let l = Math.sqrt(((sX - eX) ** 2) + ((sY - eY) ** 2)); //Distance between start and end points
+    
+    //Prevent NaN if l/2 is slightly greater than r due to floating point precision
+    let safeR = Math.max(r, l/2);
+    let offset = Math.sqrt(safeR ** 2 - (l/2) ** 2);
+    
     //Calculate the two possible centers
-    let [solX1, solY1] = [mX + Math.sqrt(r ** 2 - (l/2) ** 2) * (sY - eY) / l, mY + Math.sqrt(r ** 2 - (l/2) ** 2) * (eX - sX) / l];
-    let [solX2, solY2] = [mX - Math.sqrt(r ** 2 - (l/2) ** 2) * (sY - eY) / l, mY - Math.sqrt(r ** 2 - (l/2) ** 2) * (eX - sX) / l];
+    let [solX1, solY1] = [mX + offset * (sY - eY) / l, mY + offset * (eX - sX) / l];
+    let [solX2, solY2] = [mX - offset * (sY - eY) / l, mY - offset * (eX - sX) / l];
 
     //Calculate the orientation of first solution and return the correct center based on this orientation
     const sol1Orientation = transformOrientation(view, getArcOrientation(sX, sY, solX1, solY1, eX, eY));
