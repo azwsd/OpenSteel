@@ -1,4 +1,4 @@
-//header data
+﻿//header data
 let headerData = [];
 //Map containing fileName, filedata as text pairs
 let filePairs = new Map(Object.entries(JSON.parse(sessionStorage.getItem("filePairs") || "{}")));
@@ -1167,39 +1167,67 @@ function optimizeCuttingNests() {
         });
     }
 
-    // Run in background blob worker — UI never blocks
+    // Run in background blob workers â€” UI never blocks (Parallel execution per profile)
     cuttingNests = [];
     _setNestingUI(true);
-    const worker = _getNestingWorker();
-    worker.onmessage = function(e) {
+    
+    const profiles = Object.keys(profileGroups);
+    if (profiles.length === 0) {
         _setNestingUI(false);
-        const { cuttingNests: result, warnings } = e.data;
-        cuttingNests = result;
-        warnings.forEach(w => M.toast({ html: w, classes: 'rounded toast-warning', displayLength: 2000 }));
         renderCuttingNests(cuttingNests);
-        cuttingNestsDiv.classList.remove('hide');
-        downloadOffcutsBtn.classList.remove('hide');
-        acceptNestBtn.classList.remove('hide');
-        manualEditBtn.classList.remove('hide');
-        M.Tabs.init(document.querySelectorAll('#nesting-tabs'));
-    };
-    worker.onerror = function(err) {
-        _setNestingUI(false);
-        M.toast({ html: 'Nesting error: ' + err.message, classes: 'rounded toast-error', displayLength: 4000 });
-    };
-    worker.postMessage({ profileGroups, stockGroups, params: {
-        gripStart, gripEnd, sawWidth, maxUniqueLabels, minOffcut,
-        preferShorterStocks, useUnlimitedStock, unlimitedStockLength
-    }});
-}
+        return;
+    }
 
-let _nestingWorker = null;
+    let completedWorkers = 0;
+    let allWarnings = [];
+
+    profiles.forEach(profile => {
+        const worker = _createNewWorker();
+        worker.onmessage = function(e) {
+            const { cuttingNests: result, warnings } = e.data;
+            cuttingNests = cuttingNests.concat(result);
+            allWarnings = allWarnings.concat(warnings);
+            completedWorkers++;
+            worker.terminate();
+            
+            if (completedWorkers === profiles.length) {
+                _setNestingUI(false);
+                allWarnings.forEach(w => M.toast({ html: w, classes: 'rounded toast-warning', displayLength: 2000 }));
+                renderCuttingNests(cuttingNests);
+                cuttingNestsDiv.classList.remove('hide');
+                downloadOffcutsBtn.classList.remove('hide');
+                acceptNestBtn.classList.remove('hide');
+                manualEditBtn.classList.remove('hide');
+                M.Tabs.init(document.querySelectorAll('#nesting-tabs'));
+            }
+        };
+        worker.onerror = function(err) {
+            completedWorkers++;
+            worker.terminate();
+            M.toast({ html: 'Nesting error in profile ' + profile + ': ' + err.message, classes: 'rounded toast-error', displayLength: 4000 });
+            if (completedWorkers === profiles.length) {
+                _setNestingUI(false);
+                renderCuttingNests(cuttingNests);
+            }
+        };
+        worker.postMessage({ 
+            profile: profile,
+            pieces: profileGroups[profile], 
+            stocks: stockGroups[profile] || [], 
+            params: {
+                gripStart, gripEnd, sawWidth, maxUniqueLabels, minOffcut,
+                preferShorterStocks, useUnlimitedStock, unlimitedStockLength
+            }
+        });
+    });
+}
 
 const _WORKER_CODE = `
 self.onmessage = function(e) {
-    var pg  = e.data.profileGroups,
-        sg  = e.data.stockGroups,
-        par = e.data.params;
+    var profile = e.data.profile,
+        pieces  = e.data.pieces,
+        stocks  = e.data.stocks,
+        par     = e.data.params;
     var gripStart=par.gripStart, gripEnd=par.gripEnd, sawWidth=par.sawWidth,
         maxUniqueLabels=par.maxUniqueLabels, minOffcut=par.minOffcut,
         preferShorterStocks=par.preferShorterStocks,
@@ -1207,50 +1235,52 @@ self.onmessage = function(e) {
         unlimitedStockLength=par.unlimitedStockLength;
     var cuttingNests=[], warnings=[];
 
-    for (var profile in pg) {
-        if (!sg[profile]) { warnings.push('No available stock for profile: '+profile+'!'); continue; }
-        var pieces=pg[profile], stocks=sg[profile];
-        for (var pi=0;pi<pieces.length;pi++) pieces[pi].assigned=false;
-        for (var si=0;si<stocks.length;si++) {
-            stocks[si].used=false; stocks[si].pieceAssignments=[];
-            stocks[si].remainingLength=stocks[si].usableLength;
-            stocks[si].hasLastPieceWithoutSaw=false;
-        }
-        if (preferShorterStocks) stocks.sort(function(a,b){return a.length-b.length;});
-        if (useUnlimitedStock) {
-            ffdUnlimited(pieces,stocks,gripStart,gripEnd,sawWidth,maxUniqueLabels,profile,sg,unlimitedStockLength);
-        } else {
-            optimize(pieces,stocks,gripStart,sawWidth,maxUniqueLabels);
-        }
-        collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut);
+    if (!stocks || stocks.length === 0) {
+        warnings.push('No available stock for profile: '+profile+'!');
+        self.postMessage({cuttingNests:[], warnings:warnings});
+        return;
     }
+
+    for (var pi=0;pi<pieces.length;pi++) pieces[pi].assigned=false;
+    var maxStockLen = 0;
+    for (var si=0;si<stocks.length;si++) {
+        stocks[si].used=false; stocks[si].pieceAssignments=[];
+        stocks[si].remainingLength=stocks[si].usableLength;
+        stocks[si].hasLastPieceWithoutSaw=false;
+        if (stocks[si].usableLength > maxStockLen) maxStockLen = stocks[si].usableLength;
+    }
+    
+    // Lower bound calculation for early stopping
+    var totalPieceLength = 0;
+    for (var pi=0;pi<pieces.length;pi++) {
+        totalPieceLength += pieces[pi].length + sawWidth;
+    }
+    var lowerBoundStocks = Math.max(1, Math.ceil(totalPieceLength / (maxStockLen || 1)));
+
+    if (preferShorterStocks) stocks.sort(function(a,b){return a.length-b.length;});
+    
+    if (useUnlimitedStock) {
+        var sg = {}; sg[profile] = stocks;
+        ffdUnlimited(pieces,stocks,gripStart,gripEnd,sawWidth,maxUniqueLabels,profile,sg,unlimitedStockLength);
+    } else {
+        optimize(pieces,stocks,gripStart,sawWidth,maxUniqueLabels,lowerBoundStocks);
+    }
+    collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut);
+    
     self.postMessage({cuttingNests:cuttingNests, warnings:warnings});
 };
 
-// ── DP 0/1 Knapsack ───────────────────────────────────────────────────────────
-// Finds the EXACT optimal subset of items that maximises total piece length
-// fitting in usableLength (respecting saw cuts). Returns {pieces, waste}.
-//
-// Key insight: virtual capacity = usableLength + sawWidth, each item costs
-// (length + sawWidth). This correctly accounts for the last piece needing no
-// saw after it (the extra sawWidth in the virtual capacity absorbs it).
-//
-// For label constraint: if more unique labels exist than allowed, falls back
-// to the original backtracking which handles it exactly.
 function dpKnapsack(items, usableLength, sawWidth, maxUniqueLabels) {
     if (!items.length) return {pieces:[], waste:usableLength};
 
-    // Check whether the label constraint can bind
     var labelSet={}, labelCount=0;
     for (var i=0;i<items.length;i++) {
         if (!labelSet[items[i].label]) { labelSet[items[i].label]=1; labelCount++; }
     }
     if (labelCount > maxUniqueLabels) {
-        // Fall back to backtracking which handles label constraint exactly
         return backtrackKnapsack(items, usableLength, sawWidth, maxUniqueLabels);
     }
 
-    // Scale lengths to integers (handle up to 1 decimal place)
     var scale = 1;
     for (var i=0;i<items.length;i++) {
         var s = String(items[i].length);
@@ -1259,41 +1289,78 @@ function dpKnapsack(items, usableLength, sawWidth, maxUniqueLabels) {
     var C = Math.floor((usableLength + sawWidth) * scale);
     var sw = Math.round(sawWidth * scale);
 
-    // dp[c] = max total piece length (scaled) using at most c virtual space
+    // Grouping identical pieces by length to reduce DP state space overhead
+    var lenGroups = {};
+    for (var i=0; i<items.length; i++) {
+        var l = items[i].length;
+        var p = Math.round((l + sawWidth) * scale);
+        if (p > C) continue;
+        if (!lenGroups[l]) lenGroups[l] = { length: l, cost: p, val: Math.round(l * scale), items: [] };
+        lenGroups[l].items.push(items[i]);
+    }
+
+    var groupedItems = [];
+    for (var l in lenGroups) {
+        var g = lenGroups[l];
+        var count = g.items.length;
+        var k = 1;
+        while (count > 0) {
+            var take = Math.min(k, count);
+            groupedItems.push({
+                cost: g.cost * take,
+                val: g.val * take,
+                takeCount: take,
+                length: g.length
+            });
+            count -= take;
+            k *= 2;
+        }
+    }
+
     var dp  = new Int32Array(C + 1);
-    // par[c] = index into items[] that was placed at this state (for traceback)
     var par = new Int32Array(C + 1).fill(-1);
-    // prev[c] = previous capacity state before placing par[c]
     var prev = new Int32Array(C + 1).fill(-1);
 
-    for (var i=0;i<items.length;i++) {
-        var cost = Math.round((items[i].length + sawWidth) * scale);
+    for (var i=0;i<groupedItems.length;i++) {
+        var cost = groupedItems[i].cost;
         if (cost > C) continue;
-        // Backward scan — ensures each item used at most once
         for (var c=C; c>=cost; c--) {
-            var nv = dp[c-cost] + Math.round(items[i].length * scale);
+            var nv = dp[c-cost] + groupedItems[i].val;
             if (nv > dp[c]) { dp[c]=nv; par[c]=i; prev[c]=c-cost; }
         }
     }
 
-    // Find state with maximum total length
     var bestLen=0, bestC=0;
     for (var c=1;c<=C;c++) { if (dp[c]>bestLen) {bestLen=dp[c];bestC=c;} }
     if (bestLen===0) return {pieces:[], waste:usableLength};
 
-    // Traceback
     var selIdx=[], c=bestC;
     while (c>0 && par[c]!==-1) { selIdx.push(par[c]); c=prev[c]; }
-    selIdx.reverse();
+    
+    var requiredLengths = {};
+    for (var j=0; j<selIdx.length; j++) {
+        var gi = groupedItems[selIdx[j]];
+        if (!requiredLengths[gi.length]) requiredLengths[gi.length] = 0;
+        requiredLengths[gi.length] += gi.takeCount;
+    }
 
-    var pieces=selIdx.map(function(idx,k) {
-        return Object.assign({},items[idx],{withoutSawWidth: k===selIdx.length-1});
+    var pieces = [];
+    for (var l in requiredLengths) {
+        var req = requiredLengths[l];
+        var instances = lenGroups[l].items;
+        for (var k=0; k<req; k++) {
+            pieces.push(instances[k]);
+        }
+    }
+
+    var outPieces = pieces.map(function(pc, idx) {
+        return Object.assign({}, pc, {withoutSawWidth: idx === pieces.length-1});
     });
-    var totalLen=selIdx.reduce(function(s,idx){return s+items[idx].length;},0);
-    return {pieces:pieces, waste:usableLength-totalLen};
+
+    var totalLen=outPieces.reduce(function(s,pc){return s+pc.length;},0);
+    return {pieces:outPieces, waste:usableLength-totalLen};
 }
 
-// ── Backtracking knapsack (used when label constraint is binding) ──────────────
 function backtrackKnapsack(items, stockLength, sawWidth, maxUniqueLabels) {
     var best={pieces:[], waste:stockLength};
     function bt(start,cur,rem,labels,curLen) {
@@ -1327,7 +1394,6 @@ function backtrackKnapsack(items, stockLength, sawWidth, maxUniqueLabels) {
     return best;
 }
 
-// ── FFD using DP pricing ──────────────────────────────────────────────────────
 function runFFD(orderedPieces, stocks, gripStart, sawWidth, maxUniqueLabels) {
     for (var si=0;si<stocks.length;si++) {
         stocks[si].used=false; stocks[si].pieceAssignments=[];
@@ -1369,11 +1435,6 @@ function placePattern(bar, pieces, gripStart, sawWidth, unassigned) {
     bar.remainingLength=bar.usableLength-(pos-gripStart);
 }
 
-// ── MBS Improvement (Fleszar-Hindi 2002) ─────────────────────────────────────
-// Minimal Bin Slack: repeatedly pick the fullest open bar (smallest remaining
-// space) and try to use DP to fill that remaining space with pieces moved from
-// other bars.  A filled bar stays at 0 slack and allows the emptiest bars to
-// potentially be eliminated.  Restart whenever any bar is eliminated.
 function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
     var improved=true;
     while (improved) {
@@ -1381,14 +1442,12 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
         var used=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;});
         if (used.length<=1) break;
 
-        // Sort: tightest (smallest remaining) first — these are the MBS targets
         used.sort(function(a,b){return a.remainingLength-b.remainingLength;});
 
         for (var ti=0;ti<used.length;ti++) {
             var target=used[ti];
-            if (target.remainingLength<=0) continue; // already perfectly packed
+            if (target.remainingLength<=0) continue;
 
-            // Collect all pieces from OTHER bars that could go into target's slack
             var donors=used.filter(function(b){return b!==target;});
             var pool=[];
             for (var di=0;di<donors.length;di++) {
@@ -1398,17 +1457,13 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
             }
             var poolPieces=pool.map(function(x){return x.assign.piece;});
 
-            // Use DP to find best subset of donor pieces that fills target's slack
-            // Space available for appending: remaining - sawWidth (need one saw to join)
             var avail=target.remainingLength-sawWidth;
             if (avail<=0) continue;
             var pat=dpKnapsack(poolPieces,avail,sawWidth,maxUniqueLabels);
             if (!pat.pieces.length) continue;
 
-            // Find which pool entries correspond to selected pieces
             var toMove=[];
-            var patIds=pat.pieces.map(function(p){return p.id;});
-            var used2=new Set ? new Set() : {};
+            var used2={};
             for (var pi2=0;pi2<pat.pieces.length;pi2++) {
                 for (var pi3=0;pi3<pool.length;pi3++) {
                     var key=pool[pi3].bar.id+':'+pool[pi3].assign.piece.id;
@@ -1421,7 +1476,6 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
             }
             if (toMove.length!==pat.pieces.length) continue;
 
-            // Commit: remove from donor bars, add to target
             var donorMap={};
             for (var mi=0;mi<toMove.length;mi++) {
                 var m=toMove[mi];
@@ -1429,8 +1483,6 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
                 if (!donorMap[barId]) donorMap[barId]={bar:m.bar,removes:[]};
                 donorMap[barId].removes.push(m.assign);
             }
-            // Calculate new remaining lengths for donor bars
-            var valid=true;
             var updates=[];
             for (var barId in donorMap) {
                 var dbar=donorMap[barId].bar;
@@ -1441,7 +1493,6 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
                 }
                 updates.push({bar:dbar, removes:removes, newRem:newRem});
             }
-            // Apply updates to donor bars
             for (var ui2=0;ui2<updates.length;ui2++) {
                 var upd=updates[ui2];
                 for (var ri2=0;ri2<upd.removes.length;ri2++) {
@@ -1456,8 +1507,7 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
                     }
                 }
             }
-            // Add moved pieces to target
-            var spaceUsed=sawWidth; // one saw to join
+            var spaceUsed=sawWidth;
             for (var mi2=0;mi2<toMove.length;mi2++) {
                 var np=toMove[mi2].newPiece;
                 target.pieceAssignments.push({
@@ -1468,12 +1518,11 @@ function mbsImprove(stocks, sawWidth, maxUniqueLabels) {
                 spaceUsed+=np.length+(np.withoutSawWidth?0:sawWidth);
             }
             target.remainingLength-=spaceUsed;
-            if (improved) break; // restart with fresh bar list
+            if (improved) break;
         }
     }
 }
 
-// ── LNS — destroy N emptiest bars and re-pack freed pieces with DP ────────────
 function lns(stocks, sawWidth, maxUniqueLabels) {
     var anyImp=true;
     while (anyImp) {
@@ -1494,18 +1543,16 @@ function lns(stocks, sawWidth, maxUniqueLabels) {
             }
             freed.sort(function(a,b){return b.length-a.length;});
 
-            // Try to fit freed pieces into remaining space of other bars using DP
             var tempRem=others.map(function(b){return b.remainingLength;});
             var plans=others.map(function(){return [];});
             var unplaced=freed.slice();
 
-            // Sort others by most remaining space first
             var order=others.map(function(_,i){return i;});
             order.sort(function(a,b){return tempRem[b]-tempRem[a];});
 
             for (var ii=0;ii<order.length&&unplaced.length>0;ii++) {
                 var oi=order[ii];
-                var avail=tempRem[oi]-sawWidth; // need saw to append
+                var avail=tempRem[oi]-sawWidth;
                 if (avail<=0) continue;
                 var pat=dpKnapsack(unplaced,avail,sawWidth,maxUniqueLabels);
                 if (!pat.pieces.length) continue;
@@ -1545,7 +1592,6 @@ function lns(stocks, sawWidth, maxUniqueLabels) {
     }
 }
 
-// ── Local search: move one piece, retry MBS+LNS ──────────────────────────────
 function localSearch(stocks, sawWidth, maxUniqueLabels) {
     var used=stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;});
     if (used.length<=1) return false;
@@ -1564,7 +1610,6 @@ function localSearch(stocks, sawWidth, maxUniqueLabels) {
                 var barB=used[bi];
                 if (barB.remainingLength<needed) continue;
 
-                // Tentative move
                 barA.pieceAssignments.splice(pi,1);
                 barA.remainingLength+=piece.length+(assign.withoutSawWidth?0:sawWidth);
                 barB.pieceAssignments.push({piece:piece,position:0,length:piece.length,
@@ -1578,7 +1623,6 @@ function localSearch(stocks, sawWidth, maxUniqueLabels) {
 
                 if (after<before) return true;
 
-                // Undo
                 barB.pieceAssignments.pop();
                 barB.remainingLength+=needed;
                 barA.pieceAssignments.splice(pi,0,assign);
@@ -1589,8 +1633,7 @@ function localSearch(stocks, sawWidth, maxUniqueLabels) {
     return false;
 }
 
-// ── Main optimiser ────────────────────────────────────────────────────────────
-function optimize(pieces, stocks, gripStart, sawWidth, maxUniqueLabels) {
+function optimize(pieces, stocks, gripStart, sawWidth, maxUniqueLabels, lowerBoundStocks) {
     function shuffle(arr) {
         var a=arr.slice();
         for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}
@@ -1610,7 +1653,6 @@ function optimize(pieces, stocks, gripStart, sawWidth, maxUniqueLabels) {
         }
     }
 
-    // Phase 1: Multi-start FFD with DP pricing (20 runs)
     var byDec=pieces.slice().sort(function(a,b){return b.length-a.length;});
     var best=Infinity, bestSnap=null;
     var orderings=[byDec];
@@ -1620,21 +1662,22 @@ function optimize(pieces, stocks, gripStart, sawWidth, maxUniqueLabels) {
         var trial=clone(stocks);
         var cnt=runFFD(orderings[oi],trial,gripStart,sawWidth,maxUniqueLabels);
         if(cnt<best){best=cnt;bestSnap=trial;}
+        if(best <= lowerBoundStocks) break;
     }
     apply(stocks,bestSnap);
 
-    // Phase 2: MBS improvement (Fleszar-Hindi 2002)
-    mbsImprove(stocks,sawWidth,maxUniqueLabels);
-
-    // Phase 3: LNS
-    lns(stocks,sawWidth,maxUniqueLabels);
-
-    // Phase 4: Local search loop — move one piece then retry MBS+LNS
-    var imp=true;
-    while(imp) { imp=localSearch(stocks,sawWidth,maxUniqueLabels); }
+    if (best > lowerBoundStocks) {
+        mbsImprove(stocks,sawWidth,maxUniqueLabels);
+        lns(stocks,sawWidth,maxUniqueLabels);
+        var imp=true;
+        while(imp) { 
+            imp=localSearch(stocks,sawWidth,maxUniqueLabels); 
+            var usedCnt = stocks.filter(function(s){return s.used&&s.pieceAssignments.length>0;}).length;
+            if(usedCnt <= lowerBoundStocks) break;
+        }
+    }
 }
 
-// ── Unlimited stock (original logic) ─────────────────────────────────────────
 function ffdUnlimited(pieces,stocks,gripStart,gripEnd,sawWidth,maxUniqueLabels,profile,sg,unlimitedStockLength) {
     pieces.sort(function(a,b){return b.length-a.length;});
     var unassigned=pieces.slice();
@@ -1679,7 +1722,6 @@ function ffdUnlimited(pieces,stocks,gripStart,gripEnd,sawWidth,maxUniqueLabels,p
     }
 }
 
-// ── Collect results (no DOM access) ──────────────────────────────────────────
 function collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut) {
     for(var i=0;i<stocks.length;i++) {
         var s=stocks[i];
@@ -1692,7 +1734,8 @@ function collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut
         }
         var totalWaste=sawCuts*sawWidth+gripStart+gripEnd;
         var offcut=s.length-usedLen-totalWaste;
-        if(offcut<minOffcut){totalWaste+=offcut;offcut=0;}
+        if(offcut<minOffcut && !s.isUnlimitedStock){totalWaste+=Math.max(0, offcut);offcut=0;}
+        if(offcut<0) {totalWaste+=offcut;offcut=0;}
         cuttingNests.push({
             profile:s.originalStock.profile,stockLength:s.length,
             gripStart:gripStart,gripEnd:gripEnd,sawWidth:sawWidth,
@@ -1704,13 +1747,10 @@ function collectResults(stocks,cuttingNests,gripStart,gripEnd,sawWidth,minOffcut
 }
 `;
 
-function _getNestingWorker() {
-    if (_nestingWorker) return _nestingWorker;
+function _createNewWorker() {
     var blob = new Blob([_WORKER_CODE], { type: 'application/javascript' });
-    _nestingWorker = new Worker(URL.createObjectURL(blob));
-    return _nestingWorker;
+    return new Worker(URL.createObjectURL(blob));
 }
-
 function _setNestingUI(running) {
     var spinner = document.getElementById('nesting-spinner');
     var btn = document.getElementById('optimize-btn');
@@ -1803,7 +1843,7 @@ function renderCuttingNests(nests) {
             const node = createElem('div', 'piece-item col s4 m3 l2');
             node.innerHTML = `
                 <div class="chip" style="background-color:${item.color}">
-                    <span class="white-text">${item.count}×${item.length} mm</span>
+                    <span class="white-text">${item.count}أ—${item.length} mm</span>
                 </div>
             `;
             list.appendChild(node);
@@ -4023,7 +4063,7 @@ function _zipEntries(bytes) {
     return entries;
 }
 
-// Decompress a raw-deflate Uint8Array → string (UTF-8)
+// Decompress a raw-deflate Uint8Array â†’ string (UTF-8)
 async function _inflate(bytes) {
     var ds     = new DecompressionStream('deflate-raw');
     var writer = ds.writable.getWriter();
@@ -4047,7 +4087,7 @@ async function _inflate(bytes) {
     return new TextDecoder().decode(merged);
 }
 
-// Parse an XLSX ArrayBuffer → array-of-arrays (rows × cells)
+// Parse an XLSX ArrayBuffer â†’ array-of-arrays (rows أ— cells)
 async function parseXlsx(arrayBuffer) {
     var bytes   = new Uint8Array(arrayBuffer);
     var entries = _zipEntries(bytes);
@@ -4106,7 +4146,7 @@ function _parseCuts(str) {
     return result;
 }
 
-// Convert parsed XLSX rows → cuttingNests objects
+// Convert parsed XLSX rows â†’ cuttingNests objects
 function _buildNestsFromRows(rows) {
     if (!rows || rows.length < 2) return [];
 
