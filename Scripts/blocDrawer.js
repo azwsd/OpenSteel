@@ -15,9 +15,14 @@ function drawContours() {
     for (dataLine of contourData) {
         currentView = dataLine[0];
 
-        if (currentContour != dataLine[9]) {
-            currentContour = dataLine[9];
+        if (currentContour != dataLine[11]) {
+            currentContour = dataLine[11];
             isFirstIteration = true;
+            arcLine = 0;
+            arcData = [];
+            arcType = '';
+            rTemp = undefined;
+            notchTool = '';
         }
 
         if (isFirstIteration) {
@@ -154,8 +159,8 @@ function drawContours() {
                 isFirstIteration = true;
             }
             else {
-                let isClockwise = arcData[4] > 0 ? false : true;
-                [cX, cY] = calcCenter(sX, sY, cX, cY, eX, eY, r, isClockwise, notchTool, view); //Get center point correctly
+                let isClockwise = resolveArcDirection(arcData[4]);
+                [cX, cY] = calcCenter(sX, sY, null, null, eX, eY, r, isClockwise, notchTool, view); //Get center point correctly
                 let startAngle = calcAngle(sX, sY, cX, cY);
                 let endAngle = calcAngle(eX, eY, cX, cY);
 
@@ -195,17 +200,16 @@ function drawContours() {
 
         if (arcData.length !== 0 && arcType === 'full') {
             //Get center point correctly
-            let cX = arcData[2];
-            let cY = arcData[3];
             let sX = arcData[0];
             let sY = arcData[1];
             let eX = arcData[5];
             let eY = arcData[6];
-            [cX, cY] = transformCoordinates(view, cX, cY, canvasWidth, canvasHeight);
+            let notchTool = 'w'; // Fallback
             [sX, sY] = transformCoordinates(view, sX, sY, canvasWidth, canvasHeight);
             [eX, eY] = transformCoordinates(view, eX, eY, canvasWidth, canvasHeight);
-            let isClockwise = arcData[4] > 0 ? true : false;
+            let isClockwise = resolveArcDirection(arcData[4]);
             const r = Math.abs(arcData[4]);
+            let [cX, cY] = calcCenter(sX, sY, null, null, eX, eY, r, isClockwise, notchTool, view);
 
             //Compute start and end angles in degrees
             let startAngle = calcAngle(sX, sY, cX, cY);
@@ -474,9 +478,19 @@ function addHole() {
 
     if (holeType === 'sl') holeLine = `BO\n  ${view}  ${xPos}${dimRef}  ${yPos}  ${diameter}  ${depth}l  ${slotWidth}  ${slotHeight}  ${slotAngle}`;
     else holeLine = `BO\n  ${view}  ${xPos}${dimRef}  ${yPos}${holeType}  ${diameter}  ${depth}`;
-    holeData.push([view, xPos, dimRef, yPos, holeType, diameter, depth, 'l', slotWidth, slotHeight, slotAngle]);
-
-    filePairs.set(selectedFile, filePairs.get(selectedFile).replace('EN', holeLine + '\nEN'));
+    // holeData rebuilt during forced re-parse
+    
+    const lines = filePairs.get(selectedFile).split('\n');
+    let enIndex = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+        if (lines[i].trim() === 'EN') { enIndex = i; break; }
+    }
+    if (enIndex === -1) {
+        M.toast({ html: 'Could not add hole: no EN marker found in file', classes: 'rounded toast-error', displayLength: 2000 });
+        return;
+    }
+    lines.splice(enIndex, 0, ...holeLine.split('\n'));
+    filePairs.set(selectedFile, lines.join('\n'));
 
     document.querySelector('#files .selected-file').click();
 }
@@ -604,6 +618,11 @@ function calcArcAngle(start, end, isClockwise) {
     }
 }
 
+function resolveArcDirection(rawRadius) {
+    // rawRadius > 0 represents clockwise based on fallback calibration
+    return rawRadius > 0;
+}
+
 function calcAngle(pX, pY, cX, cY) {
     let angle = Math.atan2(pY - cY, pX - cX) * (180 / Math.PI); // Negate y for mathematical orientation
     return angle < 0 ? angle + 360 : angle; // Convert negative angles to 0-360 range
@@ -664,35 +683,52 @@ function drawBlocs() {
     drawNumertaions();
     addOriginPoints();
     redrawMeasurements();
+    if (typeof draw3DModel === 'function') draw3DModel();
     resetScale(); //Eesets scale and position of the view
     stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
 }
 
 //Shows or hide views
 function switchView(view, btn) {
-    let viewTitle = document.getElementById(view + 'ViewTitle');
-    let viewContainer = document.getElementById(view + '-view');
+    let viewTitle = document.getElementById(view + 'ViewTitle') || (view === 'threeD' ? document.getElementById('threeDViewTitle') : null);
+    let viewContainer = (view === 'threeD' || view === '3d')
+        ? (document.getElementById('threeDViewerContainer') || document.getElementById('3d-view'))
+        : document.getElementById(view + '-view');
+
+    if (!viewContainer) return;
 
     //Toggle visibility
     let isVisible = !viewContainer.classList.contains('hide');
     if (isVisible) {
-        viewTitle.classList.add('hide');
+        if (viewTitle) viewTitle.classList.add('hide');
         viewContainer.classList.add('hide');
         btn.dataset.tooltip = 'Turn ON'; //Change tooltip to "Turn ON"
         btn.classList.add('text-lighten-3'); //Dim button
     } else {
-        viewTitle.classList.remove('hide');
+        if (viewTitle) viewTitle.classList.remove('hide');
         viewContainer.classList.remove('hide');
         btn.dataset.tooltip = 'Turn OFF'; //Change tooltip to "Turn OFF"
         btn.classList.remove('text-lighten-3'); //Restore button color
+        if (view === 'threeD' || view === '3d') {
+            if (typeof onResize === 'function') onResize();
+            if (typeof render3D === 'function') render3D();
+        }
     }
 
-    M.Tooltip.getInstance(btn).close(); //Close tooltip
-    M.Tooltip.init(document.querySelectorAll('.tooltipped')); //Reinitialize tooltips
+    if (typeof M !== 'undefined' && M.Tooltip) {
+        try { M.Tooltip.getInstance(btn)?.close(); } catch(e){}
+        M.Tooltip.init(document.querySelectorAll('.tooltipped')); //Reinitialize tooltips
+    }
 
-    for (const view of views) handleResize(view);
-    resetScale(); //Reset scale and position of the view
-    stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
+    if (typeof views !== 'undefined' && views.length) {
+        for (const v of views) {
+            if (typeof handleResize === 'function') handleResize(v);
+        }
+    }
+    if (typeof resetScale === 'function') resetScale(); //Reset scale and position of the view
+    if (typeof stages !== 'undefined' && Object.keys(stages).length && stages[Object.keys(stages)[0]]) {
+        stages[Object.keys(stages)[0]].to({ onFinish: () => autoFitAllViews() }); //Ensures all views scale are reset before auto fit is executed
+    }
 }
 
 //Create a snap indicator point in a view at x, y
