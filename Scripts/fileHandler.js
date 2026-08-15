@@ -19,9 +19,9 @@ function getFileExtension(fileName){
 //make sure the file format is supported
 function verifyFile(fileName)
 {
-    const acceptableFiles = ['nc', 'nc1', 'dxf'];
+    const acceptableFiles = ['nc', 'nc1', 'nc2', 'fnc', 'dxf', 'txt'];
     if(acceptableFiles.includes(getFileExtension(fileName))) return true;
-    M.toast({html: 'Please insert correct file format!', classes: 'rounded toast-warning', displayLength: 2000})
+    M.toast({html: 'Please insert correct file format (.nc, .nc1, .nc2, .fnc, .dxf)!', classes: 'rounded toast-warning', displayLength: 2000})
     return false;
 };
 
@@ -67,10 +67,13 @@ function selectFile(file){
     document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     updateSessionData();
     updateFileTracker();
+    if (typeof update3DFileCounter === 'function') update3DFileCounter();
     //Closes side nav
     let sideNav = document.querySelector('.sidenav');
-    let instance = M.Sidenav.getInstance(sideNav)
-    instance.close();
+    if (sideNav && typeof M !== 'undefined' && M.Sidenav) {
+        let instance = M.Sidenav.getInstance(sideNav);
+        if (instance) instance.close();
+    }
 }
 
 //adds file to the html page
@@ -82,9 +85,12 @@ function addFile(fileName, fileData, fileCount, isReload = false, isBatch = fals
         return;
     }
 
-    //Checks for ST and EN in the files
+    //Checks for ST or FNC in the files
     const splitFileData = fileData.split('\n');
-    if (splitFileData[0].substring(0, 2) != 'ST' && !isReload)
+    const firstLine = (splitFileData[0] || '').trim();
+    const isDstv = firstLine.substring(0, 2).toUpperCase() === 'ST';
+    const isFnc = /\[\[PRF\]\]|\[PRF\]|\[HEAD\]|\[HOL\]/i.test(fileData.slice(0, 400));
+    if (!isDstv && !isFnc && !isReload)
     {
         M.toast({html: 'Incorrect file structure!', classes: 'rounded toast-error', displayLength: 2000});
         return;
@@ -155,13 +161,14 @@ function deleteFile(btn, event){
         clearHeaderData();
         clearAllViews();
         clearAllData();
+        if (typeof clear3DViewer === 'function') clear3DViewer();
         document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
         document.getElementById('profileViewsImg').src = ''; //Clears profile image
         document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
         document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
         selectedFile = '';
     }
-    refreshGrouping();
+    try { if (typeof refreshGrouping === 'function') refreshGrouping(); } catch (e) { console.error('refreshGrouping failed:', e); }
     updateSessionData();
 }
 
@@ -183,12 +190,13 @@ function clearAllFiles(){
     clearHeaderData(); //clears the header data
     clearAllViews(); //clears the views
     clearAllData(); //Clears bloc data
+    if (typeof clear3DViewer === 'function') clear3DViewer();
     document.getElementById('holeInfoContainer').innerHTML = ''; //Clears hole data
     document.getElementById('profileViewsImg').src = ''; //clears views img
     document.getElementById("historyDropdown").innerHTML = ''; //Delete measurement history
     document.getElementById('historyDropdownBtn').classList.add('lighten-3'); //Fades the measurement history button
     M.toast({html: 'All files were cleared!', classes: 'rounded toast-success', displayLength: 2000}); //shows success message
-    refreshGrouping()
+    try { if (typeof refreshGrouping === 'function') refreshGrouping(); } catch (e) { console.error('refreshGrouping failed:', e); }
     updateSessionData();
 }
 
