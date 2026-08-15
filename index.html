@@ -395,7 +395,7 @@
                         <i class="material-icons tiny">arrow_back</i>
                         <i class="material-icons tiny">arrow_forward</i>
                         </b>
-                        Navigate hole data
+                        Navigate hole data / Nudge selected 3D hole
                     </li>
                     <li><b>Home/End</b>Increase/Decrease snap point size</li>
                     <li><b>Page Up/Down</b>Increase/Decrease snap point distance</li>
@@ -407,6 +407,12 @@
                     <li><b>V</b>Toggle <span class="view-name">V</span> view on/off</li>
                     <li><b>U</b>Toggle <span class="view-name">U</span> view on/off</li>
                     <li><b>H</b>Toggle <span class="view-name">H</span> view on/off</li>
+                    <li><b>3</b>Toggle <span class="view-name">3D</span> viewer on/off</li>
+                    <li><b>3D Left-Drag</b>Rotate 3D model</li>
+                    <li><b>3D Right-Drag</b>Pan 3D viewport</li>
+                    <li><b>3D Scroll</b>Zoom 3D camera</li>
+                    <li><b>3D Click Hole</b>Select hole (Shift/Ctrl for multi-select)</li>
+                    <li><b>Delete / Backspace</b>Remove selected hole(s) in 3D</li>
                 </ul>
                 <div class="modal-footer">
                     <a href="#!" class="modal-close waves-effect waves-red btn-flat">Close</a>
@@ -535,6 +541,7 @@
             </p></li>
             <li id="sideNavClearAll"><a data-target="clearAllModal" class="sidenav-close modal-trigger waves-effect float-bottom">Clear all</a></li>
             <ul class="sideNavBottom">
+                <li><a href="#threeDModal" data-target="threeDModal" class="sidenav-close modal-trigger waves-effect float-left" onclick="open3DModal()"><i class="material-icons left">view_in_ar</i>3D View</a></li>
                 <li><a href='#' data-target='createModal' class="sidenav-close waves-effect modal-trigger">Create</a></li>
                 <li><a href='#' data-target='exportModal' class="sidenav-close waves-effect modal-trigger">Export</a></li>
                 <li><a href="#" onclick="loadProfilesPage()" class="sidenav-close waves-effect float-left">Profiles library</a></li>
@@ -580,6 +587,7 @@
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="v">V</a></li>
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="u">U</a></li>
                         <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="h">H</a></li>
+                        <li><a class="deep-purple-text viewSwitch tooltipped lighten-3" data-position="left" data-tooltip="Turn ON" data-view="threeD">3D</a></li>
                     </ul>
                     <ul id="settingsDropdown" class="dropdown-content">
                         <li class="settings-item">
@@ -635,6 +643,9 @@
                         <!-- Dropdown Trigger -->
                         <a class="waves-effect waves-light btn-small tooltipped deep-purple dropdown-trigger lighten-3" data-position="bottom" data-tooltip="Measurement history" id="historyDropdownBtn" data-target="historyDropdown">
                             <i class="material-icons">history</i>
+                        </a>
+                        <a class="waves-effect waves-light btn-small modal-trigger deep-purple" href="#threeDModal" data-target="threeDModal" id="open3DModalBtn" onclick="open3DModal()">
+                            <i class="material-icons left">view_in_ar</i>3D View
                         </a>
                         <a class="waves-effect waves-light btn-small deep-purple dropdown-trigger" id="viewsDropDownBtn" data-target="viewsDropdown">
                             Views <i class="material-icons right hide-on-small-only">arrow_drop_down</i>
@@ -703,15 +714,115 @@
             </a>
         </div>
 
+        <!-- 3D Viewer Modal -->
+        <div id="threeDModal" class="modal 3d-view-modal">
+            <div class="modal-content 3d-modal-content">
+                <div class="viewer-3d-header">
+                    <div class="viewer-3d-title-group">
+                        <span class="viewer-3d-title"><i class="material-icons tiny">view_in_ar</i> 3D Steel Inspector</span>
+                        <span id="formatPill3D" class="viewer-3d-badge fmt">DSTV</span>
+                        <span id="partName3D" class="viewer-3d-badge">No Part</span>
+                        <span id="profileDesc3D" class="viewer-3d-desc"></span>
+                    </div>
+                    <div class="viewer-3d-nav">
+                        <button class="v3d-btn" onclick="nav3DFile(-1)" title="Previous File (Up Arrow)"><i class="material-icons tiny">chevron_left</i></button>
+                        <span id="fileCounter3D" class="viewer-3d-badge file-count">0 / 0</span>
+                        <button class="v3d-btn" onclick="nav3DFile(1)" title="Next File (Down Arrow)"><i class="material-icons tiny">chevron_right</i></button>
+                    </div>
+                    <div class="viewer-3d-actions">
+                        <!-- Finish Theme Selector -->
+                        <div class="finish-selector">
+                            <span class="finish-label hide-on-small-only">Finish:</span>
+                            <select id="steelFinishSelect" class="browser-default v3d-select" onchange="changeSteelFinish(this.value)">
+                                <option value="steel" selected>Structural Steel</option>
+                                <option value="galv">Galvanized Zinc</option>
+                                <option value="primer">Red Oxide Primer</option>
+                                <option value="cad">High-Contrast CAD</option>
+                            </select>
+                        </div>
+                        <button class="v3d-btn" onclick="resetIsoView()" title="Reset Camera View"><i class="material-icons tiny">center_focus_strong</i> Iso</button>
+                        <button class="v3d-btn" onclick="toggle3DFullscreen()" title="Toggle Fullscreen"><i class="material-icons tiny">fullscreen</i></button>
+                        <a href="#!" class="modal-close waves-effect waves-light btn-flat white-text close-3d-btn" style="padding:0 8px;"><i class="material-icons">close</i></a>
+                    </div>
+                </div>
+                <div class="viewer-3d-toolbar">
+                    <div class="viewer-3d-views">
+                        <span class="toolbar-label">Views:</span>
+                        <button class="v3d-btn v3d-view-btn" data-view="iso" onclick="resetIsoView()">Iso</button>
+                        <button class="v3d-btn v3d-view-btn" data-view="o" onclick="goToFlatView('o')">Top (O)</button>
+                        <button class="v3d-btn v3d-view-btn" data-view="v" onclick="goToFlatView('v')">Front (V)</button>
+                        <button class="v3d-btn v3d-view-btn" data-view="u" onclick="goToFlatView('u')">Bottom (U)</button>
+                        <button class="v3d-btn v3d-view-btn" data-view="h" onclick="goToFlatView('h')">Back (H)</button>
+                        <button class="v3d-btn v3d-view-btn" data-view="endL" onclick="goToFlatView('endL')">Left</button>
+                        <button class="v3d-btn v3d-view-btn" data-view="endR" onclick="goToFlatView('endR')">Right</button>
+                    </div>
+                    <div class="viewer-3d-toggles">
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgSolid" checked onchange="render3D()"> Solid</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgEdges" checked onchange="render3D()"> CAD Edges</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgDims" onchange="render3D()"> Dimensions</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgGrid" onchange="render3D()"> Floor Grid</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgWire" onchange="render3D()"> Wireframe</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgHoles" checked onchange="render3D()"> Holes</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgMarks" checked onchange="render3D()"> Marks</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgNotch" checked onchange="render3D()"> Notches</label>
+                        <label class="v3d-toggle-label"><input type="checkbox" id="tgAxes" onchange="render3D()"> Axes</label>
+                    </div>
+                </div>
+                <!-- Quick Specs Info Bar -->
+                <div id="partSpecBar3D" class="part-spec-bar">
+                    <div class="spec-item"><span class="spec-name">Profile:</span> <span id="specProfile3D" class="spec-val">-</span></div>
+                    <div class="spec-item"><span class="spec-name">Length:</span> <span id="specLength3D" class="spec-val">-</span></div>
+                    <div class="spec-item"><span class="spec-name">Height:</span> <span id="specHeight3D" class="spec-val">-</span></div>
+                    <div class="spec-item"><span class="spec-name">Flange:</span> <span id="specFlange3D" class="spec-val">-</span></div>
+                    <div class="spec-item"><span class="spec-name">Weight:</span> <span id="specWeight3D" class="spec-val">-</span></div>
+                    <div class="spec-item"><span class="spec-name">Holes:</span> <span id="specHolesCount3D" class="spec-val">0</span></div>
+                    <div class="spec-item"><span class="spec-name">Grade:</span> <span id="specGrade3D" class="spec-val">-</span></div>
+                </div>
+                <div id="viewport3D">
+                    <div id="canvasHolder3D"></div>
+                    <!-- View Orientation Cube Overlay -->
+                    <div id="viewCube3D" class="view-cube-widget" title="Click face to snap view">
+                        <div class="cube-inner" id="cubeInner3D">
+                            <div class="cube-face cube-front" onclick="goToFlatView('v')">FRONT (V)</div>
+                            <div class="cube-face cube-back" onclick="goToFlatView('h')">BACK (H)</div>
+                            <div class="cube-face cube-top" onclick="goToFlatView('o')">TOP (O)</div>
+                            <div class="cube-face cube-bottom" onclick="goToFlatView('u')">BOTTOM (U)</div>
+                            <div class="cube-face cube-left" onclick="goToFlatView('endL')">LEFT</div>
+                            <div class="cube-face cube-right" onclick="goToFlatView('endR')">RIGHT</div>
+                        </div>
+                    </div>
+                    <!-- Empty State -->
+                    <div id="empty3D">
+                        <i class="material-icons medium" style="color:#7e57c2;">view_in_ar</i>
+                        <div class="empty-title">No 3D Part Selected</div>
+                        <div class="empty-sub">Import files on the main page using the (+) button or select an imported file.</div>
+                    </div>
+                    <!-- Floating Hole Hover Tooltip -->
+                    <div id="holeHoverTooltip3D" class="hole-hover-tooltip"></div>
+                    <div id="hint3D">Desktop: drag: rotate · scroll: zoom · right-drag: pan · hover hole: info · click: edit | Mobile: 1-finger: rotate · pinch: zoom · 2-finger: pan | Keys: ↑ / ↓ switch file</div>
+                    <div id="holeEditPanel3D">
+                        <span class="sel-label"><span id="holeSelCount3D">0</span> hole(s) selected</span>
+                        <input type="number" id="moveDX3D" placeholder="Δ along (mm)">
+                        <input type="number" id="moveDY3D" placeholder="Δ across (mm)">
+                        <button class="v3d-btn" onclick="applyHoleMove3D()">Move</button>
+                        <button class="v3d-btn danger" onclick="deleteSelectedHoles3D()">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tap Target Structure -->
         <div class="tap-target deep-purple darken-4" data-target="fileInputBtn" id="fileInputTapTarget"></div>
         
         <!--Includes js file for materialize-->
         <script src="Scripts/materialize-main.js"></script>
+        
+        <!-- Offline Bundle setup -->
         <!--Includes js file for konva-->
         <script src="Scripts/konva.min.js"></script>
         <!--Includes js file for jszip-->
         <script src="Scripts/jszip.min.js"></script>
+        <script src="Scripts/three.min.js"></script>
         <!--Custom js files-->
         <script src="Scripts/batch-nc-from-csv.js"></script>
         <script src="Scripts/dxf-to-nc.js"></script>
@@ -726,5 +837,6 @@
         <script src="Scripts/main.js"></script>
         <script src="Scripts/full-screen.js"></script>
         <script src="Scripts/search-files.js"></script>
+        <script src="Scripts/3d-viewer.js"></script>
     </body>
 </html>
