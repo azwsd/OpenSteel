@@ -10,8 +10,53 @@ let holeData = [];
 let marksData = [];
 //Numerations bloc data
 let numerationsData = [];
+
 //Store lastFace data
 let lastFace = "";
+let lastView = "";
+let currentContourId = 0;
+
+function makeContourPoint(face, x, dimensionRef, y, radius, extra2, extra3, extra4, extra5, contourType, notchTool, contourId) {
+    return [face, x, dimensionRef, y, radius, extra2, extra3, extra4, extra5, contourType, notchTool, contourId];
+}
+
+// partData object
+let partData = {};
+
+// Maps a raw DSTV profile name/code to the single-letter family used by the 3D viewer.
+// DSTV line 6 (profile name) often holds the designation (e.g. IPE300, HEA200, UB, P, R)
+// while line 7 is the short code. We fall back to the designations first character group.
+function normalizeProfileCode(profileName, profileCode) {
+    const raw = (profileCode || '').toString().replace(/[\r\n]+/g, '').trim();
+    const name = (profileName || '').toString().replace(/[\r\n]+/g, '').trim();
+    const source = raw || name;
+
+    // Two-letter round codes
+    if (/^ro/i.test(source)) return 'RO';
+    if (/^ru/i.test(source)) return 'RU';
+
+    const first = source.charAt(0).toUpperCase();
+
+    switch (first) {
+        case 'I': return 'I';          // IPE, IPN, INP, I, etc.
+        case 'H': return 'I';          // HEA, HEB, HEM, HD, H
+        case 'W': return 'I';          // Wide flange (US)
+        case 'U': return 'U';          // U, UPE, UPN, UB, UBP, UA
+        case 'C': return 'C';          // C, CH, CHS, CN, channel
+        case 'L': return 'L';          // Angle
+        case 'T': return 'T';          // T, TFC
+        case 'M': return 'M';          // Rectangular hollow / box
+        case 'S': return 'M';          // SHS square hollow
+        case 'R': return 'RO';         // Round tube/pipe (R, RHS, RO, RD)
+        case 'B': return 'B';          // Plate / flat bar
+        case 'P': return 'B';          // Plate (PFC etc.)
+        case 'Z': return 'B';          // Z / folded plate
+        case 'V': return 'B';          // V (plate)
+        case 'F': return 'B';          // Flat
+        default:  return raw || name || '';
+    }
+}
+
 //View contour bloc status
 let viewExists = {
     o: false,
@@ -53,6 +98,18 @@ function ncParseHeaderData(fileData){
         headerData.push(line);
         lineCounter++;
     }
+    
+        window.partData = {
+        project: headerData[0], drawing: headerData[1], phase: headerData[2], piece: headerData[3],
+        grade: headerData[4], quantity: parseFloat(headerData[5]),
+        profileName: headerData[6], profileCode: normalizeProfileCode(headerData[6], headerData[7]),
+        length: parseFloat(headerData[8]), height: parseFloat(headerData[9]),
+        flangeWidth: parseFloat(headerData[10]), flangeThickness: parseFloat(headerData[11]),
+        webThickness: parseFloat(headerData[12]), rootRadius: parseFloat(headerData[13]),
+        weightPerMeter: parseFloat(headerData[14]), surfacePerMeter: parseFloat(headerData[15]),
+        webCutStart: parseFloat(headerData[16]), webCutEnd: parseFloat(headerData[17]),
+        flangeCutStart: parseFloat(headerData[18]), flangeCutEnd: parseFloat(headerData[19]),
+    };
 };
 
 function ncViewsImage(){
@@ -107,8 +164,12 @@ function ncParseContourData(line, contourType){
     lastFace = face; // Update last seen face
     if (contourType == 'AK') viewExists[face] = true; //Set the view exists for the current view as true for contour type AK only
 
+    // Skip lines without a usable X token (blank/short lines)
+    if (!values[0] || values[0].length === 0) return;
+
     // Extract X-value and check for dimension reference
-    let xMatch = values[0].match(/([\d.]+)([A-Za-z]*)$/);
+    let xMatch = values[0].match(/^(-?[\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) { console.warn(`ncParseContourData: unparseable X token "${values[0]}" — line skipped`); return; }
     xValue = parseFloat(xMatch[1]);  // X-value
     dimensionRef = xMatch[2] || "";  // Dimension reference (if present)
 
@@ -127,7 +188,7 @@ function ncParseContourData(line, contourType){
     }
 
     // Add parsed line to contourBlocks
-    contourData.push([face, xValue, dimensionRef, yValue, ...parsedValues, contourType, notchTool]);
+    contourData.push(makeContourPoint(face, xValue, dimensionRef, yValue, parsedValues[0], parsedValues[1], parsedValues[2], parsedValues[3], parsedValues[4], contourType, notchTool, currentContourId));
 }
 
 //Parse hole blocs and add them to the holeData array
@@ -145,14 +206,18 @@ function ncParseHoleData(line) {
     }
     lastView = view; // Update last seen view
 
+    // Skip lines without a usable X token (blank/short lines)
+    if (!values[0] || values[0].length === 0) return;
+
     // Extract X-value and check for dimension reference
-    let xMatch = values[0].match(/^([\d.]+)([A-Za-z]*)$/);
+    let xMatch = values[0].match(/^(-?[\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) { console.warn(`ncParseHoleData: unparseable X token "${values[0]}" — line skipped`); return; }
     if (!xMatch) return; // Exit if invalid format
     xValue = parseFloat(xMatch[1]);  
     dimensionRef = xMatch[2] || "";  
 
     // Extract HoleType (may be attached to Y or separate)
-    let yMatch = values[1].match(/^([\d.]+)([A-Za-z]*)$/);
+    let yMatch = values[1].match(/^(-?[\d.]+)([A-Za-z]*)$/);
     if (!yMatch) return; // Exit if invalid format
     yValue = parseFloat(yMatch[1]);
     holeType = yMatch[2] || "";  // HoleType (if present)
@@ -163,7 +228,7 @@ function ncParseHoleData(line) {
     // Extract optional SlotType
     if (values.length > 3) {
         depth = parseFloat(values[3]) || 0.00;
-        let depthMatch = values[3].match(/^([\d.]+)([A-Za-z]*)$/);
+        let depthMatch = values[3].match(/^(-?[\d.]+)([A-Za-z]*)$/);
         if (!depthMatch) return; // Exit if invalid format
         depth = parseFloat(depthMatch[1]);
         slotType = depthMatch[2] || "";
@@ -249,9 +314,13 @@ function ncParseMarksData(line, isStart){
         face = lastFace; // Use the previous face if not present
     }
     lastFace = face; // Update last seen 
-    
+
+    //Skip lines without a usable X token (blank/short lines)
+    if (!values[0] || values[0].length === 0) return;
+
     //Extract X-value and check for dimension reference
-    let xMatch = values[0].match(/^([\d.]+)([A-Za-z]*)$/);
+    let xMatch = values[0].match(/^(-?[\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) { console.warn(`ncParseHoleData: unparseable X token "${values[0]}" — line skipped`); return; }
     if (!xMatch) return; // Exit if invalid format
     xValue = parseFloat(xMatch[1]);  
     dimensionRef = xMatch[2] || "";  
@@ -278,9 +347,13 @@ function ncParseNumertaionsData(line){
         face = lastFace; // Use the previous face if not present
     }
     lastFace = face; // Update last seen 
-    
+
+    // Skip lines without a usable X token (blank/short lines)
+    if (!values[0] || values[0].length === 0) return;
+
     // Extract X-value and check for dimension reference
-    let xMatch = values[0].match(/^([\d.]+)([A-Za-z]*)$/);
+    let xMatch = values[0].match(/^(-?[\d.]+)([A-Za-z]*)$/);
+    if (!xMatch) { console.warn(`ncParseHoleData: unparseable X token "${values[0]}" — line skipped`); return; }
     if (!xMatch) return; // Exit if invalid format
     xValue = parseFloat(xMatch[1]);  
     dimensionRef = xMatch[2] || "";
@@ -572,26 +645,26 @@ function addFrontWeb(length, height, flangeWidth, flangeThickness, webThickness,
     const sValue = wCS > fCS ? wCS : fCS;
     const eValue = wCE > fCE ? wCE : fCE;
 
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['v', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['v', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['v', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('v', fCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('v', 0.00, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('v', sValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('v', wCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - wCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', length - eValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', length - fCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', length - eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', length - fCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - wCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', length - eValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['v', fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('v', sValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', wCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('v', fCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', 0.00, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
     
     contourData.push(firstPoint);
 }
@@ -606,26 +679,26 @@ function addBackWeb(length, height, flangeWidth, flangeThickness, webThickness, 
     const sValue = wCS > fCS ? wCS : fCS;
     const eValue = wCE > fCE ? wCE : fCE;
 
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['h', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['h', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['h', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['h', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('h', 0.00, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('h', fCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('h', wCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('h', sValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['h', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length - eValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('h', length - wCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length - fCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('h', length, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length- eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['h', length - wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length - fCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('h', length, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length- eValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('h', length - wCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['h', wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h',sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['h', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['h', fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('h', wCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('h', sValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('h', 0.00, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('h', fCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
     
     contourData.push(firstPoint);
 }
@@ -640,26 +713,26 @@ function addTopFlange(length, height, flangeWidth, flangeThickness, webThickness
     const sValue = wCS > fCS ? wCS : fCS;
     const eValue = wCE > fCE ? wCE : fCE;
 
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['o', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['o', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['o', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['o', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('o', 0.00, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('o', fCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('o', wCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('o', sValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['o', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['o', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['o', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['o', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('o', length - eValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('o', length - wCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('o', length - fCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('o', length, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['o', length - wCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['o', length - eValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['o', length, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['o', length - fCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('o', length - wCE, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('o', length - eValue, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('o', length, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('o', length - fCE, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['o', fCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['o', 0.00, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['o', sValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['o', wCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('o', fCS, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('o', 0.00, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('o', sValue, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('o', wCS, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
     
     contourData.push(firstPoint);
 }
@@ -674,26 +747,26 @@ function addBottomFlange(length, height, flangeWidth, flangeThickness, webThickn
     const sValue = wCS > fCS ? wCS : fCS;
     const eValue = wCE > fCE ? wCE : fCE;
 
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['u', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['u', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['u', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['u', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('u', wCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('u', sValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('u', 0.00, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('u', fCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['u', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - fCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('u', length, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - eValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('u', length - wCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length - fCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - wCE, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['u', length - eValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('u', length - fCE, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - wCE, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('u', length - eValue, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['u', sValue, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', wCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['u', fCS, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['u', 0.00, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('u', sValue, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('u', wCS, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('u', fCS, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('u', 0.00, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
     
     contourData.push(firstPoint);
 }
@@ -708,26 +781,26 @@ function addFlangeT(length, height, flangeWidth, flangeThickness, webThickness, 
     const sValue = wCS > fCS ? wCS : fCS;
     const eValue = wCE > fCE ? wCE : fCE;
     //Calculate web points
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['v', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['v', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['v', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('v', fCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('v', 0.00, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('v', sValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('v', wCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - wCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', length - eValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', length - fCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length- wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', length - eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', length - fCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length- wCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', length - eValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v',wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['v',fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('v', sValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', wCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('v', fCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', 0.00, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
     contourData.push(firstPoint);
 }
@@ -742,26 +815,26 @@ function addOtherFlangeT(length, height, flangeWidth, flangeThickness, webThickn
     const sValue = wCS > fCS ? wCS : fCS;
     const eValue = wCE > fCE ? wCE : fCE;
     //Calculate web points
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['h', fCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['h', 0.00, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['h', sValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['h', wCS, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('h', fCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('h', 0.00, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('h', sValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('h', wCS, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length - wCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length - eValue, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['h', length - fCE, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length - wCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('h', length - eValue, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('h', length - fCE, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['h', length, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h', length - fCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['h', length- wCE, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['h', length - eValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('h', length - fCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('h', length- wCE, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('h', length - eValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['h', sValue, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['h',wCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['h',fCS, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['h', 0.00, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('h', sValue, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('h', wCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('h', fCS, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('h', 0.00, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
     contourData.push(firstPoint);
 }
@@ -776,26 +849,26 @@ function addWebT(length, height, flangeWidth, flangeThickness, webThickness, web
     const sValueT = wCST > fCS ? wCST : fCS;
     const eValueT = wCET > fCE ? wCET : fCE;
     //Calculate flange points
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['u', wCST, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['u', sValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['u', wCST, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['u', sValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('u', wCST, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('u', sValueT, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('u', wCST, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('u', sValueT, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - eValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length - wCET, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - eValueT, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['u', length - wCET, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - eValueT, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('u', length - wCET, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - eValueT, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('u', length - wCET, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - wCET, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', length - eValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['u', length - wCET, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['u', length - eValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - wCET, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('u', length - eValueT, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('u', length - wCET, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('u', length - eValueT, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['u', sValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['u', wCST, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['u', sValueT, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['u', wCST, '', flangeWidth, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('u', sValueT, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('u', wCST, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('u', sValueT, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('u', wCST, '', flangeWidth, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
     
     contourData.push(firstPoint);
 }
@@ -812,26 +885,26 @@ function addFrontWebI(length, height, flangeWidth, flangeThickness, webThickness
     const sValueW = wCS > fCSW ? wCS : fCSW;
     const eValueW = wCE > fCEW ? wCE : fCEW;
 
-    if (!isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCSW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (!isNegativeWCS && isNegativeFCS) firstPoint = ['v', sValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else if (isNegativeWCS && !isNegativeFCS) firstPoint = ['v', fCSW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
-    else firstPoint = ['v', sValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00];
+    if (!isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('v', fCSW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (!isNegativeWCS && isNegativeFCS) firstPoint = makeContourPoint('v', sValueW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else if (isNegativeWCS && !isNegativeFCS) firstPoint = makeContourPoint('v', fCSW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
+    else firstPoint = makeContourPoint('v', sValueW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId);
     contourData.push(firstPoint);
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - eValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - fCEW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - eValueW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', length - fCEW, '', 0.00, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - eValueW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', length - fCEW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - eValueW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', length - fCEW, '', 0.00, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - fCEW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', length - eValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCE && !isNegativeFCE) contourData.push(['v', length - fCEW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', length - eValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - fCEW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', length - eValueW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCE && !isNegativeFCE) contourData.push(makeContourPoint('v', length - fCEW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', length - eValueW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
-    if (!isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (!isNegativeWCE && isNegativeFCE) contourData.push(['v', fCSW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else if (isNegativeWCS && !isNegativeFCS) contourData.push(['v', sValueW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
-    else contourData.push(['v', fCSW, '', height, '', 0.00, 0.00, 0.00, 0.00, 0.00]);
+    if (!isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('v', sValueW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (!isNegativeWCE && isNegativeFCE) contourData.push(makeContourPoint('v', fCSW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else if (isNegativeWCS && !isNegativeFCS) contourData.push(makeContourPoint('v', sValueW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
+    else contourData.push(makeContourPoint('v', fCSW, '', height, 0, 0, 0, 0, 0, 'AK', '', currentContourId));
 
     contourData.push(firstPoint);
 }
