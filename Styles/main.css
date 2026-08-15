@@ -1940,3 +1940,564 @@ table th, table td {
   height: 100vh;
   overflow-y: auto;
 }
+
+/* =========================================================================
+   3D NC / FNC MODEL VIEWER STYLES
+   ========================================================================= */
+#threeDViewerContainer {
+  background: #0b0d10;
+  border: 1px solid #232b33;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #d7dde3;
+  display: flex;
+  flex-direction: column;
+}
+
+/* -------------------------------------------------------------------------
+   3D VIEWER MODAL & STYLING INTEGRATION (OPENSTEEL THEME)
+   ------------------------------------------------------------------------- */
+.3d-view-modal.modal {
+  max-height: 94vh !important;
+  height: 92vh !important;
+  width: 96vw !important;
+  max-width: 96vw !important;
+  background: #090614 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(126, 87, 194, 0.4) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85) !important;
+  padding: 0 !important;
+  margin: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.3d-view-modal.modal.open {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.3d-view-modal.viewer-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.3d-modal-content {
+  padding: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #090614 !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.viewer-3d-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: #19103a;
+  border-bottom: 1px solid rgba(126, 87, 194, 0.3);
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0 !important;
+}
+
+.viewer-3d-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewer-3d-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #d1c4e9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.viewer-3d-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.viewer-3d-badge {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: #2a1b5d;
+  color: #b388ff;
+  border: 1px solid rgba(179, 136, 255, 0.3);
+}
+
+.viewer-3d-badge.fmt {
+  background: #5e35b1;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.viewer-3d-badge.file-count {
+  background: #311b92;
+  color: #ea80fc;
+  font-weight: 600;
+}
+
+.viewer-3d-desc {
+  font-size: 11px;
+  color: #b388ff;
+  font-family: "JetBrains Mono", Consolas, monospace;
+}
+
+.viewer-3d-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.viewer-3d-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #140d33;
+  border-bottom: 1px solid rgba(126, 87, 194, 0.2);
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0 !important;
+}
+
+.viewer-3d-toolbar .toolbar-label {
+  font-size: 11px;
+  color: #b388ff;
+  margin-right: 4px;
+}
+
+.viewer-3d-views, .viewer-3d-toggles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.v3d-btn {
+  background: #261952 !important;
+  color: #ede7f6 !important;
+  border: 1px solid rgba(126, 87, 194, 0.35) !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1.2 !important;
+  height: auto !important;
+  min-height: 32px !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+}
+
+.v3d-btn:hover {
+  background: #4527a0 !important;
+  border-color: #b388ff !important;
+  color: #ffffff !important;
+}
+
+.v3d-btn.active {
+  background: #5e35b1 !important;
+  border-color: #ea80fc !important;
+  color: #ffffff !important;
+}
+
+.v3d-btn.danger:hover {
+  border-color: #ff5252 !important;
+  color: #ff5252 !important;
+  background: #4a1414 !important;
+}
+
+.v3d-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #d1c4e9;
+  cursor: pointer;
+  user-select: none;
+  margin-right: 8px;
+  margin-bottom: 0 !important;
+  min-height: 32px;
+}
+
+.v3d-toggle-label input[type="checkbox"] {
+  opacity: 1 !important;
+  position: static !important;
+  pointer-events: auto !important;
+  accent-color: #7e57c2;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.v3d-toggle-label:hover {
+  color: #ffffff;
+}
+
+#viewport3D {
+  position: relative !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: calc(100% - 130px) !important;
+  min-height: 400px !important;
+  background: #090614 !important;
+  overflow: hidden !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#canvasHolder3D {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#canvasHolder3D canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#hint3D {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 11px;
+  color: #b388ff;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  background: rgba(15, 10, 36, 0.85);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(126, 87, 194, 0.3);
+  pointer-events: none;
+  z-index: 10;
+}
+
+#empty3D {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #b388ff;
+  background: radial-gradient(circle at center, #1b123d 0%, #090614 75%);
+  z-index: 5;
+  padding: 20px;
+  text-align: center;
+}
+
+#empty3D .empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ede7f6;
+}
+
+#empty3D .empty-sub {
+  font-size: 13px;
+  color: #b388ff;
+  max-width: 420px;
+  line-height: 1.4;
+}
+
+#holeEditPanel3D {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(30, 21, 72, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1px solid #7e57c2;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  z-index: 15;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  flex-wrap: wrap;
+}
+
+#holeEditPanel3D .sel-label {
+  font-size: 11px;
+  color: #ffb74d;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-weight: bold;
+}
+
+#holeEditPanel3D input[type="number"] {
+  width: 90px;
+  height: 28px;
+  background: #100a26 !important;
+  color: #ede7f6 !important;
+  border: 1px solid rgba(126, 87, 194, 0.4) !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 11px !important;
+  font-family: "JetBrains Mono", Consolas, monospace !important;
+  margin: 0 !important;
+}
+
+#holeEditPanel3D input[type="number"]:focus {
+  border-color: #b388ff !important;
+  outline: none !important;
+}
+
+/* Finish Selector */
+.finish-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.finish-label {
+  font-size: 11px;
+  color: #b388ff;
+  font-weight: 500;
+}
+
+.v3d-select {
+  background: #261952 !important;
+  color: #ede7f6 !important;
+  border: 1px solid rgba(126, 87, 194, 0.4) !important;
+  border-radius: 6px !important;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-family: inherit !important;
+  height: 28px !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+.v3d-select:focus {
+  border-color: #b388ff !important;
+}
+
+/* Part Quick Specs Bar */
+.part-spec-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 6px 16px;
+  background: #100a26;
+  border-bottom: 1px solid rgba(126, 87, 194, 0.2);
+  font-size: 11px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  flex-shrink: 0 !important;
+}
+
+.spec-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.spec-name {
+  color: #9575cd;
+}
+
+.spec-val {
+  color: #ede7f6;
+  font-weight: 600;
+}
+
+/* Floating Hole Hover Tooltip */
+.hole-hover-tooltip {
+  position: absolute;
+  display: none;
+  background: rgba(20, 15, 45, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1px solid #b388ff;
+  color: #ede7f6;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  pointer-events: none;
+  z-index: 25;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* Interactive 3D View Orientation Cube */
+.view-cube-widget {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 54px;
+  height: 54px;
+  perspective: 250px;
+  z-index: 20;
+  user-select: none;
+}
+
+.cube-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.05s linear;
+}
+
+.cube-face {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  background: rgba(30, 21, 72, 0.85);
+  border: 1px solid rgba(179, 136, 255, 0.6);
+  color: #ede7f6;
+  font-size: 8px;
+  font-weight: 700;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cube-face:hover {
+  background: #5e35b1;
+  color: #ffffff;
+  border-color: #ea80fc;
+  box-shadow: 0 0 8px rgba(234, 128, 252, 0.6);
+}
+
+.cube-front  { transform: rotateY(  0deg) translateZ(27px); }
+.cube-back   { transform: rotateY(180deg) translateZ(27px); }
+.cube-right  { transform: rotateY( 90deg) translateZ(27px); }
+.cube-left   { transform: rotateY(-90deg) translateZ(27px); }
+.cube-top    { transform: rotateX( 90deg) translateZ(27px); }
+.cube-bottom { transform: rotateX(-90deg) translateZ(27px); }
+
+/* Mobile Media Queries */
+@media (max-width: 992px) {
+  .3d-view-modal.modal {
+    width: 96vw !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .3d-view-modal.modal {
+    width: 98vw !important;
+    height: 94vh !important;
+    max-height: 94vh !important;
+    border-radius: 8px !important;
+  }
+
+  .viewer-3d-header {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .viewer-3d-title {
+    font-size: 12px;
+  }
+
+  .viewer-3d-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .viewer-3d-toolbar {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .v3d-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    min-height: 36px !important;
+  }
+
+  .view-cube-widget {
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .cube-face {
+    width: 44px;
+    height: 44px;
+    font-size: 7px;
+  }
+
+  .cube-front  { transform: rotateY(  0deg) translateZ(22px); }
+  .cube-back   { transform: rotateY(180deg) translateZ(22px); }
+  .cube-right  { transform: rotateY( 90deg) translateZ(22px); }
+  .cube-left   { transform: rotateY(-90deg) translateZ(22px); }
+  .cube-top    { transform: rotateX( 90deg) translateZ(22px); }
+  .cube-bottom { transform: rotateX(-90deg) translateZ(22px); }
+
+  #hint3D {
+    font-size: 9px;
+    padding: 4px 8px;
+    bottom: 6px;
+    left: 6px;
+    max-width: 90%;
+  }
+
+  #holeEditPanel3D {
+    bottom: 6px;
+    right: 6px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  #holeEditPanel3D input[type="number"] {
+    width: 70px;
+  }
+}
