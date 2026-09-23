@@ -1,4 +1,4 @@
-﻿//header data
+//header data
 let headerData = [];
 //Map containing fileName, filedata as text pairs
 let filePairs = new Map(Object.entries(JSON.parse(sessionStorage.getItem("filePairs") || "{}")));
@@ -3044,6 +3044,67 @@ function exportFncNest() {
     document.body.removeChild(link);
 }
 
+// Expose cuttingNests getter for external modules
+window.getCuttingNests = function() {
+    return cuttingNests;
+};
+
+function exportCamNest() {
+    if (typeof saveCAMSettings === 'function') {
+        saveCAMSettings();
+    }
+
+    // If no nesting is present return with error
+    if (!cuttingNests || cuttingNests.length === 0) {
+        M.toast({html: 'No Nesting to Export!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+
+    if (checkForMissingProfile() === true) {
+        M.toast({html: 'Some Piece Profiles are Missing!', classes: 'rounded toast-error', displayLength: 2000});
+        return;
+    }
+
+    createPieceItemsFromFiles();
+
+    if (nestCounter === undefined || isNaN(nestCounter)) nestCounter = 1;
+
+    try {
+        const camContent = createCAMNestContentFromNests(cuttingNests, pieceItemsFromFiles, filePairs, pieceItems, nestCounter);
+
+        const blob = new Blob([camContent], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const fileName = (typeof CAMJobNumber !== 'undefined' && CAMJobNumber ? `${CAMJobNumber}.cam` : 'JOB-01.cam');
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+        M.toast({
+            html: `Exported ${fileName} successfully!`,
+            classes: 'rounded toast-success',
+            displayLength: 3000
+        });
+
+        const modalEl = document.getElementById('ExportCAMNestModal');
+        if (modalEl) {
+            const modalInst = M.Modal.getInstance(modalEl);
+            if (modalInst) modalInst.close();
+        }
+    } catch (err) {
+        M.toast({
+            html: `CAM Export error: ${err.message}`,
+            classes: 'rounded toast-error',
+            displayLength: 4000
+        });
+        console.error('CAM export error:', err);
+    }
+}
+
+window.exportCamNest = exportCamNest;
+
 function getMissingPieces() {
     // Create a set of labels from filePairs for quick lookup
     const labelsFromFiles = new Set();
@@ -4301,13 +4362,14 @@ function parseCamFile(text) {
         if (!profile || isNaN(stockLength) || stockLength <= 0) continue;
 
         var assignments = [];
-        var itemBlockMatch = section.match(/\[ITEM\]([\s\S]*?)(?=;\s*STEEL|$)/);
+        var itemBlockMatch = section.match(/\[ITEM\]([\s\S]*?)(?=\[POS_ITEM\]|\[[A-Z_]+\]|;\s*(?:OpenSteel|opensteel|STEEL)|;|$)/);
 
         if (itemBlockMatch) {
             var itemLines = itemBlockMatch[1].split('\n');
             for (var j = 0; j < itemLines.length; j++) {
                 var line = itemLines[j].trim().replace(/\r$/, '');
                 if (!line || line.charAt(0) === ';') continue;
+                if (line.charAt(0) === '[') break;
 
                 var firstComma  = line.indexOf(',');
                 var secondComma = line.indexOf(',', firstComma + 1);

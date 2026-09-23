@@ -28,6 +28,7 @@
                 <ul class="right hide-on-med-and-down">
                     <li><a href='#' class="waves-effect" id="fullscreenBtn"><i class="material-icons">fullscreen</i></a></li>
                     <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton" onclick="loadFNCSettings()">Export FNC Nesting</a></li>
+                    <li><a href='#' data-target='ExportCAMNestModal' class="waves-effect modal-trigger" id="exportCAMButton" onclick="loadCAMSettings()">Export CAM Nesting</a></li>
                     <li><a href="#about-me" data-target="aboutMeModal" class="waves-effect modal-trigger">About me</a></li>
                 </ul>
             </div>
@@ -95,7 +96,42 @@
                     </div>
                 </div>
             <div class="modal-footer">
-                <a href='#' class="btn waves-effect modal-trigger" onclick="exportFncNest()">Export FNC Nest</a>
+                <button class="btn waves-effect deep-purple" onclick="exportFncNest()">Export FNC Nest</button>
+                <a href="#!" class="modal-close waves-effect waves-red btn red">Close</a>
+            </div>
+        </div>
+    </div>
+    <!--CAM export modal-->
+    <div id="ExportCAMNestModal" class="modal">
+        <div class="modal-content">
+            <h4>CAM Nesting Export Options</h4>
+            <div class="modalMinHeight">
+                <div class="input-field">
+                    <input id="CAMJobNumberInput" type="text" class="validate" value="JOB-01" placeholder="e.g. JOB-01, BATCH-1, 102">
+                    <label for="CAMJobNumberInput" class="active">Job / Batch Identifier (BAR_BON)</label>
+                </div>
+                <div class="input-field">
+                    <input id="CAMCncMachineInput" type="text" class="validate" value="CNC" placeholder="e.g. CNC, HP20T6, MACHINE-1">
+                    <label for="CAMCncMachineInput" class="active">CNC Machine Model (BAR_CNC)</label>
+                </div>
+                <div class="input-field">
+                    <input id="CAMLicenseInput" type="text" class="validate" value="OpenSteel" placeholder="e.g. OpenSteel, Customer / License">
+                    <label for="CAMLicenseInput" class="active">License / Customer (BAR_LIC)</label>
+                </div>
+                <div class="input-field">
+                    <input id="CAMConstraintMaterialInput" type="text" class="validate" placeholder="Optional constraint material (e.g. S235JR, S355JR)">
+                    <label for="CAMConstraintMaterialInput" class="active">Constraint Material (Optional)</label>
+                </div>
+                <div>
+                    <span class="deep-purple-text lighten-3">Remove Holes:</span>
+                    <label>
+                        <input type="checkbox" id="removeCAMHoles">
+                        <span for="removeCAMHoles"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn waves-effect deep-purple" onclick="exportCamNest()">Export CAM Nest</button>
                 <a href="#!" class="modal-close waves-effect waves-red btn red">Close</a>
             </div>
         </div>
@@ -166,7 +202,8 @@
         <ul class="sideNavBottom">
             <li><a href="#!" class="waves-effect float-left" onclick="loadIndexPage()">DSTV Viewer</a></li>
             <li><a href="#!"  class="waves-effect float-left" onclick="loadProfilesPage()">Profiles library</a></li>
-            <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButton" onclick="loadFNCSettings()">Export FNC Nesting</a></li>
+            <li><a href='#' data-target='ExportFNCNestModal' class="waves-effect modal-trigger" id="exportFNCButtonMobile" onclick="loadFNCSettings()">Export FNC Nesting</a></li>
+            <li><a href='#' data-target='ExportCAMNestModal' class="waves-effect modal-trigger" id="exportCAMButtonMobile" onclick="loadCAMSettings()">Export CAM Nesting</a></li>
             <li><a href="#about-me" data-target="aboutMeModal" class="sidenav-close modal-trigger float-left">About me</a></li>
         </ul>
     </ul>
@@ -494,6 +531,7 @@
 
     <!--Includes js file for materialize-->
     <script src="Scripts/nc-to-fnc.js"></script>
+    <script src="Scripts/nc-to-cam.js"></script>
     <script src="Scripts/materialize-main.js"></script>
     <script src="Scripts/materialize-scripts.js"></script>
     <!--Includes js file for jsPDF-->
